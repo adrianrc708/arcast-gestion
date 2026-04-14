@@ -1,0 +1,213 @@
+/** @type {any} */
+const User = require('./user.model');
+/** @type {any} */
+const Movie = require('../catalog/movie.model');
+/** @type {any} */
+const Review = require('../reviews/review.model');
+const axios = require('axios');
+const audit = require('../../common/audit.service');
+const catalogApi = require('../catalog/catalog.api');
+const { catchAsync, AppError } = require('../../common/error.utils');
+
+/**
+ * @typedef {Object} UserDoc
+ * @property {string} _id
+ * @property {string} username
+ * @property {function(): Promise<UserDoc>} save
+ * @property {Array<{contentId: string, percentWatched: number}>} watchHistory
+ * @property {Array<{item: string, kind: string, _id: string}>} watchlist
+ */
+
+exports.getBossStats = catchAsync(async (req, res, _next) => {
+    // noinspection JSUnresolvedFunction
+    const [totalUsers, totalMovies, totalReviews] = await Promise.all([
+        User.countDocuments(),
+        Movie.countDocuments(),
+        Review.countDocuments()
+    ]);
+
+    // noinspection JSUnresolvedFunction
+    const topRated = await Movie.find().sort({ voteAverage: -1 }).limit(5);
+
+    res.json({
+        metrics: { totalUsers, totalMovies, totalReviews },
+        rankings: topRated
+    });
+});
+
+exports.getRecommendations = catchAsync(async (req, res, _next) => {
+    // 1. Obtener géneros reales del usuario a partir de su watchlist
+    /** @type {UserDoc|null} */
+    const user = await (/** @type {any} */ (require('./user.model'))).findById(req.user.id);
+
+    let preferredGenres = ['Acción']; // fallback por defecto
+
+    if (user && user.watchlist && user.watchlist.length > 0) {
+        const movieIds = user.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
+        if (movieIds.length > 0) {
+            const watchedMovies = await (/** @type {any} */ (require('../catalog/movie.model')))
+                .find({ _id: { $in: movieIds } }).select('genres').limit(20);
+
+            const genreCount = {};
+            for (const movie of watchedMovies) {
+                for (const genre of (movie.genres || [])) {
+                    genreCount[genre] = (genreCount[genre] || 0) + 1;
+                }
+            }
+
+            // Ordenar géneros por frecuencia descendente
+            const sorted = Object.entries(genreCount)
+                .sort((a, b) => b[1] - a[1])
+                .map(([genre]) => genre);
+
+            if (sorted.length > 0) preferredGenres = sorted.slice(0, 4);
+        }
+    }
+
+    // 2. Llamar al motor de IA con los géneros reales
+    const AI_URL = process.env.AI_ENGINE_URL || 'http://localhost:5000';
+    try {
+        const response = await axios.post(`${AI_URL}/recommend`, {
+            userId: req.user.id,
+            preferredGenres,
+            limit: 6
+        }, { timeout: 4000 });
+
+        // noinspection JSUnresolvedVariable
+        const tmdbIds = response.data.recommendations || [];
+        res.json(await catalogApi.getRecommendedContent(tmdbIds));
+    } catch (_aiErr) {
+        // Fallback silencioso: devolvemos las mejor calificadas del catálogo
+        res.json(await catalogApi.getRecommendedContent([]));
+    }
+});
+
+exports.getMe = catchAsync(async (req, res, _next) => {
+    // noinspection JSUnresolvedFunction
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+    res.json(user);
+});
+
+exports.updateMe = catchAsync(async (req, res, _next) => {
+    const { username } = req.body;
+    // noinspection JSUnresolvedFunction
+    const user = await User.findById(req.user.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    const oldName = user.username;
+    if (username && username !== user.username) {
+        // noinspection JSUnresolvedFunction
+        if (await User.findOne({ username })) throw new AppError('Usuario ya existe.', 400);
+        user.username = username;
+    }
+
+    await user.save();
+    await audit.recordMutation(req.user.id, 'USER_PROFILE_MUTATION', { from: oldName, to: user.username }, req.ip);
+    res.json(user);
+});
+
+exports.updateProgress = catchAsync(async (req, res, _next) => {
+    const { contentId, percentWatched } = req.body;
+    // noinspection JSUnresolvedFunction
+    const user = await User.findById(req.user.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    /** @type {UserDoc} */
+    const userDoc = user;
+    const idx = userDoc.watchHistory.findIndex(h => h.contentId === contentId);
+    if (idx > -1) userDoc.watchHistory[idx].percentWatched = percentWatched;
+    else userDoc.watchHistory.push({ contentId, percentWatched });
+
+    await userDoc.save();
+    res.json({ message: "Progreso guardado." });
+});
+
+exports.getWatchlist = catchAsync(async (req, res, _next) => {
+    // noinspection JSUnresolvedFunction
+    const user = await User.findById(req.user.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    /** @type {UserDoc} */
+    const userDoc = user;
+
+    const movieIds = userDoc.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
+    const tvIds = userDoc.watchlist.filter(i => i.kind === 'TVShow').map(i => i.item);
+
+    const { movies, tvshows } = await catalogApi.getBulkItems(movieIds, tvIds);
+
+    const finalWatchlist = userDoc.watchlist.map(entry => {
+        const data = entry.kind === 'Movie'
+            ? movies.find(m => m._id.toString() === entry.item.toString())
+            : tvshows.find(t => t._id.toString() === entry.item.toString());
+        return data ? { _id: entry._id, kind: entry.kind, item: data } : null;
+    }).filter(item => item !== null);
+
+    res.json({ watchlist: finalWatchlist });
+});
+
+exports.getAllUsers = catchAsync(async (req, res, _next) => {
+    // noinspection JSUnresolvedFunction
+    const users = await User.find().select('-password');
+    res.json(users);
+});
+
+exports.updateUserRole = catchAsync(async (req, res, _next) => {
+    const { role } = req.body;
+
+    if (!['user', 'admin', 'boss'].includes(role)) {
+        throw new AppError('Rol no válido', 400);
+    }
+
+    // noinspection JSUnresolvedFunction
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    const oldRole = user.role;
+    user.role = role;
+    await user.save();
+
+    await audit.recordMutation(req.user.id, 'USER_ROLE_MUTATION', { targetUser: user.username, from: oldRole, to: role }, req.ip);
+
+    res.json({ message: 'Rol actualizado exitosamente', user });
+});
+
+exports.toggleWatchlist = catchAsync(async (req, res) => {
+    const { itemId, itemType } = req.body;
+    const user = await User.findById(req.user.id);
+    const kind = itemType === 'movie' ? 'Movie' : 'TVShow';
+
+    const index = user.watchlist.findIndex(w => w.item.toString() === itemId);
+    if (index > -1) {
+        user.watchlist.splice(index, 1);
+    } else {
+        user.watchlist.push({ item: itemId, kind });
+    }
+
+    await user.save();
+    res.json(user.watchlist);
+});
+
+exports.updateMe = catchAsync(async (req, res) => {
+    const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { username: req.body.username },
+        { new: true, runValidators: true }
+    );
+    res.json(user);
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user.id).select('+password');
+    // noinspection JSUnresolvedFunction
+    if (!(await user.correctPassword(currentPassword, user.password))) {
+        return next(new AppError('La contraseña actual es incorrecta.', 401));
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Contraseña actualizada con éxito.' });
+});

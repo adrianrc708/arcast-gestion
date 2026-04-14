@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  api-core:
+    build: ./api-core
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./api-core/.env
+    networks:
+      - arcast_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ai-engine:
+    build: ./ai-engine
+    ports:
+      - "5000:5000"
+    networks:
+      - arcast_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ui-web:
+    build: ./ui-web
+    ports:
+      - "80:80"
+    networks:
+      - arcast_net
+    depends_on:
+      - api-core
+      - ai-engine
+
+networks:
+  arcast_net:
+    driver: bridge
