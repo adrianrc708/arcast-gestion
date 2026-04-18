@@ -1,7 +1,7 @@
-const User = require('../src/modules/auth/user.model');
-const Review = require('../models/review.model');
-const Movie = require('../src/modules/catalog/movie.model');
-const TVShow = require('../src/modules/catalog/tvshow.model');
+const User = require('../auth/user.model');
+const Review = require('../reviews/review.model');
+const Movie = require('../catalog/movie.model');
+const TVShow = require('../catalog/tvshow.model');
 
 exports.getMe = async (req, res) => {
     try {

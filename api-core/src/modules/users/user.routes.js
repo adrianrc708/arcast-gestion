@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/user.controller');
-const { requiredAuth } = require('../middleware/auth.middleware');
+const controller = require('./user.controller');
+const { requiredAuth } = require('../../common/auth.middleware');
 
 // Todas estas rutas requieren estar logueado
 router.get('/me', requiredAuth, controller.getMe);

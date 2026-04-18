@@ -1,4 +1,4 @@
-const Review = require('../models/review.model');
+const Review = require('./review.model');
 
 // GET /api/reviews -> listar todas 
 exports.getAllReviews = async (req, res) => {
