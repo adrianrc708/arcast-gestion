@@ -1,11 +1,11 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-#root { width: 100%; max-width: 100%; padding: 0; margin: 0; text-align: left; display: block; }
-body { background-color: #141414; color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; }
-.hero { height: 80vh; display: flex; flex-direction: column; justify-content: flex-end; padding: 50px; background-size: cover; background-position: center top; transition: background-image 0.4s ease-in-out; }
-.hero-title { font-size: 4rem; font-weight: 800; margin-bottom: 20px; text-shadow: 2px 2px 8px rgba(0,0,0,0.8); }
-.row { margin-left: 50px; margin-bottom: 40px; margin-top: -100px; position: relative; z-index: 10; }
-.row-title { font-size: 1.5rem; margin-bottom: 15px; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
-.posters { display: flex; overflow-y: hidden; overflow-x: scroll; padding: 20px 0; scrollbar-width: none; }
+#root { width: 100%; max-width: 100%; text-align: left; }
+body { background-color: #141414; color: #fff; font-family: sans-serif; overflow-x: hidden; }
+.hero { height: 75vh; display: flex; flex-direction: column; justify-content: flex-end; padding: 50px; background-size: cover; background-position: center top; transition: background-image 0.4s; }
+.hero-title { font-size: 3.5rem; font-weight: 800; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); position: relative; z-index: 5; }
+.row { padding-left: 50px; margin-top: -80px; position: relative; z-index: 10; }
+.row-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+.posters { display: flex; overflow-y: hidden; overflow-x: scroll; padding: 20px 0; }
 .posters::-webkit-scrollbar { display: none; }
-.poster { object-fit: contain; max-height: 250px; margin-right: 15px; transition: transform 450ms; cursor: pointer; border-radius: 5px; }
-.poster:hover { transform: scale(1.08); z-index: 2; }
+.poster { max-height: 250px; margin-right: 15px; border-radius: 5px; cursor: pointer; transition: transform 0.3s; z-index: 15; position: relative; }
+.poster:hover { transform: scale(1.08); z-index: 20; }
