@@ -1,4 +1,4 @@
-const Movie = require('../models/movie.model');
+const Movie = require('./movie.model');
 
 // POST /api/movies (manual)
 exports.createMovie = async (req, res) => {

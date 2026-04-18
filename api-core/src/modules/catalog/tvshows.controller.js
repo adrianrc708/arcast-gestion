@@ -1,4 +1,4 @@
-const TVShow = require('../models/tvshow.model');
+const TVShow = require('./tvshow.model');
 
 // GET /api/tvshows -> listar con filtros y aleatoriedad
 exports.getAllTVShows = async (req, res) => {
