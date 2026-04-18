@@ -1,4 +1,4 @@
-const User = require('../auth/user.model');
+const User = require('../../common/models/user.model');
 const Review = require('../reviews/review.model');
 const Movie = require('../catalog/movie.model');
 const TVShow = require('../catalog/tvshow.model');
