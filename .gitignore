@@ -13,6 +13,9 @@ Thumbs.db
 
 
 /backend/.env
+/ui-web/node_modules/
+/ui-web/.env
+
 
 # Ignorar logs de npm
 npm-debug.log*
@@ -25,6 +28,10 @@ yarn-error.log
 /frontend/.venv/
 .venv/
 venv/
+/ai-engine/venv/
+/ai-engine/.venv/
+
+
 
 # Ignorar caché de Python
 /frontend/__pycache__/
