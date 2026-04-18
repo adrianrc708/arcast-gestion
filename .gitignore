@@ -18,6 +18,7 @@ Thumbs.db
 /ui-web/node_modules/
 /ui-web/.env
 
+/api-core/package-lock.json
 
 # Ignorar logs de npm
 npm-debug.log*
