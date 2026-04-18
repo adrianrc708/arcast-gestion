@@ -1,25 +1,49 @@
 import { useEffect, useState } from 'react'
+import './index.css'
 
 function App() {
   const [movies, setMovies] = useState([])
+  const [hero, setHero] = useState(null)
 
   useEffect(() => {
     fetch('/api/movies')
       .then(res => res.json())
-      .then(data => setMovies(data))
+      .then(data => {
+        setMovies(data)
+        if (data.length > 0) {
+          const validMovies = data.filter(m => m.backdropUrl)
+          setHero(validMovies[Math.floor(Math.random() * validMovies.length)])
+        }
+      })
       .catch(err => console.error(err))
   }, [])
 
   return (
-    <div style={{ backgroundColor: '#0f1014', color: 'white', minHeight: '100vh', padding: '20px' }}>
-      <h1>Arcast</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
-        {movies.map(movie => (
-          <div key={movie._id} style={{ backgroundColor: '#1b1d24', padding: '10px', borderRadius: '8px' }}>
-            <img src={movie.posterUrl} alt={movie.title} style={{ width: '100%', borderRadius: '4px' }} />
-            <h3>{movie.title}</h3>
-          </div>
-        ))}
+    <div>
+      {hero && (
+        <div 
+          className="hero" 
+          style={{ backgroundImage: `linear-gradient(to top, #141414 5%, transparent 95%), url(${hero.backdropUrl})` }}
+        >
+          <h1 className="hero-title">{hero.title}</h1>
+        </div>
+      )}
+      
+      <div className="row">
+        <h2 className="row-title">Catálogo Principal</h2>
+        <div className="posters">
+          {movies.map(movie => (
+            movie.posterUrl && (
+              <img 
+                key={movie._id} 
+                className="poster" 
+                src={movie.posterUrl} 
+                alt={movie.title} 
+                onClick={() => setHero(movie)}
+              />
+            )
+          ))}
+        </div>
       </div>
     </div>
   )
