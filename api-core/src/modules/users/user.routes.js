@@ -1,19 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const userController = require('./user.controller');
-const { requiredAuth, authorize } = require('../../common/auth.middleware');
+const controller = require('./user.controller');
+const { requiredAuth } = require('../../common/auth.middleware');
 
-router.get('/me', requiredAuth, userController.getMe);
-router.get('/recommendations', requiredAuth, userController.getRecommendations);
+// Todas estas rutas requieren estar logueado
+router.get('/me', requiredAuth, controller.getMe);
+router.put('/me', requiredAuth, controller.updateMe);
+router.get('/my-reviews', requiredAuth, controller.getMyReviews);
 
-router.get('/', requiredAuth, authorize(['admin', 'boss']), userController.getAllUsers);
-router.get('/me', requiredAuth, (req, res) => res.json(req.user));
-router.put('/me', requiredAuth, userController.updateMe);
-router.put('/update-password', requiredAuth, userController.updatePassword);
-router.post('/progress', requiredAuth, userController.updateProgress);
-router.get('/stats', requiredAuth, authorize(['boss', 'admin']), userController.getBossStats);
-router.put('/:id/role', requiredAuth, authorize(['admin']), userController.updateUserRole);
-router.post('/watchlist', requiredAuth, userController.toggleWatchlist);
-router.get('/watchlist', requiredAuth, userController.getWatchlist);
+// ... (código existente) ...
+router.post('/me/watchlist', requiredAuth, controller.addToWatchlist);
+router.get('/me/watchlist', requiredAuth, controller.getWatchlist);
+
+// NUEVA RUTA
+router.delete('/me/watchlist/:itemId', requiredAuth, controller.removeFromWatchlist);
 
 module.exports = router;

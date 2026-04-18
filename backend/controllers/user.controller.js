@@ -1,44 +1,42 @@
 const User = require('../models/user.model');
 const Review = require('../models/review.model');
-const Movie = require('../models/movie.model');
-const TVShow = require('../models/tvshow.model');
 
+// Obtener datos del usuario logueado (para pág. "Account")
 exports.getMe = async (req, res) => {
     try {
+        // req.user.id viene del middleware 'requiredAuth'
         const user = await User.findById(req.user.id).select('-password');
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
         res.json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
+// Actualizar datos del usuario (para pág. "Account")
 exports.updateMe = async (req, res) => {
-    const { username } = req.body;
+    const { username, email } = req.body;
     try {
         const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-
-        // Validación: Si cambió el nombre, verificar que no exista otro igual
-        if (username && username !== user.username) {
-            const exists = await User.findOne({ username });
-            if (exists) {
-                return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-            }
-            user.username = username;
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
+
+        user.username = username || user.username;
+        user.email = email || user.email;
+
+        // (Opcional: agregar lógica para cambiar contraseña)
 
         const updatedUser = await user.save();
         res.json(updatedUser);
     } catch (err) {
-        // Captura error de índice duplicado por seguridad extra
-        if (err.code === 11000) {
-            return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-        }
         res.status(500).json({ message: err.message });
     }
 };
 
+// Obtener todas las reseñas del usuario logueado (para pág. "Profile")
 exports.getMyReviews = async (req, res) => {
     try {
         const reviews = await Review.find({ userId: req.user.id }).sort({ date: -1 });
@@ -48,78 +46,35 @@ exports.getMyReviews = async (req, res) => {
     }
 };
 
-// ... (El resto del archivo se mantiene igual para addToWatchlist, getWatchlist, etc.) ...
-// --- WATCHLIST: Agregar ---
+// --- NUEVA FUNCIÓN: Agregar a Watchlist ---
 exports.addToWatchlist = async (req, res) => {
     const { movieId } = req.body;
     try {
         const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
 
-        const exists = user.watchlist.find(w => w.item && w.item.toString() === movieId);
-        if (exists) return res.status(400).json({ message: 'Ya está en tu watchlist.' });
+        // Evitar duplicados
+        if (user.watchlist.includes(movieId)) {
+            return res.status(400).json({ message: 'Esta película ya está en tu watchlist.' });
+        }
 
-        const isMovie = await Movie.exists({ _id: movieId });
-        const isTVShow = await TVShow.exists({ _id: movieId });
-
-        let validKind = null;
-        if (isMovie) validKind = 'Movie';
-        else if (isTVShow) validKind = 'TVShow';
-        else return res.status(404).json({ message: 'Contenido no encontrado.' });
-
-        user.watchlist.push({ item: movieId, kind: validKind });
+        user.watchlist.push(movieId);
         await user.save();
-
         res.json(user.watchlist);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
+// --- NUEVA FUNCIÓN: Obtener Watchlist ---
 exports.getWatchlist = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+        const user = await User.findById(req.user.id).populate('watchlist');
+        // .populate('watchlist') reemplaza los IDs con los objetos completos de Película
 
-        const finalWatchlist = [];
-        for (const entry of user.watchlist) {
-            const itemId = entry.item;
-            let foundData = await Movie.findById(itemId);
-            let realKind = 'Movie';
-
-            if (!foundData) {
-                foundData = await TVShow.findById(itemId);
-                realKind = 'TVShow';
-            }
-
-            if (foundData) {
-                finalWatchlist.push({
-                    _id: entry._id,
-                    kind: realKind,
-                    item: foundData
-                });
-            }
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
-        res.json({ watchlist: finalWatchlist });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-exports.removeFromWatchlist = async (req, res) => {
-    const { itemId } = req.params;
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-
-        user.watchlist = user.watchlist.filter(w => {
-            if (!w.item) return false;
-            const currentId = w.item._id ? w.item._id.toString() : w.item.toString();
-            return currentId !== itemId;
-        });
-
-        await user.save();
-        res.json({ message: 'Eliminado de la watchlist' });
+        res.json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
