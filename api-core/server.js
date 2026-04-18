@@ -13,20 +13,15 @@ app.use(cors());
 app.use(express.json());
 
 // 3. Montaje de Módulos (Puntos de entrada únicos)
-// El módulo de Auth ya contiene sus propias rutas internas
+// Cada carpeta tiene su propio index.js que gestiona sus rutas internas
 app.use('/api/auth', require('./src/modules/auth'));
+app.use('/api/catalog', require('./src/modules/catalog'));
 
-// Agrupamos todo lo relacionado al contenido en un solo prefijo
-app.use('/api/catalog', require('./routes/movies.routes'));
-app.use('/api/catalog/tv', require('./routes/tvshows.routes'));
-app.use('/api/catalog/import', require('./routes/import.routes'));
-
-// Otros servicios
+// Servicios que aún no se han movido a módulos
 app.use('/api/reviews', require('./routes/reviews.routes'));
 app.use('/api/user', require('./routes/user.routes'));
 
-// 4. Configuración del Puerto
-// Forzamos el 5001 para que no haya conflictos con React (5173) o la IA (8001)
+// 4. Configuración del Puerto (5001 para evitar conflictos)
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {

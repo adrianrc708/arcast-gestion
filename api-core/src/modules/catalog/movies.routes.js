@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../src/modules/catalog/movies.controller');
+const controller = require('./movies.controller');
 
 // API Endpoints para Películas
 router.get('/', controller.getAllMovies);
