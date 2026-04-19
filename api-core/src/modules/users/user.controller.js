@@ -17,19 +17,20 @@ exports.getWatchlist = async (req, res) => {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
 
-        // ✅ OPTIMIZACIÓN: Clasificamos IDs para pedir todo en una sola llamada
+        // ✅ PASO 1: Agrupamos todos los IDs de películas y series
         const movieIds = user.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
         const tvIds = user.watchlist.filter(i => i.kind === 'TVShow').map(i => i.item);
 
+        // ✅ PASO 2: Pedimos todo al catálogo en UNA SOLA llamada
         const { movies, tvshows } = await catalogApi.getBulkItems(movieIds, tvIds);
 
-        // Mapeamos los resultados para devolver el formato esperado
+        // ✅ PASO 3: Reconstruimos la lista para el frontend
         const finalWatchlist = user.watchlist.map(entry => {
-            const data = entry.kind === 'Movie'
+            const details = entry.kind === 'Movie'
                 ? movies.find(m => m._id.toString() === entry.item.toString())
                 : tvshows.find(t => t._id.toString() === entry.item.toString());
 
-            return data ? { _id: entry._id, kind: entry.kind, item: data } : null;
+            return details ? { _id: entry._id, kind: entry.kind, item: details } : null;
         }).filter(item => item !== null);
 
         res.json({ watchlist: finalWatchlist });
@@ -44,10 +45,8 @@ exports.removeFromWatchlist = async (req, res) => {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
 
-        // ✅ CORRECCIÓN DE BUG: Comparación directa de strings para ObjectId
-        user.watchlist = user.watchlist.filter(w =>
-            w.item && w.item.toString() !== itemId
-        );
+        // Corregimos el filtro para usar comparación de strings segura
+        user.watchlist = user.watchlist.filter(w => w.item && w.item.toString() !== itemId);
 
         await user.save();
         res.json({ message: 'Eliminado de la watchlist' });
@@ -56,51 +55,43 @@ exports.removeFromWatchlist = async (req, res) => {
     }
 };
 
-// Mantén tus otras funciones (updateMe, getMyReviews, addToWatchlist) como estaban
+// Mantén tus otras funciones (updateMe, getMyReviews, addToWatchlist) como estaban en tu commit
 exports.updateMe = async (req, res) => {
     const { username } = req.body;
     try {
         const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
         if (username && username !== user.username) {
             const exists = await User.findOne({ username });
-            if (exists) return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
+            if (exists) return res.status(400).json({ message: 'El nombre de usuario ya existe.' });
             user.username = username;
         }
-        const updatedUser = await user.save();
-        res.json(updatedUser);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+        await user.save();
+        res.json(user);
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 exports.getMyReviews = async (req, res) => {
     try {
         const reviews = await reviewsApi.getReviewsByUserId(req.user.id);
         res.json(reviews);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 exports.addToWatchlist = async (req, res) => {
     const { movieId } = req.body;
     try {
         const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
         const exists = user.watchlist.find(w => w.item && w.item.toString() === movieId);
         if (exists) return res.status(400).json({ message: 'Ya está en tu watchlist.' });
 
         const movie = await catalogApi.getMovieById(movieId);
         const tvshow = await catalogApi.getTVShowById(movieId);
-        let validKind = movie ? 'Movie' : (tvshow ? 'TVShow' : null);
+        let kind = movie ? 'Movie' : (tvshow ? 'TVShow' : null);
 
-        if (!validKind) return res.status(404).json({ message: 'Contenido no encontrado.' });
+        if (!kind) return res.status(404).json({ message: 'Contenido no encontrado.' });
 
-        user.watchlist.push({ item: movieId, kind: validKind });
+        user.watchlist.push({ item: movieId, kind });
         await user.save();
         res.json(user.watchlist);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };

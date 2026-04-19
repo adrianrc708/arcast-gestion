@@ -1,5 +1,7 @@
 const moviesService = require('./movies.service');
 const tvshowsService = require('./tvshows.service');
+const Movie = require('./movie.model');
+const TVShow = require('./tvshow.model');
 
 module.exports = {
     getMovieById: async (id) => {
@@ -8,11 +10,12 @@ module.exports = {
     getTVShowById: async (id) => {
         return await tvshowsService.findById(id);
     },
-    // ✅ NUEVO: Método para obtener múltiples elementos de golpe (Evita el problema N+1)
+    // ✅ OPTIMIZACIÓN: Método para obtener muchos elementos de golpe
+    // Esto evita que el módulo de usuarios tenga que llamar a la DB 50 veces en un bucle.
     getBulkItems: async (movieIds, tvshowIds) => {
         const [movies, tvshows] = await Promise.all([
-            require('./movie.model').find({ _id: { $in: movieIds } }),
-            require('./tvshow.model').find({ _id: { $in: tvshowIds } })
+            Movie.find({ _id: { $in: movieIds } }),
+            TVShow.find({ _id: { $in: tvshowIds } })
         ]);
         return { movies, tvshows };
     }
