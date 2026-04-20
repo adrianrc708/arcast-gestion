@@ -1,18 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('./user.controller');
+const userController = require('./user.controller');
 const { requiredAuth } = require('../../common/auth.middleware');
 
-// Todas estas rutas requieren estar logueado
-router.get('/me', requiredAuth, controller.getMe);
-router.put('/me', requiredAuth, controller.updateMe);
-router.get('/my-reviews', requiredAuth, controller.getMyReviews);
+router.get('/me', requiredAuth, userController.getMe);
 
-// ... (código existente) ...
-router.post('/me/watchlist', requiredAuth, controller.addToWatchlist);
-router.get('/me/watchlist', requiredAuth, controller.getWatchlist);
+// Rutas de Watchlist
+router.get('/watchlist', requiredAuth, userController.getWatchlist);
+router.post('/watchlist', requiredAuth, userController.addToWatchlist);
+router.delete('/watchlist/:itemId', requiredAuth, userController.removeFromWatchlist);
 
-// NUEVA RUTA
-router.delete('/me/watchlist/:itemId', requiredAuth, controller.removeFromWatchlist);
+// ✅ NUEVAS RUTAS ESTILO NETFLIX
+router.get('/recommendations', requiredAuth, userController.getRecommendations);
+router.post('/progress', requiredAuth, userController.updateProgress);
 
 module.exports = router;
