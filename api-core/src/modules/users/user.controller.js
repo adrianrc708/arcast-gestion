@@ -1,126 +1,100 @@
-const User = require('../../common/models/user.model');
-const Review = require('../reviews/review.model');
-const Movie = require('../catalog/movie.model');
-const TVShow = require('../catalog/tvshow.model');
+const User = require('./user.model');
+const catalogApi = require('../catalog/catalog.api');
+const axios = require('axios');
 
+/**
+ * ✅ FUNCIONALIDAD NETFLIX 1: Recomendaciones por IA
+ * Conecta api-core con ai-engine (Sistema Distribuido)
+ */
+exports.getRecommendations = async (req, res) => {
+    try {
+        // Llamada al servicio de Python con TIMEOUT (Resiliencia ISO 25010)
+        // Asumiendo que tu ai-engine corre en el puerto 5000
+        const aiResponse = await axios.post(`${process.env.AI_ENGINE_URL || 'http://localhost:5000'}/recommend`, {
+            userId: req.user.id
+        }, { timeout: 3000 });
+
+        const recommendedIds = aiResponse.data.recommendations; // [tmdbId1, tmdbId2...]
+        const movies = await catalogApi.getRecommendedContent(recommendedIds);
+
+        res.json(movies);
+    } catch (err) {
+        // Fallback: Si la IA falla, devolvemos algo genérico para no romper la web
+        console.error("AI Engine offline o lento, enviando fallback");
+        const defaultContent = await catalogApi.getRecommendedContent([]);
+        res.json(defaultContent);
+    }
+};
+
+/**
+ * ✅ FUNCIONALIDAD NETFLIX 2: Guardar Progreso
+ */
+exports.updateProgress = async (req, res) => {
+    const { contentId, contentType, percentWatched } = req.body;
+    try {
+        const user = await User.findById(req.user.id);
+
+        // Buscamos si ya existe el progreso para este contenido
+        const historyIndex = user.watchHistory.findIndex(h => h.contentId === contentId);
+
+        if (historyIndex > -1) {
+            user.watchHistory[historyIndex].percentWatched = percentWatched;
+            user.watchHistory[historyIndex].lastTimeWatched = Date.now();
+        } else {
+            user.watchHistory.push({ contentId, contentType, percentWatched });
+        }
+
+        await user.save();
+        res.json({ message: "Progreso guardado" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ... (Mantén aquí tus funciones de getMe, getWatchlist, etc. de tus commits anteriores)
 exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
         res.json(user);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-exports.updateMe = async (req, res) => {
-    const { username } = req.body;
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-
-        // Validación: Si cambió el nombre, verificar que no exista otro igual
-        if (username && username !== user.username) {
-            const exists = await User.findOne({ username });
-            if (exists) {
-                return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-            }
-            user.username = username;
-        }
-
-        const updatedUser = await user.save();
-        res.json(updatedUser);
-    } catch (err) {
-        // Captura error de índice duplicado por seguridad extra
-        if (err.code === 11000) {
-            return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-        }
-        res.status(500).json({ message: err.message });
-    }
-};
-
-exports.getMyReviews = async (req, res) => {
-    try {
-        const reviews = await Review.find({ userId: req.user.id }).sort({ date: -1 });
-        res.json(reviews);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// ... (El resto del archivo se mantiene igual para addToWatchlist, getWatchlist, etc.) ...
-// --- WATCHLIST: Agregar ---
-exports.addToWatchlist = async (req, res) => {
-    const { movieId } = req.body;
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-
-        const exists = user.watchlist.find(w => w.item && w.item.toString() === movieId);
-        if (exists) return res.status(400).json({ message: 'Ya está en tu watchlist.' });
-
-        const isMovie = await Movie.exists({ _id: movieId });
-        const isTVShow = await TVShow.exists({ _id: movieId });
-
-        let validKind = null;
-        if (isMovie) validKind = 'Movie';
-        else if (isTVShow) validKind = 'TVShow';
-        else return res.status(404).json({ message: 'Contenido no encontrado.' });
-
-        user.watchlist.push({ item: movieId, kind: validKind });
-        await user.save();
-
-        res.json(user.watchlist);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 exports.getWatchlist = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-
-        const finalWatchlist = [];
-        for (const entry of user.watchlist) {
-            const itemId = entry.item;
-            let foundData = await Movie.findById(itemId);
-            let realKind = 'Movie';
-
-            if (!foundData) {
-                foundData = await TVShow.findById(itemId);
-                realKind = 'TVShow';
-            }
-
-            if (foundData) {
-                finalWatchlist.push({
-                    _id: entry._id,
-                    kind: realKind,
-                    item: foundData
-                });
-            }
-        }
+        const movieIds = user.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
+        const tvIds = user.watchlist.filter(i => i.kind === 'TVShow').map(i => i.item);
+        const { movies, tvshows } = await catalogApi.getBulkItems(movieIds, tvIds);
+        const finalWatchlist = user.watchlist.map(entry => {
+            const data = entry.kind === 'Movie'
+                ? movies.find(m => m._id.toString() === entry.item.toString())
+                : tvshows.find(t => t._id.toString() === entry.item.toString());
+            return data ? { _id: entry._id, kind: entry.kind, item: data } : null;
+        }).filter(item => item !== null);
         res.json({ watchlist: finalWatchlist });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+exports.addToWatchlist = async (req, res) => {
+    const { movieId } = req.body;
+    try {
+        const user = await User.findById(req.user.id);
+        const movie = await catalogApi.getMovieById(movieId);
+        const tvshow = await catalogApi.getTVShowById(movieId);
+        let kind = movie ? 'Movie' : (tvshow ? 'TVShow' : null);
+        if (!kind) return res.status(404).json({ message: 'No encontrado' });
+        user.watchlist.push({ item: movieId, kind });
+        await user.save();
+        res.json(user.watchlist);
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 exports.removeFromWatchlist = async (req, res) => {
     const { itemId } = req.params;
     try {
         const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
-
-        user.watchlist = user.watchlist.filter(w => {
-            if (!w.item) return false;
-            const currentId = w.item._id ? w.item._id.toString() : w.item.toString();
-            return currentId !== itemId;
-        });
-
+        user.watchlist = user.watchlist.filter(w => w.item && w.item.toString() !== itemId);
         await user.save();
-        res.json({ message: 'Eliminado de la watchlist' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+        res.json({ message: 'Eliminado' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
