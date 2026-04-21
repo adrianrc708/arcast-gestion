@@ -35,19 +35,14 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.clear();
         setUser(null);
-        window.location.replace('/'); // Resetea la URL a / para que el próximo usuario empiece limpio
+        window.location.reload();
     };
 
-    // FIX: Agregamos loading al value para que App.jsx lo detecte
-    const value = useMemo(() => ({
-        user, login, register, logout,
-        isAuthenticated: !!user,
-        loading
-    }), [user, loading]);
+    const value = useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user }), [user]);
 
     return (
         <AuthContext.Provider value={value}>
-            {children}
+            {!loading && children}
         </AuthContext.Provider>
     );
 };
