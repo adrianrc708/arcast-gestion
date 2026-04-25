@@ -1,202 +1,54 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-
-const CarouselRow = ({ title, items, type }) => {
-    const trackRef = useRef(null);
-    const navigate = useNavigate();
-    const scroll = (direction) => {
-        if (trackRef.current) trackRef.current.scrollBy({ left: direction === 'left' ? -350 : 350, behavior: 'smooth' });
-    };
-    if (!items || items.length === 0) return null;
-    return (
-        <div className="category-section">
-            <div className="row-header"><h2 className="row-title">{title}</h2></div>
-            <div className="carousel-wrapper">
-                <button className="carousel-btn prev" onClick={() => scroll('left')}>&#10094;</button>
-                <div className="carousel-track" ref={trackRef}>
-                    {items.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
-                            <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
-                            <div className="card-info">
-                                <h3>{item.title || item.name}</h3>
-                                <div className="card-meta">
-                                    <span>{item.releaseDate?.split('-')[0]}</span>
-                                    <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <button className="carousel-btn next" onClick={() => scroll('right')}>&#10095;</button>
-            </div>
-        </div>
-    );
-};
 
 const Home = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // 1. AQUI VA EL ESTADO DE LAS RECOMENDACIONES
-    const [recommendations, setRecommendations] = useState([]);
-
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [type, setType] = useState('movies'); // 'movies' o 'tvshows'
     const navigate = useNavigate();
-
-    const view = searchParams.get('view') || 'home';
-    const type = searchParams.get('type') || 'movies';
-    const genre = searchParams.get('genre') || 'Todas';
-    const sort = searchParams.get('sort') || 'newest';
-
-    const [currentSlide, setCurrentSlide] = useState(0);
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 15;
 
     useEffect(() => {
         setLoading(true);
-        api.get(`/catalog/${type}`, { params: { genre, sort } })
+        api.get(`/catalog/${type}`)
             .then(res => setItems(res.data))
+            .catch(err => console.error(err))
             .finally(() => setLoading(false));
-    }, [type, genre, sort]);
-
-    useEffect(() => { setCurrentPage(1); }, [type, genre, sort]);
-
-    const heroItems = items.slice(0, 5);
-    useEffect(() => {
-        if (heroItems.length === 0 || view === 'catalog') return;
-        const interval = setInterval(() => setCurrentSlide(prev => (prev + 1) % heroItems.length), 5000);
-        return () => clearInterval(interval);
-    }, [heroItems, view]);
-
-    // 2. AQUI VA EL EFECTO QUE LLAMA A LA API DE LA IA
-    useEffect(() => {
-        const token = localStorage.getItem('arcast_token');
-        if (token) {
-            api.get('/users/recommendations')
-                .then(res => setRecommendations(res.data))
-                .catch(err => console.error(err));
-        }
-    }, []);
-
-    const updateFilter = (key, value) => {
-        const params = new URLSearchParams(searchParams);
-        if (value && value !== 'Todas') params.set(key, value);
-        else params.delete(key);
-        setSearchParams(params);
-    };
-
-    if (loading) return <div style={{height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)'}}>Cargando Catálogo...</div>;
-
-    // VISTA 2: CATÁLOGO (Grid + Paginación)
-    if (view === 'catalog') {
-        const indexOfLastItem = currentPage * itemsPerPage;
-        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-        const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
-        const totalPages = Math.ceil(items.length / itemsPerPage);
-
-        return (
-            <div style={{padding: '40px 5%', minHeight: '100vh'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px'}}>
-                    <h2 style={{fontSize: '2rem', fontWeight: '800', margin: 0}}>
-                        Catálogo de <span style={{color: 'var(--accent)'}}>{type === 'movies' ? 'Películas' : 'Series'}</span>
-                    </h2>
-                    <div className="filters-group">
-                        <select className="filter-select" value={genre} onChange={(e) => updateFilter('genre', e.target.value)}>
-                            <option value="Todas">Todos los Géneros</option>
-                            <option value="Acción">Acción</option>
-                            <option value="Aventura">Aventura</option>
-                            <option value="Comedia">Comedia</option>
-                        </select>
-                        <select className="filter-select" value={sort} onChange={(e) => updateFilter('sort', e.target.value)}>
-                            <option value="newest">Más Recientes</option>
-                            <option value="rating">Mejor Valoradas</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="catalog-grid">
-                    {currentItems.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
-                            <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
-                            <div className="card-info">
-                                <h3>{item.title || item.name}</h3>
-                                <div className="card-meta">
-                                    <span>{item.releaseDate?.split('-')[0]}</span>
-                                    <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {totalPages > 1 && (
-                    <div className="pagination-container">
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>Anterior</button>
-                        <span>Página {currentPage} de {totalPages}</span>
-                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>Siguiente</button>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    // VISTA 1: DASHBOARD
-    const topRated = [...items].sort((a, b) => (b.voteAverage || 0) - (a.voteAverage || 0));
-    const recent = [...items].sort((a, b) => new Date(b.releaseDate || 0) - new Date(a.releaseDate || 0));
+    }, [type]);
 
     return (
-        <div style={{paddingBottom: '60px'}}>
-            <div className="hero-container">
-                {heroItems.map((item, index) => (
-                    <div
-                        key={item._id}
-                        className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
-                        style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})`, cursor: 'pointer' }}
-                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}
-                    >
-                        <div className="hero-overlay">
-                            <div className="hero-content">
-                                <span className="hero-label">Destacado #{index + 1}</span>
-                                <h1 className="hero-title">{item.title || item.name}</h1>
-                                <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic en la imagen o en el botón para ver todos los detalles y calificaciones."}</p>
-                                <button
-                                    className="hero-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
-                                    }}
-                                >
-                                    Ver Detalles
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                <div className="slider-dots">
-                    {heroItems.map((_, index) => (
-                        <div
-                            key={index}
-                            className={`dot ${index === currentSlide ? 'active' : ''}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setCurrentSlide(index);
-                            }}
-                        ></div>
-                    ))}
+        <div className="max-w-7xl mx-auto py-8 px-4 space-y-8 animate-in fade-in duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-[#30363d] pb-4 gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold">Catálogo</h2>
+                    <p className="text-gray-500 text-sm mt-1">Explora el contenido de tu backend</p>
+                </div>
+                <div className="flex bg-[#161b22] rounded-lg p-1 border border-[#30363d]">
+                    <button onClick={() => setType('movies')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${type === 'movies' ? 'bg-[#58a6ff] text-white' : 'text-gray-400 hover:text-white'}`}>Películas</button>
+                    <button onClick={() => setType('tvshows')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${type === 'tvshows' ? 'bg-[#58a6ff] text-white' : 'text-gray-400 hover:text-white'}`}>Series</button>
                 </div>
             </div>
 
-            {/* 3. AQUI VA EL RENDERIZADO VISUAL DE LA IA (Debajo del Hero y antes de las otras filas) */}
-            {recommendations.length > 0 && (
-                <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />
+            {loading ? (
+                <div className="py-20 text-center text-gray-500 font-medium">Cargando catálogo...</div>
+            ) : items.length === 0 ? (
+                <div className="py-20 text-center text-gray-500">No hay contenido. Usa el panel de Admin para importar de TMDB.</div>
+            ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    {items.map(item => (
+                        <div key={item._id} onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)} className="group space-y-3 cursor-pointer">
+                            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-[#161b22] border border-[#30363d] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-[#58a6ff] shadow-lg relative">
+                                <img src={item.posterUrl} alt={item.title || item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm border border-white/10">★ {item.voteAverage?.toFixed(1)}</div>
+                            </div>
+                            <div className="px-1">
+                                <h3 className="text-sm font-bold truncate text-gray-200 group-hover:text-white">{item.title || item.name}</h3>
+                                <p className="text-[11px] text-gray-500 font-medium truncate mt-0.5">{item.genres?.join(', ')}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             )}
-
-            <CarouselRow title="Novedades Recientes" items={recent} type={type} />
-            <CarouselRow title="Aclamadas por la Crítica" items={topRated} type={type} />
-            <CarouselRow title="Explorar Catálogo" items={items} type={type} />
         </div>
     );
 };

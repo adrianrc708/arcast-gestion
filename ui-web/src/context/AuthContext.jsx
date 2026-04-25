@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.clear();
         setUser(null);
-        window.location.replace('/'); // Resetea la URL a / para que el próximo usuario empiece limpio
+        window.location.reload();
     };
 
     // FIX: Agregamos loading al value para que App.jsx lo detecte

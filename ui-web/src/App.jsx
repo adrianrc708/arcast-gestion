@@ -1,62 +1,64 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import api from './services/api';
-
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
 import AdminPanel from './views/AdminPanel';
 import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
-import Profile from './views/Profile';
 
-const App = () => {
-    const { isAuthenticated, user } = useAuth();
+const AppContent = () => {
+    const { isAuthenticated, user, loading } = useAuth();
 
-    // NUEVO: Efecto que inyecta el CSS global sin importar si está logueado
-    useEffect(() => {
-        // CORRECCIÓN 1: La ruta exacta de tu backend
-        api.get('/system/config')
-            .then(res => {
-                const config = Array.isArray(res.data) ? res.data[0] : res.data;
-                // CORRECCIÓN 2: El nombre exacto de la variable en tu BD
-                const customCSS = config?.customCSS;
-
-                if (customCSS) {
-                    let styleTag = document.getElementById('arcast-custom-css');
-                    if (!styleTag) {
-                        styleTag = document.createElement('style');
-                        styleTag.id = 'arcast-custom-css';
-                        document.head.appendChild(styleTag);
-                    }
-                    styleTag.innerHTML = customCSS;
-                }
-            })
-            .catch(err => console.error('No se pudo cargar la configuración del sistema:', err));
-    }, []); // Los corchetes vacíos hacen que se ejecute solo 1 vez al entrar a la página
+    if (loading) return <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-[#58a6ff]">Validando sesión...</div>;
 
     if (!isAuthenticated) return <Auth />;
 
-    return (
-        <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex flex-col">
-            <Navbar />
-            <main className="flex-1 pt-16">
-                <Routes>
-                    <Route path="/" element={
-                        user?.role === 'admin' ? <Navigate to="/admin" replace /> :
-                            user?.role === 'boss'  ? <Navigate to="/boss" replace />  :
-                                <Home />
-                    } />
+    // LÓGICA REALISTA: Redirigir a la landing correcta según el rol
+    const getLandingRoute = () => {
+        if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+        if (user?.role === 'boss') return <Navigate to="/boss" replace />;
+        return <Home />; // Solo los usuarios normales ven el catálogo
+    };
 
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/item/:type/:id" element={<MovieDetails />} />
+    return (
+        <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans selection:bg-[#58a6ff] selection:text-white flex flex-col">
+            <Navbar />
+            <main className="flex-1">
+                <Routes>
+                    {/* Ruta Raíz Dinámica */}
+                    <Route path="/" element={getLandingRoute()} />
+
+                    {/* Rutas para Usuarios Normales */}
+                    {user?.role === 'user' && (
+                        <Route path="/item/:type/:id" element={<MovieDetails />} />
+                    )}
+
+                    {/* Rutas Exclusivas para Admin */}
                     <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
+
+                    {/* Rutas Exclusivas para Boss */}
                     <Route path="/boss" element={user?.role === 'boss' ? <BossDashboard /> : <Navigate to="/" replace />} />
+
+                    {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>
+            <footer className="py-8 border-t border-[#30363d] text-center mt-auto">
+                <p className="text-xs text-gray-600 font-medium tracking-widest uppercase">
+                    &copy; {new Date().getFullYear()} Arcast System
+                </p>
+            </footer>
         </div>
+    );
+};
+
+const App = () => {
+    return (
+        <AuthProvider>
+            <AppContent />
+        </AuthProvider>
     );
 };
 
