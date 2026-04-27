@@ -1,22 +1,24 @@
 const mongoose = require('mongoose');
 
-// Definimos el modelo aquí mismo para no crear archivos extra si tienes prisa
+// Definimos el modelo de auditoría para cambios de estado (Mutaciones)
 const AuditLog = mongoose.model('AuditLog', new mongoose.Schema({
     userId: { type: String, required: true },
-    action: { type: String, required: true }, // Ej: "CATALOG_MUTATION", "SENSITIVE_DATA_CHANGE"
+    action: { type: String, required: true }, // Ej: "CATALOG_IMPORT", "USER_PROFILE_CHANGE"
     details: { type: Object },
+    ip: { type: String },
     timestamp: { type: Date, default: Date.now }
 }));
 
 /**
- * Registra cambios estructurales en el sistema (Calidad ISO 25010)
+ * Calidad ISO 25010: Trazabilidad.
+ * Registra únicamente cambios críticos en la base de datos.
  */
-exports.recordMutation = async (userId, action, details) => {
+exports.recordMutation = async (userId, action, details, ip = 'internal') => {
     try {
-        const log = new AuditLog({ userId, action, details });
+        const log = new AuditLog({ userId, action, details, ip });
         await log.save();
-        console.log(`[AUDIT] Acción crítica registrada: ${action}`);
+        console.log(`[AUDIT] Mutación detectada y registrada: ${action}`);
     } catch (err) {
-        console.error("Error en sistema de auditoría:", err);
+        console.error("Fallo crítico en el sistema de auditoría:", err.message);
     }
 };
