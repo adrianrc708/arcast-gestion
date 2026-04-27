@@ -13,8 +13,11 @@ module.exports = {
         return { movies, tvshows };
     },
 
-    // ✅ NUEVO: Buscar por ID de TMDB (lo que suele devolver la IA)
     getRecommendedContent: async (tmdbIds) => {
+        // Si no hay IDs, devolvemos las 10 mejores calificadas como fallback
+        if (!tmdbIds || tmdbIds.length === 0) {
+            return await Movie.find().sort({ voteAverage: -1 }).limit(10);
+        }
         return await Movie.find({ tmdbId: { $in: tmdbIds } }).limit(10);
     }
 };
