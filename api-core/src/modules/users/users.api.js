@@ -1,4 +1,4 @@
-const User = require('../../common/models/user.model');
+const User = require('./user.model'); // ✅ Importación corregida a su propio módulo
 
 module.exports = {
     findByEmailOrUsername: async (email, username) => {

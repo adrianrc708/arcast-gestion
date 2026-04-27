@@ -1,52 +1,24 @@
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
-// Middleware de autenticación opcional
-// Si hay token, verifica y adjunta datos de usuario.
-// Si no hay token, simplemente continúa.
-const optionalAuth = (req, res, next) => {
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-        return next(); // No hay token, continuar sin autenticar
-    }
+// En un monolito modular, el middleware común NO importa modelos de base de datos.
+// Se basa 100% en descifrar el token, o en su defecto, usar una API puente.
 
-    const token = authHeader.split(' ')[1]; // Formato "Bearer <token>"
+module.exports = (req, res, next) => {
+    // Obtener token del header (soporta 'x-auth-token' o 'Authorization: Bearer ...')
+    const token = req.header('x-auth-token') || req.header('Authorization');
+
     if (!token) {
-        return next(); // Formato de header incorrecto, continuar
+        return res.status(401).json({ message: 'No hay token, autorización denegada.' });
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Adjuntar payload del token (ej. { id, username })
+        const tokenString = token.startsWith('Bearer ') ? token.slice(7, token.length) : token;
+        const decoded = jwt.verify(tokenString, process.env.JWT_SECRET);
+
+        // Asignamos el payload del token a req.user (sin tocar la DB)
+        req.user = decoded;
         next();
     } catch (err) {
-        // Token inválido, pero no bloqueamos la petición
-        console.warn("Token inválido recibido, continuando como anónimo.");
-        next();
+        res.status(401).json({ message: 'Token no válido.' });
     }
 };
-
-// Middleware de autenticación REQUERIDA
-// Si no hay token válido, bloquea la petición.
-const requiredAuth = (req, res, next) => {
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-        return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token.' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ message: 'Formato de token inválido.' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Adjuntar payload del token
-        next();
-    } catch (err) {
-        res.status(400).json({ message: 'Token inválido.' });
-    }
-};
-
-
-module.exports = { optionalAuth, requiredAuth };
