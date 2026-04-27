@@ -1,21 +1,19 @@
-const User = require('../../common/models/user.model');
+const usersApi = require('../users/users.api'); // ✅ Usamos la API, no el Modelo
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Registrar un nuevo usuario
 exports.registerUser = async (req, res) => {
     const { username, email, password } = req.body;
     try {
-        let user = await User.findOne({ $or: [{ email }, { username }] });
+        let user = await usersApi.findByEmailOrUsername(email, username);
         if (user) {
             return res.status(400).json({ message: 'El email o usuario ya existe.' });
         }
 
-        user = new User({ username, email, password });
-
         const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-        await user.save();
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        await usersApi.createUser({ username, email, password: hashedPassword });
 
         res.status(201).json({ message: 'Usuario registrado exitosamente.' });
     } catch (err) {
@@ -23,11 +21,10 @@ exports.registerUser = async (req, res) => {
     }
 };
 
-// Iniciar sesión
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await User.findOne({ email });
+        const user = await usersApi.findByEmail(email);
         if (!user) {
             return res.status(400).json({ message: 'Credenciales inválidas.' });
         }
@@ -37,7 +34,6 @@ exports.loginUser = async (req, res) => {
             return res.status(400).json({ message: 'Credenciales inválidas.' });
         }
 
-        // Crear y enviar el token
         const payload = {
             id: user._id,
             username: user.username
