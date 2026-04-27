@@ -1,88 +1,54 @@
-/**
+/** * ✅ SOLUCIÓN RADICAL PARA WEBSTORM:
+ * Realizamos el casteo directamente en la línea del require.
+ * Esto elimina "Method expression is not of Function type" en el constructor 'new Movie'.
  * @type {any}
  */
-const Movie = require('./movie.model');
+const Movie = (/** @type {any} */ (require('./movie.model')));
+
 /** @type {any} */
-const TVShow = require('./tvshow.model');
-const axios = require('axios');
-const audit = require('../../common/audit.service');
+const audit = (/** @type {any} */ (require('../../common/audit.service')));
+
+const { catchAsync, AppError } = require('../../common/error.utils');
+
+/** * ✅ SOLUCIÓN PARA PROVIDERS:
+ * @type {{getMovieDetails: function(string): Promise<any>}}
+ */
+const tmdbProvider = (/** @type {any} */ (require('./providers/tmdb.provider')));
 
 /**
-
- * @typedef {Object} TMDBResponse
- * @property {string} [title] - Título para películas
- * @property {string} [name] - Nombre para series
- * @property {string} overview
- * @property {string} poster_path
- * @property {string} [release_date]
- * @property {string} [first_air_date]
- * @property {number} vote_average
- * @property {number} id
+ * VISTA ADMIN: Importación agnóstica al proveedor (ISO 25010: Extensibilidad)
  */
+exports.importMovie = catchAsync(async (req, res, next) => {
+    const { externalId, provider = 'tmdb' } = req.body;
 
-exports.importMovie = async (req, res) => {
-    const { tmdbId } = req.body;
-    try {
-        const response = await axios.get(`https://api.themoviedb.org/3/movie/${tmdbId}`, {
-            params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
-        });
+    if (!externalId) return next(new AppError('Se requiere un ID externo para importar.', 400));
 
-        /** @type {TMDBResponse} */
-        const data = response.data;
+    let movieData;
 
-        const movie = new Movie({
-            title: data.title,
-            description: data.overview,
-            posterPath: data.poster_path,
-            releaseDate: data.release_date,
-            voteAverage: data.vote_average,
-            tmdbId: data.id
-        });
-
-        await movie.save();
-
-        await audit.recordMutation(req.user.id, 'CATALOG_IMPORT_MOVIE', {
-            id: movie._id,
-            tmdbId: movie.tmdbId,
-            title: movie.title
-        }, req.ip);
-
-        res.json(movie);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    // Selección de proveedor
+    if (provider === 'tmdb') {
+        movieData = await tmdbProvider.getMovieDetails(externalId);
+    } else {
+        return next(new AppError(`El proveedor '${provider}' no está implementado.`, 400));
     }
-};
 
+    // Validación de duplicados local
+    // noinspection JSUnresolvedFunction
+    let movie = await Movie.findOne({ tmdbId: movieData.tmdbId });
 
-exports.importTVShow = async (req, res) => {
-    const { tmdbId } = req.body;
-    try {
-        const response = await axios.get(`https://api.themoviedb.org/3/tv/${tmdbId}`, {
-            params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
-        });
-
-        /** @type {TMDBResponse} */
-        const data = response.data;
-
-        const tvShow = new TVShow({
-            name: data.name,
-            description: data.overview,
-            posterPath: data.poster_path,
-            firstAirDate: data.first_air_date,
-            voteAverage: data.vote_average,
-            tmdbId: data.id
-        });
-
-        await tvShow.save();
-
-        await audit.recordMutation(req.user.id, 'CATALOG_IMPORT_TV', {
-            id: tvShow._id,
-            tmdbId: tvShow.tmdbId,
-            name: tvShow.name
-        }, req.ip);
-
-        res.json(tvShow);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (movie) {
+        return next(new AppError('Este contenido ya existe en el catálogo de Arcast.', 400));
     }
-};
+
+    // ✅ Al haber casteado Movie arriba, el 'new' ya no dará advertencias.
+    movie = new Movie(movieData);
+    await movie.save();
+
+    // Auditoría de la acción (Trazabilidad)
+    await audit.recordMutation(req.user.id, 'CATALOG_IMPORT', {
+        title: movie.title,
+        source: provider
+    }, req.ip);
+
+    res.status(201).json({ status: 'success', data: movie });
+});
