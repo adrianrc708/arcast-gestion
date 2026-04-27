@@ -13,46 +13,51 @@ import Profile from './views/Profile';
 const AppContent = () => {
     const { isAuthenticated, user, loading } = useAuth();
 
-    if (loading) return <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-[#58a6ff] font-bold animate-pulse">Validando sesión...</div>;
+    // Pantalla de carga profesional para evitar saltos visuales
+    if (loading) return (
+        <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-[#58a6ff] font-bold">
+            <div className="flex flex-col items-center gap-4">
+                <div className="w-10 h-10 border-4 border-[#58a6ff] border-t-transparent rounded-full animate-spin"></div>
+                <span className="tracking-widest uppercase text-xs">Verificando Credenciales...</span>
+            </div>
+        </div>
+    );
 
     if (!isAuthenticated) return <Auth />;
 
-    // LÓGICA REALISTA: Redirigir a la landing correcta según el rol
+    // LÓGICA DE REDIRECCIÓN POR ROL:
+    // El administrador y el jefe son enviados a sus paneles por defecto al entrar a la raíz.
     const getLandingRoute = () => {
         if (user?.role === 'admin') return <Navigate to="/admin" replace />;
         if (user?.role === 'boss') return <Navigate to="/boss" replace />;
-        return <Home />; // Solo los usuarios normales ven el catálogo
+        return <Home />;
     };
 
     return (
         <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans selection:bg-[#58a6ff] selection:text-white flex flex-col">
             <Navbar />
-            <main className="flex-1 pt-20 pb-12">
+            <main className="flex-1 pt-16">
                 <Routes>
-                    {/* Ruta Raíz Dinámica */}
+                    {/* Ruta Raíz Dinámica basada en el Rol */}
                     <Route path="/" element={getLandingRoute()} />
 
-                    {/* Rutas para Usuarios Normales */}
-                    {user?.role === 'user' && (
-                        <Route path="/:type/:id" element={<MovieDetails />} />
-                    )}
-
-                    {/* NUEVA RUTA: Perfil de Usuario (Accesible para todos los roles logueados) */}
+                    {/* Ruta de Perfil: Accesible para todos los usuarios logueados */}
                     <Route path="/profile" element={<Profile />} />
 
-                    {/* Rutas Exclusivas para Admin */}
-                    <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
+                    {/* Ruta de Detalles: El usuario normal la usa para ver contenido */}
+                    <Route path="/:type/:id" element={<MovieDetails />} />
 
-                    {/* Rutas Exclusivas para Boss */}
+                    {/* Rutas Protegidas por Interfaz */}
+                    <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
                     <Route path="/boss" element={user?.role === 'boss' ? <BossDashboard /> : <Navigate to="/" replace />} />
 
-                    {/* Fallback general */}
+                    {/* Fallback para rutas inexistentes */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>
-            <footer className="py-8 border-t border-[#30363d] text-center mt-auto">
-                <p className="text-xs text-gray-600 font-medium tracking-widest uppercase">
-                    &copy; {new Date().getFullYear()} Arcast System
+            <footer className="py-8 border-t border-[#30363d] text-center mt-auto bg-[#0d1117]">
+                <p className="text-[10px] text-gray-600 font-bold tracking-[0.2em] uppercase">
+                    &copy; {new Date().getFullYear()} Arcast System &bull; Intelligent Streaming Engine
                 </p>
             </footer>
         </div>

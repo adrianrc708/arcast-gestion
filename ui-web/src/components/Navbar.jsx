@@ -17,128 +17,76 @@ const Navbar = () => {
     const isActive = (path) => location.pathname === path;
 
     return (
-        <nav className="fixed top-0 w-full bg-[#0d1117]/90 backdrop-blur-md border-b border-[#30363d] z-50 transition-all duration-300">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
-                    <div className="flex items-center">
-                        <Link to="/" className="flex items-center gap-2 group">
-                            <div className="w-8 h-8 bg-gradient-to-tr from-[#58a6ff] to-purple-600 rounded-lg flex items-center justify-center transform group-hover:rotate-12 transition-transform shadow-[0_0_15px_rgba(88,166,255,0.4)]">
-                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <span className="text-2xl font-black tracking-tighter text-white">ARCAST</span>
-                        </Link>
+        <nav className="fixed top-0 w-full bg-[#0d1117]/80 backdrop-blur-xl border-b border-[#30363d] z-[100] h-16">
+            <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+                {/* LOGO */}
+                <Link to="/" className="flex items-center gap-2.5 group">
+                    <div className="w-9 h-9 bg-gradient-to-tr from-[#58a6ff] to-[#8957e5] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.5 9a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM14.5 6a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" /></svg>
                     </div>
+                    <span className="text-xl font-black tracking-tighter text-white">ARCAST</span>
+                </Link>
 
-                    <div className="hidden md:flex items-center space-x-8">
-                        <Link to="/" className={`text-sm font-bold transition-colors ${isActive('/') ? 'text-[#58a6ff]' : 'text-[#e6edf3] hover:text-[#58a6ff]'}`}>
-                            Catálogo
-                        </Link>
+                {/* NAVEGACIÓN DESKTOP */}
+                <div className="hidden md:flex items-center space-x-1">
+                    <Link to="/" className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${isActive('/') ? 'bg-[#58a6ff]/10 text-[#58a6ff]' : 'text-gray-400 hover:text-white'}`}>
+                        Catálogo
+                    </Link>
 
-                        {user ? (
-                            <div className="flex items-center gap-6">
-                                <Link to="/profile" className={`text-sm font-bold transition-colors ${isActive('/profile') ? 'text-[#58a6ff]' : 'text-[#e6edf3] hover:text-[#58a6ff]'}`}>
-                                    Mi Perfil
-                                </Link>
-
-                                {user.role === 'admin' && (
-                                    <Link to="/admin" className={`text-sm font-bold transition-colors ${isActive('/admin') ? 'text-red-400' : 'text-gray-400 hover:text-red-400'}`}>
-                                        Panel Admin
-                                    </Link>
-                                )}
-                                {user.role === 'boss' && (
-                                    <Link to="/boss" className={`text-sm font-bold transition-colors ${isActive('/boss') ? 'text-purple-400' : 'text-gray-400 hover:text-purple-400'}`}>
-                                        Métricas Globales
-                                    </Link>
-                                )}
-
-                                <div className="h-6 w-px bg-[#30363d] mx-2"></div>
-
-                                <div className="flex items-center gap-3">
-                                    <div className="flex flex-col items-end leading-tight">
-                                        <span className="text-sm font-bold text-white">{user.username}</span>
-                                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{user.role}</span>
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-[#161b22] border border-[#30363d] flex items-center justify-center text-white font-black text-xs">
-                                        {user.username?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="ml-2 text-xs font-bold text-gray-400 hover:text-red-400 transition-colors"
-                                    >
-                                        Salir
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <Link to="/auth" className="bg-[#58a6ff] hover:bg-[#318bf8] text-[#0d1117] font-black px-5 py-2 rounded-lg transition-colors text-sm shadow-[0_0_15px_rgba(88,166,255,0.3)]">
-                                INICIAR SESIÓN
+                    {user ? (
+                        <div className="flex items-center gap-1">
+                            <Link to="/profile" className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${isActive('/profile') ? 'bg-[#58a6ff]/10 text-[#58a6ff]' : 'text-gray-400 hover:text-white'}`}>
+                                Mi Perfil
                             </Link>
-                        )}
-                    </div>
 
-                    <div className="md:hidden flex items-center">
-                        <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="text-gray-300 hover:text-white focus:outline-none"
-                        >
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                {isMenuOpen ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                ) : (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                )}
-                            </svg>
-                        </button>
-                    </div>
+                            {user.role === 'admin' && (
+                                <Link to="/admin" className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${isActive('/admin') ? 'bg-red-500/10 text-red-400' : 'text-gray-400 hover:text-red-400'}`}>
+                                    Panel Admin
+                                </Link>
+                            )}
+
+                            {user.role === 'boss' && (
+                                <Link to="/boss" className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${isActive('/boss') ? 'bg-purple-500/10 text-purple-400' : 'text-gray-400 hover:text-purple-400'}`}>
+                                    Métricas
+                                </Link>
+                            )}
+
+                            <div className="w-px h-6 bg-[#30363d] mx-4"></div>
+
+                            <div className="flex items-center gap-3 pl-2">
+                                <div className="text-right hidden lg:block">
+                                    <p className="text-[10px] font-black text-white leading-none mb-0.5">{user.username}</p>
+                                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{user.role}</p>
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all uppercase"
+                                >
+                                    Salir
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <Link to="/auth" className="ml-4 bg-white text-black font-black px-6 py-2 rounded-xl text-xs tracking-widest hover:scale-105 transition-all">
+                            ACCEDER
+                        </Link>
+                    )}
                 </div>
+
+                {/* BOTÓN MÓVIL */}
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-gray-400 hover:text-white p-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
             </div>
 
+            {/* MENÚ MÓVIL */}
             {isMenuOpen && (
-                <div className="md:hidden bg-[#0d1117] border-b border-[#30363d] shadow-2xl">
-                    <div className="px-4 pt-2 pb-6 space-y-2">
-                        <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-3 rounded-xl text-base font-bold text-white hover:bg-[#161b22]">
-                            Catálogo
-                        </Link>
-
-                        {user ? (
-                            <>
-                                <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="block px-3 py-3 rounded-xl text-base font-bold text-white hover:bg-[#161b22]">
-                                    Mi Perfil
-                                </Link>
-
-                                {user.role === 'admin' && (
-                                    <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="block px-3 py-3 rounded-xl text-base font-bold text-red-400 hover:bg-red-500/10">
-                                        Panel Admin
-                                    </Link>
-                                )}
-                                {user.role === 'boss' && (
-                                    <Link to="/boss" onClick={() => setIsMenuOpen(false)} className="block px-3 py-3 rounded-xl text-base font-bold text-purple-400 hover:bg-purple-500/10">
-                                        Métricas Globales
-                                    </Link>
-                                )}
-                                <div className="border-t border-[#30363d] my-4 pt-4 px-3 flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-[#161b22] border border-[#30363d] flex items-center justify-center text-white font-black text-sm">
-                                            {user.username?.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="text-white font-bold text-sm leading-tight">{user.username}</p>
-                                            <p className="text-gray-500 text-xs font-bold uppercase">{user.role}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={handleLogout} className="bg-red-500/10 text-red-400 font-bold px-4 py-2 rounded-lg text-sm">
-                                        Salir
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="pt-4 px-3">
-                                <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="block w-full text-center bg-[#58a6ff] text-[#0d1117] font-black px-5 py-3 rounded-xl">
-                                    INICIAR SESIÓN
-                                </Link>
-                            </div>
-                        )}
-                    </div>
+                <div className="md:hidden absolute top-16 w-full bg-[#0d1117] border-b border-[#30363d] p-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
+                    <Link to="/" onClick={() => setIsMenuOpen(false)} className="p-3 text-sm font-bold text-white hover:bg-[#161b22] rounded-xl">Catálogo</Link>
+                    {user && <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="p-3 text-sm font-bold text-white hover:bg-[#161b22] rounded-xl">Mi Perfil</Link>}
+                    {user?.role === 'admin' && <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="p-3 text-sm font-bold text-red-400 hover:bg-red-500/10 rounded-xl">Panel Admin</Link>}
+                    {user?.role === 'boss' && <Link to="/boss" onClick={() => setIsMenuOpen(false)} className="p-3 text-sm font-bold text-purple-400 hover:bg-purple-500/10 rounded-xl">Métricas</Link>}
+                    {user && <button onClick={handleLogout} className="p-3 text-sm font-bold text-left text-red-500 border-t border-[#30363d] mt-2">Cerrar Sesión</button>}
                 </div>
             )}
         </nav>
