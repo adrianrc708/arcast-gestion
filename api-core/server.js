@@ -2,8 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-/**
- * @type {function(): void}
+/** * @type {function(): void}
  */
 const connectDB = (/** @type {any} */ (require('./src/common/db')));
 
@@ -35,6 +34,23 @@ app.use('/api/catalog', catalogModule);
 app.use('/api/reviews', reviewsModule);
 // noinspection JSCheckFunctionSignatures
 app.use('/api/system', systemModule);
+
+/**
+ * @type {import('express').ErrorRequestHandler}
+ */
+const errorHandler = (err, req, res, _next) => {
+    console.error(`[SERVER ERROR] ${err.message}`);
+
+    const errorStatus = (/** @type {any} */ (err)).status || 500;
+    const errorMessage = err.message || 'Error interno del servidor';
+
+    (/** @type {any} */ (res)).status(errorStatus).json({
+        message: errorMessage,
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Backend Arcast listo en puerto ${PORT}`));
