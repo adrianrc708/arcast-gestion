@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Sub-schema limpio, sin referencias directas a otros modelos
 const WatchlistSchema = new Schema({
     item: {
         type: Schema.Types.ObjectId,

@@ -1,5 +1,4 @@
 const User = require('../../common/models/user.model');
-// ✅ IMPORTAMOS LAS APIS INTERNAS, NO LOS MODELOS
 const catalogApi = require('../catalog/catalog.api');
 const reviewsApi = require('../reviews/reviews.api');
 
@@ -35,7 +34,6 @@ exports.updateMe = async (req, res) => {
 
 exports.getMyReviews = async (req, res) => {
     try {
-        // ✅ USAMOS LA API DE REVIEWS
         const reviews = await reviewsApi.getReviewsByUserId(req.user.id);
         res.json(reviews);
     } catch (err) {
@@ -52,7 +50,6 @@ exports.addToWatchlist = async (req, res) => {
         const exists = user.watchlist.find(w => w.item && w.item.toString() === movieId);
         if (exists) return res.status(400).json({ message: 'Ya está en tu watchlist.' });
 
-        // ✅ USAMOS LA API DE CATALOGO PARA VERIFICAR EXISTENCIA
         const movie = await catalogApi.getMovieById(movieId);
         const tvshow = await catalogApi.getTVShowById(movieId);
 
@@ -80,7 +77,6 @@ exports.getWatchlist = async (req, res) => {
             const itemId = entry.item;
             let foundData = null;
 
-            // ✅ USAMOS LA API DE CATALOGO PARA OBTENER DETALLES
             if (entry.kind === 'Movie') {
                 foundData = await catalogApi.getMovieById(itemId);
             } else if (entry.kind === 'TVShow') {
