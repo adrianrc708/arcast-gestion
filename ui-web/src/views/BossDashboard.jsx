@@ -46,7 +46,7 @@ const BossDashboard = () => {
             {/* 1. MÉTRICAS CLAVE */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                    { label: 'Usuarios Registrados', val: stats?.metrics?.totalUsers, color: 'text-blue-400' },
+                    { label: 'Usuarios Registrados', val: stats?.metrics?.totalUsers, color: 'text-white' },
                     { label: 'Películas en Catálogo', val: stats?.metrics?.totalMovies, color: 'text-purple-400' },
                     { label: 'Reseñas de la Comunidad', val: stats?.metrics?.totalReviews, color: 'text-green-400' }
                 ].map((s, i) => (
