@@ -38,11 +38,16 @@ export const AuthProvider = ({ children }) => {
         window.location.reload();
     };
 
-    const value = useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user }), [user]);
+    // FIX: Agregamos loading al value para que App.jsx lo detecte
+    const value = useMemo(() => ({
+        user, login, register, logout,
+        isAuthenticated: !!user,
+        loading
+    }), [user, loading]);
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

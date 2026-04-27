@@ -36,14 +36,14 @@ const Profile = () => {
         try {
             // Llama a la ruta PUT /api/users/me (Con soporte para auditoría)
             await api.put('/users/me', { username: newUsername });
-            setMsg({ text: 'Perfil actualizado. Reinicia sesión para ver los cambios.', type: 'success' });
+            setMsg({ text: 'Perfil actualizado exitosamente.', type: 'success' });
             setIsEditing(false);
         } catch (error) {
             setMsg({ text: error.response?.data?.message || 'Error al actualizar.', type: 'error' });
         }
     };
 
-    if (!user) return <div className="py-20 text-center text-red-400 font-bold">ACCESO DENEGADO</div>;
+    if (!user) return <div className="py-20 text-center text-red-400 font-bold uppercase tracking-tighter">Acceso denegado</div>;
 
     return (
         <div className="max-w-6xl mx-auto py-12 px-4 space-y-12 animate-in fade-in duration-700">
@@ -65,7 +65,7 @@ const Profile = () => {
                                     <span className="bg-[#58a6ff]/10 text-[#58a6ff] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#58a6ff]/20">
                                         ROL: {user.role}
                                     </span>
-                                    <button onClick={() => setIsEditing(true)} className="bg-[#21262d] hover:bg-[#30363d] text-white font-bold px-5 py-1.5 rounded-full border border-[#30363d] transition-all text-xs">Editar</button>
+                                    <button onClick={() => setIsEditing(true)} className="bg-[#21262d] hover:bg-[#30363d] text-white font-bold px-5 py-1.5 rounded-full border border-[#30363d] transition-all text-xs">Ajustar Perfil</button>
                                 </div>
                             </div>
                         ) : (
@@ -86,7 +86,7 @@ const Profile = () => {
             <div className="space-y-8">
                 <div className="flex items-center justify-between border-b border-[#30363d] pb-4">
                     <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Mi Lista de Seguimiento</h2>
-                    <span className="text-[10px] font-black text-gray-500 bg-[#161b22] px-3 py-1 rounded-full border border-[#30363d] uppercase">{watchlist.length} Títulos</span>
+                    <span className="text-[10px] font-black text-gray-500 bg-[#161b22] px-3 py-1 rounded-full border border-[#30363d] uppercase">{watchlist.length} Títulos Guardados</span>
                 </div>
 
                 {loading ? (
