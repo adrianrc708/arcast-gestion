@@ -121,3 +121,23 @@ exports.getAllUsers = catchAsync(async (req, res, _next) => {
     const users = await User.find().select('-password');
     res.json(users);
 });
+
+exports.updateUserRole = catchAsync(async (req, res, _next) => {
+    const { role } = req.body;
+
+    if (!['user', 'admin', 'boss'].includes(role)) {
+        throw new AppError('Rol no válido', 400);
+    }
+
+    // noinspection JSUnresolvedFunction
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    const oldRole = user.role;
+    user.role = role;
+    await user.save();
+
+    await audit.recordMutation(req.user.id, 'USER_ROLE_MUTATION', { targetUser: user.username, from: oldRole, to: role }, req.ip);
+
+    res.json({ message: 'Rol actualizado exitosamente', user });
+});

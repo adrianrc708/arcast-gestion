@@ -9,8 +9,7 @@ router.get('/recommendations', requiredAuth, userController.getRecommendations);
 router.get('/', requiredAuth, authorize(['admin', 'boss']), userController.getAllUsers);
 
 router.post('/progress', requiredAuth, userController.updateProgress);
-
-// ✅ VISTA JEFE: Solo accesible por 'boss' o 'admin' para ver métricas
 router.get('/stats', requiredAuth, authorize(['boss', 'admin']), userController.getBossStats);
+router.put('/:id/role', requiredAuth, authorize(['admin']), userController.updateUserRole);
 
 module.exports = router;
