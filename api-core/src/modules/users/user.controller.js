@@ -1,7 +1,7 @@
 const User = require('../../common/models/user.model');
-const Review = require('../reviews/review.model');
-const Movie = require('../catalog/movie.model');
-const TVShow = require('../catalog/tvshow.model');
+// ✅ IMPORTAMOS LAS APIS INTERNAS, NO LOS MODELOS
+const catalogApi = require('../catalog/catalog.api');
+const reviewsApi = require('../reviews/reviews.api');
 
 exports.getMe = async (req, res) => {
     try {
@@ -19,37 +19,30 @@ exports.updateMe = async (req, res) => {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
 
-        // Validación: Si cambió el nombre, verificar que no exista otro igual
         if (username && username !== user.username) {
             const exists = await User.findOne({ username });
-            if (exists) {
-                return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-            }
+            if (exists) return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
             user.username = username;
         }
 
         const updatedUser = await user.save();
         res.json(updatedUser);
     } catch (err) {
-        // Captura error de índice duplicado por seguridad extra
-        if (err.code === 11000) {
-            return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-        }
+        if (err.code === 11000) return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
         res.status(500).json({ message: err.message });
     }
 };
 
 exports.getMyReviews = async (req, res) => {
     try {
-        const reviews = await Review.find({ userId: req.user.id }).sort({ date: -1 });
+        // ✅ USAMOS LA API DE REVIEWS
+        const reviews = await reviewsApi.getReviewsByUserId(req.user.id);
         res.json(reviews);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// ... (El resto del archivo se mantiene igual para addToWatchlist, getWatchlist, etc.) ...
-// --- WATCHLIST: Agregar ---
 exports.addToWatchlist = async (req, res) => {
     const { movieId } = req.body;
     try {
@@ -59,12 +52,13 @@ exports.addToWatchlist = async (req, res) => {
         const exists = user.watchlist.find(w => w.item && w.item.toString() === movieId);
         if (exists) return res.status(400).json({ message: 'Ya está en tu watchlist.' });
 
-        const isMovie = await Movie.exists({ _id: movieId });
-        const isTVShow = await TVShow.exists({ _id: movieId });
+        // ✅ USAMOS LA API DE CATALOGO PARA VERIFICAR EXISTENCIA
+        const movie = await catalogApi.getMovieById(movieId);
+        const tvshow = await catalogApi.getTVShowById(movieId);
 
         let validKind = null;
-        if (isMovie) validKind = 'Movie';
-        else if (isTVShow) validKind = 'TVShow';
+        if (movie) validKind = 'Movie';
+        else if (tvshow) validKind = 'TVShow';
         else return res.status(404).json({ message: 'Contenido no encontrado.' });
 
         user.watchlist.push({ item: movieId, kind: validKind });
@@ -84,18 +78,19 @@ exports.getWatchlist = async (req, res) => {
         const finalWatchlist = [];
         for (const entry of user.watchlist) {
             const itemId = entry.item;
-            let foundData = await Movie.findById(itemId);
-            let realKind = 'Movie';
+            let foundData = null;
 
-            if (!foundData) {
-                foundData = await TVShow.findById(itemId);
-                realKind = 'TVShow';
+            // ✅ USAMOS LA API DE CATALOGO PARA OBTENER DETALLES
+            if (entry.kind === 'Movie') {
+                foundData = await catalogApi.getMovieById(itemId);
+            } else if (entry.kind === 'TVShow') {
+                foundData = await catalogApi.getTVShowById(itemId);
             }
 
             if (foundData) {
                 finalWatchlist.push({
                     _id: entry._id,
-                    kind: realKind,
+                    kind: entry.kind,
                     item: foundData
                 });
             }
