@@ -1,37 +1,25 @@
+// Ruta: api-core/server.js
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./src/common/db');
-require('dotenv').config();
 
 const app = express();
 
-// 1. Conexión a la base de datos
+// Conectar a MongoDB
 connectDB();
 
-// 2. Middlewares globales
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// 3. Orquestación de Módulos (Puntos de entrada únicos)
+// --- REGISTRO DE MÓDULOS (MONOLITO MODULAR) ---
 app.use('/api/auth', require('./src/modules/auth'));
+app.use('/api/users', require('./src/modules/users'));
 app.use('/api/catalog', require('./src/modules/catalog'));
 app.use('/api/reviews', require('./src/modules/reviews'));
-app.use('/api/users', require('./src/modules/users'));
+// ✅ NUEVO: Módulo de Sistema para Vista Administrador
+app.use('/api/system', require('./src/modules/system'));
 
-// 4. Manejador de errores centralizado
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(err.status || 500).json({
-        error: 'Error interno en el módulo',
-        message: err.message
-    });
-});
-
-// 5. Configuración del Puerto
 const PORT = process.env.PORT || 5001;
-
-app.listen(PORT, () => {
-    console.log(`==========================================`);
-    console.log(`🚀 API-CORE: http://localhost:${PORT}`);
-    console.log(`==========================================`);
-});
+app.listen(PORT, () => console.log(`Servidor Arcast corriendo en puerto ${PORT}`));
