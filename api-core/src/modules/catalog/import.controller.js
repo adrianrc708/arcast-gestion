@@ -2,21 +2,20 @@ const Movie = require('./movie.model');
 const TVShow = require('./tvshow.model');
 const axios = require('axios');
 
-// Renombramos las funciones para que coincidan con lo que piden las rutas
+// ✅ Normalizamos los nombres de las funciones
 exports.importMovie = async (req, res) => {
     const { tmdbId } = req.body;
     try {
         const response = await axios.get(`https://api.themoviedb.org/3/movie/${tmdbId}`, {
             params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
         });
-        const movieData = response.data;
         const movie = new Movie({
-            title: movieData.title,
-            description: movieData.overview,
-            posterPath: movieData.poster_path,
-            releaseDate: movieData.release_date,
-            voteAverage: movieData.vote_average,
-            tmdbId: movieData.id
+            title: response.data.title,
+            description: response.data.overview,
+            posterPath: response.data.poster_path,
+            releaseDate: response.data.release_date,
+            voteAverage: response.data.vote_average,
+            tmdbId: response.data.id
         });
         await movie.save();
         res.json(movie);
@@ -31,14 +30,13 @@ exports.importTVShow = async (req, res) => {
         const response = await axios.get(`https://api.themoviedb.org/3/tv/${tmdbId}`, {
             params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
         });
-        const tvData = response.data;
         const tvShow = new TVShow({
-            name: tvData.name,
-            description: tvData.overview,
-            posterPath: tvData.poster_path,
-            firstAirDate: tvData.first_air_date,
-            voteAverage: tvData.vote_average,
-            tmdbId: tvData.id
+            name: response.data.name,
+            description: response.data.overview,
+            posterPath: response.data.poster_path,
+            firstAirDate: response.data.first_air_date,
+            voteAverage: response.data.vote_average,
+            tmdbId: response.data.id
         });
         await tvShow.save();
         res.json(tvShow);

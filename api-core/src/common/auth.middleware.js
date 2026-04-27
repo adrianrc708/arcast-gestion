@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// Exportamos un objeto con la propiedad requiredAuth para que coincida con tus rutas
+// ✅ Exportamos como objeto para que el import { requiredAuth } funcione en todas partes
 exports.requiredAuth = (req, res, next) => {
     const token = req.header('x-auth-token') || req.header('Authorization');
 
