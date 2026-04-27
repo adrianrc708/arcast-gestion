@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Definimos el modelo de auditoría para cambios de estado (Mutaciones)
 const AuditLog = mongoose.model('AuditLog', new mongoose.Schema({
     userId: { type: String, required: true },
     action: { type: String, required: true }, // Ej: "CATALOG_IMPORT", "USER_PROFILE_CHANGE"
@@ -9,10 +8,7 @@ const AuditLog = mongoose.model('AuditLog', new mongoose.Schema({
     timestamp: { type: Date, default: Date.now }
 }));
 
-/**
- * Calidad ISO 25010: Trazabilidad.
- * Registra únicamente cambios críticos en la base de datos.
- */
+
 exports.recordMutation = async (userId, action, details, ip = 'internal') => {
     try {
         const log = new AuditLog({ userId, action, details, ip });

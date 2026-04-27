@@ -1,7 +1,24 @@
+/**
+ * @type {any}
+ */
 const Movie = require('./movie.model');
+/** @type {any} */
 const TVShow = require('./tvshow.model');
 const axios = require('axios');
-const audit = require('../../common/audit.service'); // ✅ Auditoría para mutaciones
+const audit = require('../../common/audit.service');
+
+/**
+
+ * @typedef {Object} TMDBResponse
+ * @property {string} [title] - Título para películas
+ * @property {string} [name] - Nombre para series
+ * @property {string} overview
+ * @property {string} poster_path
+ * @property {string} [release_date]
+ * @property {string} [first_air_date]
+ * @property {number} vote_average
+ * @property {number} id
+ */
 
 exports.importMovie = async (req, res) => {
     const { tmdbId } = req.body;
@@ -10,18 +27,20 @@ exports.importMovie = async (req, res) => {
             params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
         });
 
+        /** @type {TMDBResponse} */
+        const data = response.data;
+
         const movie = new Movie({
-            title: response.data.title,
-            description: response.data.overview,
-            posterPath: response.data.poster_path,
-            releaseDate: response.data.release_date,
-            voteAverage: response.data.vote_average,
-            tmdbId: response.data.id
+            title: data.title,
+            description: data.overview,
+            posterPath: data.poster_path,
+            releaseDate: data.release_date,
+            voteAverage: data.vote_average,
+            tmdbId: data.id
         });
 
         await movie.save();
 
-        // AUDITORÍA: Registrar que se ha alterado el catálogo global
         await audit.recordMutation(req.user.id, 'CATALOG_IMPORT_MOVIE', {
             id: movie._id,
             tmdbId: movie.tmdbId,
@@ -34,6 +53,7 @@ exports.importMovie = async (req, res) => {
     }
 };
 
+
 exports.importTVShow = async (req, res) => {
     const { tmdbId } = req.body;
     try {
@@ -41,18 +61,20 @@ exports.importTVShow = async (req, res) => {
             params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
         });
 
+        /** @type {TMDBResponse} */
+        const data = response.data;
+
         const tvShow = new TVShow({
-            name: response.data.name,
-            description: response.data.overview,
-            posterPath: response.data.poster_path,
-            firstAirDate: response.data.first_air_date,
-            voteAverage: response.data.vote_average,
-            tmdbId: response.data.id
+            name: data.name,
+            description: data.overview,
+            posterPath: data.poster_path,
+            firstAirDate: data.first_air_date,
+            voteAverage: data.vote_average,
+            tmdbId: data.id
         });
 
         await tvShow.save();
 
-        // AUDITORÍA: Registrar alteración del catálogo global
         await audit.recordMutation(req.user.id, 'CATALOG_IMPORT_TV', {
             id: tvShow._id,
             tmdbId: tvShow.tmdbId,

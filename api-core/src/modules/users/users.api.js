@@ -1,14 +1,31 @@
-const User = require('./user.model'); // ✅ Importación corregida a su propio módulo
+/**
+ * @type {any}
+ */
+const User = require('./user.model');
 
 module.exports = {
+    /**
+     * Busca un usuario por email o nombre de usuario.
+     */
     findByEmailOrUsername: async (email, username) => {
-        return await User.findOne({ $or: [{ email }, { username }] });
+        // noinspection JSUnresolvedFunction
+        return User.findOne({ $or: [{ email }, { username }] });
     },
+
+    /**
+     * Busca un usuario por email.
+     */
     findByEmail: async (email) => {
-        return await User.findOne({ email });
+        // noinspection JSUnresolvedFunction
+        return User.findOne({ email });
     },
+
+    /**
+     * Crea y persiste un nuevo usuario.
+     */
     createUser: async (userData) => {
         const user = new User(userData);
-        return await user.save();
+        // noinspection JSUnresolvedFunction
+        return user.save();
     }
 };

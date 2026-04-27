@@ -2,7 +2,11 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+/**
+ * @type {any}
+ */
 const Movie = require('./src/modules/catalog/movie.model');
+/** @type {any} */
 const TVShow = require('./src/modules/catalog/tvshow.model');
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -10,20 +14,46 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 
-// GÉNEROS A IMPORTAR
-// SE HA ELIMINADO EL ID 18 (Drama)
 const GENRES_TO_FETCH = [28, 35, 27, 878, 16];
-// CANTIDAD DE PÁGINAS A RECORRER POR GÉNERO/CATEGORÍA (Aumenta este número para más datos)
 const PAGES_TO_FETCH = 5;
-
-// ID del género Documental (ID 99).
 const GENRES_TO_EXCLUDE = [99];
+
+/**
+ * @typedef {Object} TMDBVideo
+ * @property {string} type
+ * @property {string} site
+ * @property {string} key
+ *
+ * @typedef {Object} TMDBProvider
+ * @property {string} provider_name
+ * @property {string} logo_path
+ *
+ * @typedef {Object} TMDBDetail
+ * @property {number} id
+ * @property {string} [title]
+ * @property {string} [name]
+ * @property {string} overview
+ * @property {string} poster_path
+ * @property {string} backdrop_path
+ * @property {string} release_date
+ * @property {string} first_air_date
+ * @property {number} vote_average
+ * @property {number} runtime
+ * @property {number} number_of_seasons
+ * @property {Array<{name: string}>} genres
+ * @property {Array<{name: string}>} spoken_languages
+ * @property {{results: TMDBVideo[]}} videos
+ * @property {{results: Object.<string, {flatrate: TMDBProvider[], link: string}>}} [watch/providers]
+ */
 
 // --- HELPERS ---
 const findTrailer = (videos) => {
     if (!videos || !videos.results) return null;
+    // noinspection JSUnresolvedVariable
     let v = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+    // noinspection JSUnresolvedVariable
     if (!v) v = videos.results.find(v => v.type === 'Teaser' && v.site === 'YouTube');
+    // noinspection JSUnresolvedVariable
     if (!v) v = videos.results.find(v => v.site === 'YouTube');
     return v ? v.key : null;
 };
@@ -32,13 +62,15 @@ const isInTheaters = (releaseDateStr) => {
     if (!releaseDateStr) return false;
     const release = new Date(releaseDateStr);
     const now = new Date();
-    const diffDays = Math.ceil(Math.abs(now - release) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(Math.abs(now.getTime() - release.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays <= 60;
 };
 
 const getWatchProviders = (providers, releaseDate) => {
     let results = [];
+    // noinspection JSUnresolvedVariable
     if (providers && providers.results && providers.results.PE && providers.results.PE.flatrate) {
+        // noinspection JSUnresolvedVariable
         results = providers.results.PE.flatrate.map(p => ({
             name: p.provider_name,
             logo: `${TMDB_IMG_URL}${p.logo_path}`,
@@ -58,30 +90,22 @@ const getWatchProviders = (providers, releaseDate) => {
 async function importMoviesByGenre(genreId) {
     try {
         console.log(`\n🎬 Importando género ID ${genreId}...`);
-
-        // BUCLE PARA TRAER MÁS PÁGINAS
         for (let page = 1; page <= PAGES_TO_FETCH; page++) {
-            console.log(`   ↳ Procesando página ${page}...`);
-
             const response = await axios.get(`${TMDB_BASE_URL}/discover/movie`, {
                 params: {
                     api_key: TMDB_API_KEY,
                     language: 'es-ES',
                     include_adult: 'false',
-
-                    // FILTRO: Exigir un mínimo de votos (para filtrar contenido de nicho)
                     'vote_count.gte': 50,
-
-                    // FILTRO: Excluir géneros no deseados (Documental)
                     without_genres: GENRES_TO_EXCLUDE.join(','),
-
                     with_genres: genreId,
                     sort_by: 'popularity.desc',
-                    page: page // Paginación dinámica
+                    page: page
                 }
             });
 
             for (const basicData of response.data.results) {
+                // noinspection JSUnresolvedFunction
                 const existing = await Movie.findOne({ tmdbId: basicData.id });
                 if (!existing) {
                     try {
@@ -93,16 +117,24 @@ async function importMoviesByGenre(genreId) {
                                 include_video_language: 'es,en,null'
                             }
                         });
+                        /** @type {TMDBDetail} */
                         const d = detailRes.data;
-                        const platforms = getWatchProviders(d['watch/providers'], d.release_date);
 
+                        // ✅ Añadimos noinspection para release_date
+                        // noinspection JSUnresolvedVariable
+                        const releaseDate = d.release_date;
+                        const platforms = getWatchProviders(d['watch/providers'], releaseDate);
+
+                        // noinspection JSUnresolvedVariable
                         const movie = new Movie({
                             title: d.title,
                             overview: d.overview,
+                            // noinspection JSUnresolvedVariable
                             posterUrl: d.poster_path ? `${TMDB_IMG_URL}${d.poster_path}` : null,
+                            // noinspection JSUnresolvedVariable
                             backdropUrl: d.backdrop_path ? `${TMDB_BACKDROP_URL}${d.backdrop_path}` : null,
                             tmdbId: d.id,
-                            releaseDate: d.release_date,
+                            releaseDate: releaseDate,
                             voteAverage: d.vote_average,
                             genres: d.genres.map(g => g.name),
                             trailerKey: findTrailer(d.videos),
@@ -111,13 +143,14 @@ async function importMoviesByGenre(genreId) {
                             platforms: platforms,
                             watchLink: platforms.length > 0 ? platforms[0].link : null
                         });
+                        // noinspection JSUnresolvedFunction
                         await movie.save();
-                        process.stdout.write('+'); // Indicador visual de guardado
+                        process.stdout.write('+');
                     } catch (innerErr) {
-                        process.stdout.write('x'); // Error puntual en una peli
+                        process.stdout.write('x');
                     }
                 } else {
-                    process.stdout.write('.'); // Ya existía
+                    process.stdout.write('.');
                 }
             }
         }
@@ -129,25 +162,19 @@ async function importMoviesByGenre(genreId) {
 async function importPopularTVShows() {
     try {
         console.log('\n\n📺 Importando Series Populares...');
-
-        // BUCLE PARA TRAER MÁS PÁGINAS DE SERIES
         for (let page = 1; page <= PAGES_TO_FETCH; page++) {
-            console.log(`   ↳ Procesando página ${page}...`);
-
             const response = await axios.get(`${TMDB_BASE_URL}/tv/popular`, {
                 params: {
                     api_key: TMDB_API_KEY,
                     language: 'es-ES',
                     include_adult: 'false',
-
-                    // FILTRO: Exigir un mínimo de votos (50)
                     'vote_count.gte': 50,
-
                     page: page
                 }
             });
 
             for (const basicData of response.data.results) {
+                // noinspection JSUnresolvedFunction
                 const existing = await TVShow.findOne({ tmdbId: basicData.id });
                 if (!existing) {
                     try {
@@ -159,16 +186,24 @@ async function importPopularTVShows() {
                                 include_video_language: 'es,en,null'
                             }
                         });
+                        /** @type {TMDBDetail} */
                         const d = detailRes.data;
-                        const platforms = getWatchProviders(d['watch/providers'], d.first_air_date);
 
+                        // ✅ Añadimos noinspection para first_air_date
+                        // noinspection JSUnresolvedVariable
+                        const firstAirDate = d.first_air_date;
+                        const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
+
+                        // noinspection JSUnresolvedVariable
                         const show = new TVShow({
                             name: d.name,
                             overview: d.overview,
+                            // noinspection JSUnresolvedVariable
                             posterUrl: d.poster_path ? `${TMDB_IMG_URL}${d.poster_path}` : null,
+                            // noinspection JSUnresolvedVariable
                             backdropUrl: d.backdrop_path ? `${TMDB_BACKDROP_URL}${d.backdrop_path}` : null,
                             tmdbId: d.id,
-                            firstAirDate: d.first_air_date,
+                            firstAirDate: firstAirDate,
                             voteAverage: d.vote_average,
                             genres: d.genres.map(g => g.name),
                             trailerKey: findTrailer(d.videos),
@@ -177,6 +212,7 @@ async function importPopularTVShows() {
                             platforms: platforms,
                             watchLink: platforms.length > 0 ? platforms[0].link : null
                         });
+                        // noinspection JSUnresolvedFunction
                         await show.save();
                         process.stdout.write('+');
                     } catch (innerErr) {
@@ -198,11 +234,6 @@ async function runSeed() {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('Conectado a MongoDB.');
 
-        // ----------------------------------------------------
-        // RECUERDA: Eliminar colecciones 'movies' y 'tvshows' de Atlas
-        // antes de correr este script para que los cambios sean efectivos.
-        // ----------------------------------------------------
-
         for (const genreId of GENRES_TO_FETCH) {
             await importMoviesByGenre(genreId);
         }
@@ -217,4 +248,8 @@ async function runSeed() {
     }
 }
 
-runSeed();
+// ✅ Manejo de promesa para evitar 'Promise returned is ignored'
+runSeed().catch(err => {
+    console.error(err);
+    process.exit(1);
+});

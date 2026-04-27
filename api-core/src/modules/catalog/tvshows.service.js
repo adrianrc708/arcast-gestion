@@ -1,10 +1,20 @@
+/**
+ * @type {any}
+ */
 const TVShow = require('./tvshow.model');
 
-// Separamos la lógica de la base de datos del controlador
+/**
+ * Busca todas las series aplicando filtros y ordenamiento.
+ */
 exports.findAll = async (query, sortOption) => {
-    return await TVShow.find(query).sort(sortOption);
+    // noinspection JSUnresolvedFunction
+    return TVShow.find(query).sort(sortOption);
 };
 
+/**
+ * Busca una serie por su ID único.
+ */
 exports.findById = async (id) => {
-    return await TVShow.findById(id);
+    // noinspection JSUnresolvedFunction
+    return TVShow.findById(id);
 };
