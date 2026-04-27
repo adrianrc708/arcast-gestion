@@ -1,80 +1,45 @@
-import { useEffect, useState } from 'react'
-import { Routes, Route, useNavigate, useParams } from 'react-router-dom'
-import './index.css'
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Auth from './components/Auth';
+import Navbar from './components/Navbar';
+import Home from './views/Home';
+import AdminPanel from './views/AdminPanel';
+import BossDashboard from './views/BossDashboard';
 
-const MovieCard = ({ movie }) => {
-    const navigate = useNavigate()
+const AppContent = () => {
+    const { isAuthenticated, loading } = useAuth();
+    const [view, setView] = useState('home');
+
+    if (loading) return null;
+    if (!isAuthenticated) return <Auth />;
+
+    const renderView = () => {
+        switch(view) {
+            case 'admin': return <AdminPanel />;
+            case 'boss': return <BossDashboard />;
+            default: return <Home />;
+        }
+    };
+
     return (
-        <div className="card" onClick={() => navigate(`/movie/${movie._id}`)}>
-            <img className="poster" src={movie.posterUrl} alt={movie.title} />
-            <h3 className="card-title">{movie.title}</h3>
+        <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans selection:bg-[#58a6ff] selection:text-white">
+            <Navbar setView={setView} currentView={view} />
+            <main>
+                {renderView()}
+            </main>
+            <footer className="py-12 border-t border-[#30363d] mt-20 text-center">
+                <p className="text-xs text-gray-600 font-medium tracking-widest uppercase">
+                    &copy; {new Date().getFullYear()} Arcast Intelligence Unit
+                </p>
+            </footer>
         </div>
-    )
-}
+    );
+};
 
-const MovieDetails = () => {
-    const { id } = useParams()
-    const [movie, setMovie] = useState(null)
-    const navigate = useNavigate()
+const App = () => (
+    <AuthProvider>
+        <AppContent />
+    </AuthProvider>
+);
 
-    useEffect(() => {
-        // Ruta actualizada al módulo catalog
-        fetch(`/api/catalog/movies/${id}`).then(res => res.json()).then(setMovie)
-    }, [id])
-
-    if (!movie) return <div className="loader">Cargando...</div>
-
-    return (
-        <div className="details-view" style={{ backgroundImage: `linear-gradient(to right, #141414 40%, transparent), url(${movie.backdropUrl})` }}>
-            <button onClick={() => navigate('/')} className="back-btn">← Volver</button>
-            <div className="details-content">
-                <h1>{movie.title}</h1>
-                <p className="overview">{movie.overview}</p>
-                <div className="meta">
-                    <span>⭐ {movie.voteAverage}</span>
-                    <span>📅 {movie.releaseDate}</span>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-const Home = ({ movies }) => {
-    const [hero, setHero] = useState(null)
-    useEffect(() => {
-        if (movies.length > 0) setHero(movies[Math.floor(Math.random() * movies.length)])
-    }, [movies])
-
-    return (
-        <>
-            {hero && (
-                <div className="hero" style={{ backgroundImage: `linear-gradient(to top, #141414 10%, transparent), url(${hero.backdropUrl})` }}>
-                    <h1 className="hero-title">{hero.title}</h1>
-                </div>
-            )}
-            <div className="content">
-                <h2 className="section-title">Catálogo Arcast</h2>
-                <div className="grid">
-                    {movies.map(m => <MovieCard key={m._id} movie={m} />)}
-                </div>
-            </div>
-        </>
-    )
-}
-
-function App() {
-    const [movies, setMovies] = useState([])
-    useEffect(() => {
-        // Ruta actualizada al módulo catalog
-        fetch('/api/catalog/movies').then(res => res.json()).then(setMovies)
-    }, [])
-
-    return (
-        <Routes>
-            <Route path="/" element={<Home movies={movies} />} />
-            <Route path="/movie/:id" element={<MovieDetails />} />
-        </Routes>
-    )
-}
-
-export default App
+export default App;
