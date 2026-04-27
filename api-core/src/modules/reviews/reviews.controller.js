@@ -84,3 +84,9 @@ exports.deleteReview = catchAsync(async (req, res, _next) => {
     await reviewDoc.deleteOne();
     res.json({ message: 'Reseña eliminada.' });
 });
+
+exports.getAllReviews = catchAsync(async (req, res, _next) => {
+    // noinspection JSUnresolvedFunction
+    const reviews = await Review.find().sort({ createdAt: -1 });
+    res.json(reviews);
+});

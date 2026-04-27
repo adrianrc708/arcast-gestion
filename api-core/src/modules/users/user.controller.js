@@ -115,3 +115,9 @@ exports.getWatchlist = catchAsync(async (req, res, _next) => {
 
     res.json({ watchlist: finalWatchlist });
 });
+
+exports.getAllUsers = catchAsync(async (req, res, _next) => {
+    // noinspection JSUnresolvedFunction
+    const users = await User.find().select('-password');
+    res.json(users);
+});

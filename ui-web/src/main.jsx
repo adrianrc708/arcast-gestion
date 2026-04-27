@@ -1,13 +1,14 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import './index.css'
-import App from './App.jsx'
+import App from './App' // Eliminada la extensión .jsx
+// import './index.css' // Comentado temporalmente si no existe
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+        {/* BrowserRouter es OBLIGATORIO para que react-router-dom funcione */}
+        <BrowserRouter>
+            <App />
+        </BrowserRouter>
+    </React.StrictMode>,
 )

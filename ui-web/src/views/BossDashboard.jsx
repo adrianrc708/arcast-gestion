@@ -1,37 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
 const BossDashboard = () => {
     const [stats, setStats] = useState(null);
 
     useEffect(() => {
-        api.get('/users/boss/stats').then(r => setStats(r.data)).catch(console.error);
+        api.get('/users/stats').then(r => setStats(r.data)).catch(console.error);
     }, []);
 
+    if(!stats) return <div className="py-20 text-center text-gray-500">Calculando métricas...</div>;
+
     return (
-        <div className="space-y-12">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-10 animate-in fade-in">
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter border-b border-[#30363d] pb-4">Centro de Mando</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                    { l: 'Usuarios Activos', v: stats?.metrics?.totalUsers, c: 'cyan' },
-                    { l: 'Títulos en Catálogo', v: stats?.metrics?.totalMovies, c: 'purple' },
-                    { l: 'Reseñas Totales', v: stats?.metrics?.totalReviews, c: 'green' }
-                ].map(x => (
-                    <div key={x.l} className={`bg-[#1e293b] p-8 rounded-3xl border-b-4 border-${x.c}-500 shadow-2xl`}>
-                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">{x.l}</p>
-                        <p className="text-6xl font-black text-white mt-2">{x.v || 0}</p>
+                    { label: 'Usuarios Activos', val: stats.metrics?.totalUsers, color: 'text-blue-400' },
+                    { label: 'Catálogo', val: stats.metrics?.totalMovies, color: 'text-purple-400' },
+                    { label: 'Reseñas Totales', val: stats.metrics?.totalReviews, color: 'text-green-400' }
+                ].map((s, i) => (
+                    <div key={i} className="bg-[#161b22] p-6 rounded-2xl border border-[#30363d] flex flex-col items-center justify-center text-center">
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">{s.label}</span>
+                        <span className={`text-5xl font-black mt-3 ${s.color}`}>{s.val || 0}</span>
                     </div>
                 ))}
             </div>
-            <div className="bg-[#1e293b] p-10 rounded-[3rem] border border-gray-800 shadow-xl">
-                <h3 className="text-xl font-black text-white mb-8 italic">Ranking de Valoración</h3>
-                <div className="space-y-4">
-                    {stats?.rankings?.map((r, i) => (
-                        <div key={r._id} className="flex items-center justify-between p-5 bg-[#0f172a] rounded-2xl border border-gray-800 hover:border-cyan-500/30 transition-all">
+
+            <div className="bg-[#161b22] p-8 rounded-2xl border border-[#30363d]">
+                <h3 className="text-xl font-bold text-white mb-6">Top 5 Películas Mejor Valoradas</h3>
+                <div className="space-y-3">
+                    {stats.rankings?.map((r, i) => (
+                        <div key={r._id} className="flex items-center justify-between p-4 bg-[#0d1117] rounded-xl border border-[#30363d]">
                             <div className="flex items-center space-x-4">
-                                <span className="text-3xl font-black text-gray-800">0{i+1}</span>
-                                <span className="text-white font-bold">{r.title}</span>
+                                <span className="text-2xl font-black text-[#58a6ff]">#{i+1}</span>
+                                <span className="font-bold text-sm">{r.title}</span>
                             </div>
-                            <span className="text-cyan-500 font-black tracking-widest">{r.voteAverage} ★</span>
+                            <span className="text-yellow-500 font-bold text-sm">★ {r.voteAverage?.toFixed(1)}</span>
                         </div>
                     ))}
                 </div>
