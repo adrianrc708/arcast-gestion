@@ -1,31 +1,35 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
 import AdminPanel from './views/AdminPanel';
 import BossDashboard from './views/BossDashboard';
+import MovieDetails from './views/MovieDetails'; // Nueva vista que crearemos
 
-const AppContent = () => {
+const AppRoutes = () => {
     const { isAuthenticated, loading } = useAuth();
-    const [view, setView] = useState('home');
+    const navigate = useNavigate();
+    const location = useLocation();
 
     if (loading) return null;
-    if (!isAuthenticated) return <Auth />;
 
-    const renderView = () => {
-        switch(view) {
-            case 'admin': return <AdminPanel />;
-            case 'boss': return <BossDashboard />;
-            default: return <Home />;
-        }
-    };
+    // Si no está autenticado, mostramos la pantalla de Auth
+    if (!isAuthenticated) return <Auth />;
 
     return (
         <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans selection:bg-[#58a6ff] selection:text-white">
-            <Navbar setView={setView} currentView={view} />
+            {/* Pasamos navigate para que el Navbar pueda cambiar de ruta */}
+            <Navbar currentPath={location.pathname} navigate={navigate} />
             <main>
-                {renderView()}
+                <Routes>
+                    <Route path="/" element={<Home navigate={navigate} />} />
+                    <Route path="/movie/:id" element={<MovieDetails />} />
+                    <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/boss" element={<BossDashboard />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
             </main>
             <footer className="py-12 border-t border-[#30363d] mt-20 text-center">
                 <p className="text-xs text-gray-600 font-medium tracking-widest uppercase">
@@ -38,7 +42,7 @@ const AppContent = () => {
 
 const App = () => (
     <AuthProvider>
-        <AppContent />
+        <AppRoutes />
     </AuthProvider>
 );
 
