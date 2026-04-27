@@ -1,36 +1,25 @@
 const moviesService = require('./movies.service');
+const { catchAsync, AppError } = require('../../common/error.utils');
 
-exports.createMovie = async (req, res, next) => {
-    try {
-        const savedMovie = await moviesService.create({ title: req.body.title });
-        res.status(201).json(savedMovie);
-    } catch (err) {
-        next(err);
-    }
-};
+exports.getAllMovies = catchAsync(async (req, res, _next) => {
+    const { genre, platform, sort, search } = req.query;
+    let query = {};
 
-exports.getAllMovies = async (req, res, next) => {
-    try {
-        const { genre, platform, sort, search } = req.query;
-        let query = {};
+    if (search) query.title = { $regex: search, $options: 'i' };
+    if (genre && genre !== 'Todas') query.genres = genre;
+    if (platform && platform !== 'Todas') query['platforms.name'] = { $regex: platform, $options: 'i' };
 
-        if (search) query.title = { $regex: search, $options: 'i' };
-        if (genre && genre !== 'Todas') query.genres = genre;
-        if (platform && platform !== 'Todas') query['platforms.name'] = { $regex: platform, $options: 'i' };
+    const movies = await moviesService.findAll(query, String(sort || ''), String(search || ''));
+    res.json(movies);
+});
 
-        const movies = await moviesService.findAll(query, sort, search);
-        res.json(movies);
-    } catch (err) {
-        next(err);
-    }
-};
+exports.getMovieById = catchAsync(async (req, res, _next) => {
+    const movie = await moviesService.findById(req.params.id);
+    if (!movie) throw new AppError('Película no encontrada', 404);
+    res.json(movie);
+});
 
-exports.getMovieById = async (req, res, next) => {
-    try {
-        const movie = await moviesService.findById(req.params.id);
-        if (!movie) return res.status(404).json({ message: 'Película no encontrada' });
-        res.json(movie);
-    } catch (err) {
-        next(err);
-    }
-};
+exports.createMovie = catchAsync(async (req, res, _next) => {
+    const savedMovie = await moviesService.create(req.body);
+    res.status(201).json(savedMovie);
+});
