@@ -20,6 +20,20 @@ exports.getMovieById = catchAsync(async (req, res, _next) => {
 });
 
 exports.createMovie = catchAsync(async (req, res, _next) => {
+    if (!req.body.tmdbId) {
+        req.body.tmdbId = 'manual-' + Date.now();
+    }
     const savedMovie = await moviesService.create(req.body);
     res.status(201).json(savedMovie);
+});
+
+exports.updateMovie = catchAsync(async (req, res, _next) => {
+    const movie = await moviesService.update(req.params.id, req.body);
+    if (!movie) throw new AppError('Película no encontrada', 404);
+    res.json(movie);
+});
+
+exports.deleteMovie = catchAsync(async (req, res, _next) => {
+    await moviesService.delete(req.params.id);
+    res.json({ message: 'Película eliminada' });
 });

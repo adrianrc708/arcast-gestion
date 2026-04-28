@@ -35,3 +35,6 @@ exports.findById = async (id) => {
     // noinspection JSUnresolvedFunction
     return Movie.findById(id);
 };
+
+exports.update = async (id, data) => Movie.findByIdAndUpdate(id, data, { new: true });
+exports.delete = async (id) => Movie.findByIdAndDelete(id);

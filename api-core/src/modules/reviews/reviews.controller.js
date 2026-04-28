@@ -36,9 +36,22 @@ const validateOwnership = async (id, currentUser) => {
     // noinspection JSUnresolvedFunction
     const review = await Review.findById(id);
     if (!review) throw new AppError('Reseña no encontrada', 404);
-    if (!currentUser || (review.userId && review.userId.toString() !== currentUser.id)) {
+
+    // Si no hay usuario logueado, bloquea inmediatamente
+    if (!currentUser) {
         throw new AppError('No autorizado para modificar esta reseña.', 403);
     }
+
+    // Verificamos si es el dueño
+    const isOwner = review.userId && review.userId.toString() === currentUser.id;
+    // Verificamos si tiene rango de admin o boss
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'boss';
+
+    // Si NO es el dueño Y TAMPOCO es administrador, lanzamos error
+    if (!isOwner && !isAdmin) {
+        throw new AppError('No autorizado para modificar esta reseña.', 403);
+    }
+
     return (/** @type {ReviewDoc} */ (review));
 };
 

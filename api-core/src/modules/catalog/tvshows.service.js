@@ -18,3 +18,7 @@ exports.findById = async (id) => {
     // noinspection JSUnresolvedFunction
     return TVShow.findById(id);
 };
+
+exports.create = async (data) => TVShow.create(data);
+exports.update = async (id, data) => TVShow.findByIdAndUpdate(id, data, { new: true });
+exports.delete = async (id) => TVShow.findByIdAndDelete(id);

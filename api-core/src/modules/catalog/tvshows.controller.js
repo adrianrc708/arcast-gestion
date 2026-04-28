@@ -37,3 +37,30 @@ exports.getTVShowById = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+exports.createTVShow = async (req, res) => {
+    try {
+        if (!req.body.tmdbId) {
+            req.body.tmdbId = 'manual-' + Date.now();
+        }
+        const show = await tvshowsService.create(req.body);
+        res.status(201).json(show);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.updateTVShow = async (req, res) => {
+    try {
+        const show = await tvshowsService.update(req.params.id, req.body);
+        if (!show) return res.status(404).json({ message: 'Serie no encontrada' });
+        res.json(show);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+exports.deleteTVShow = async (req, res) => {
+    try {
+        await tvshowsService.delete(req.params.id);
+        res.json({ message: 'Serie eliminada' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+};
