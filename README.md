@@ -1,39 +1,68 @@
-# 🎬 FilmLog - Puesta en Marcha
+# 🎬 Arcast (FilmLog) - Puesta en Marcha
 
-Guía rápida para ejecutar el proyecto. Se requieren **Node.js** y **Python** instalados.
+Este repositorio contiene un sistema distribuido para la gestión y recomendación de contenido audiovisual. El proyecto se divide en tres servicios principales que deben ejecutarse en paralelo.
 
-## 1. Backend (Terminal 1)
+## 🛠 Requisitos Previos
+* **Node.js** (v18+)
+* **Python** (3.9+)
+* **MongoDB Atlas** (Cuenta configurada)
+* **TMDB API Key** (Obtenida de The Movie Database)
 
-Entra a la carpeta, instala dependencias y configura el entorno:
+---
 
-```bash
-cd backend
-npm install
-```
-Crea un archivo .env (puedes copiar .env.example).
-
-Define tus variables: MONGO_URI (Atlas), TMDB_API_KEY y JWT_SECRET.
-
-Una vez configurado, ejecuta estos comandos en orden:
+## 1. AI Engine (Motor de Recomendación)
+Servicio en Flask que procesa las preferencias del usuario para sugerir contenido.
 
 ```bash
-node seed.js    # 1. Carga las películas y series a la BD
-node server.js  # 2. Inicia el servidor (Puerto 5000)
-```
-
-## 2. Frontend (Terminal 2)
-
-Abre una nueva terminal, entra a la carpeta y prepara el entorno virtual:
-
-```bash
-cd frontend
+cd ai-engine
 python -m venv venv
-.\venv\Scripts\activate   # En Windows
-# source venv/bin/activate  # En Mac/Linux
-```
 
-Instala las librerías y ejecuta la aplicación:
-```bash
+# Activar entorno virtual
+.\venv\Scripts\activate      # Windows
+source venv/bin/activate     # Mac/Linux
+
 pip install Flask requests
 python app.py
-```
+
+**Puerto:** 5000
+
+---
+
+## 2. API Core (Backend Central)
+
+API REST desarrollada en Express que gestiona la lógica de negocio y la base de datos.
+
+```bash
+cd api-core
+npm install
+
+**Configuración:**  
+Crea un archivo `.env` basado en `.env.example` y define:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `TMDB_API_KEY`
+
+---
+
+**Carga Inicial:**
+```bash
+node seed.js
+
+**Ejecución:**
+```bash
+node server.js
+
+**Puerto:** 5001
+
+---
+
+## 3. UI Web (Frontend)
+
+Interfaz de usuario moderna construida con React y Vite.
+
+```bash
+cd ui-web
+npm install
+npm run dev
+**Acceso:** http://localhost:5173
