@@ -1945,3 +1945,169 @@ select.bg-black\/40 option {
     font-weight: 700 !important;
     padding: 10px !important;
 }
+
+
+/* =========================================
+   BOSS DASHBOARD: ESTRUCTURA FORZADA Y DISEÑO PREMIUM
+   ========================================= */
+
+/* 1. FORZAR FILA SUPERIOR: 3 MÉTRICAS LADO A LADO */
+.max-w-7xl .grid.grid-cols-1.sm\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important; /* Forza 3 columnas exactas */
+    gap: 30px !important;
+    margin-bottom: 40px !important;
+}
+
+/* Tarjetas de Métricas (Cajas con efecto cristal) */
+.max-w-7xl .grid.grid-cols-1.sm\:grid-cols-3 > div {
+    background: rgba(20, 22, 30, 0.7) !important;
+    backdrop-filter: blur(25px) !important;
+    border: 1px solid rgba(168, 85, 247, 0.3) !important;
+    border-radius: 24px !important;
+    padding: 35px 20px !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: 0.3s ease !important;
+}
+.max-w-7xl .grid.grid-cols-1.sm\:grid-cols-3 > div:hover {
+    transform: translateY(-5px) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 20px 45px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* Títulos de las Métricas */
+.max-w-7xl .grid.grid-cols-1.sm\:grid-cols-3 span.text-xs {
+    color: #94a3b8 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
+}
+
+/* Números Gigantes de las Métricas */
+.max-w-7xl .grid.grid-cols-1.sm\:grid-cols-3 span.text-6xl {
+    background: linear-gradient(135deg, #a855f7, #38bdf8) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-size: 4rem !important;
+    font-weight: 900 !important;
+    margin-top: 15px !important;
+    text-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important;
+}
+
+
+/* 2. FORZAR FILA INFERIOR: RANKING Y USUARIOS LADO A LADO */
+.max-w-7xl .grid.grid-cols-1.lg\:grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important; /* Forza 2 columnas exactas (mitad y mitad) */
+    gap: 40px !important;
+    align-items: start !important;
+}
+
+/* Contenedores del Ranking y Tabla */
+.max-w-7xl .grid.grid-cols-1.lg\:grid-cols-2 > div {
+    background: rgba(20, 22, 30, 0.7) !important;
+    backdrop-filter: blur(25px) !important;
+    border: 1px solid rgba(168, 85, 247, 0.2) !important;
+    border-radius: 24px !important;
+    padding: 35px !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+    min-height: 450px !important; /* Altura mínima para que se vean parejos */
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Títulos de Ranking y Usuarios */
+.max-w-7xl .grid.grid-cols-1.lg\:grid-cols-2 h3 {
+    color: white !important;
+    font-weight: 900 !important;
+    font-size: 1.3rem !important;
+    border-left: 5px solid #a855f7 !important;
+    padding-left: 15px !important;
+    margin-bottom: 30px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+
+
+/* 3. DISEÑO DE LA LISTA "TOP 5" */
+.space-y-3 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+}
+.space-y-3 > div {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    padding: 15px 25px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    transition: 0.3s ease !important;
+}
+.space-y-3 > div:hover {
+    background: rgba(168, 85, 247, 0.1) !important;
+    border-color: #a855f7 !important;
+    transform: translateX(8px) !important; /* Se mueve a la derecha al pasar el mouse */
+}
+
+
+/* 4. DISEÑO DE LA TABLA DE USUARIOS (Sin líneas feas, filas flotantes) */
+.overflow-hidden.rounded-xl.border.border-\[\#30363d\] {
+    border: none !important;
+    background: transparent !important;
+}
+
+table.w-full {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important; /* Separa las filas entre sí */
+}
+
+/* Cabecera de la tabla */
+table.w-full thead { background: transparent !important; }
+table.w-full th {
+    color: #94a3b8 !important;
+    padding: 0 15px 15px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+
+/* Filas de la tabla */
+table.w-full tbody { border: none !important; } /* Quita la línea divisoria por defecto */
+table.w-full tbody tr {
+    background: rgba(255, 255, 255, 0.03) !important;
+    transition: 0.2s ease !important;
+}
+table.w-full tbody tr:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    transform: scale(1.02) !important;
+}
+
+table.w-full td {
+    padding: 15px !important;
+    border: none !important;
+    color: #e2e8f0 !important;
+}
+table.w-full td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+table.w-full td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* 5. ETIQUETAS DE ROLES (Badges Neón) */
+td span.text-\[10px\] {
+    padding: 6px 14px !important;
+    border-radius: 50px !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
+}
+/* Admin (Rojo) */
+td span.bg-red-500\/10 { background: rgba(244, 63, 94, 0.15) !important; color: #f43f5e !important; border: 1px solid rgba(244, 63, 94, 0.3) !important; }
+/* Boss (Morado) */
+td span.bg-purple-500\/10 { background: rgba(168, 85, 247, 0.15) !important; color: #c084fc !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; }
+/* User (Azul) */
+td span.bg-blue-500\/10 { background: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; border: 1px solid rgba(56, 189, 248, 0.3) !important; }
