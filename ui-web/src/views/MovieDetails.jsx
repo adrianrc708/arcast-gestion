@@ -9,33 +9,37 @@ const MovieDetails = () => {
     const [item, setItem] = useState(null);
     const [reviews, setReviews] = useState([]);
 
+    // Sincronizado con ReviewSchema: usamos 'text' en lugar de 'comment'
     const [newReview, setNewReview] = useState({ rating: 5, text: '' });
     const [hoverRating, setHoverRating] = useState(0);
     const [editingReviewId, setEditingReviewId] = useState(null);
 
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
-    const [activeVideo, setActiveVideo] = useState('trailer');
+    const [activeVideo, setActiveVideo] = useState('movie');
 
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // 1. Traemos el contenido y las reseñas reales
+                // CORRECCIÓN: La ruta correcta es /api/reviews/movie/:id
                 const [itemRes, reviewsRes] = await Promise.all([
                     api.get(`/catalog/${type === 'movie' ? 'movies' : 'tvshows'}/${id}`),
-                    api.get(`/reviews/${id}`).catch(() => ({ data: [] }))
+                    api.get(`/reviews/movie/${id}`).catch(() => ({ data: [] }))
                 ]);
                 setItem(itemRes.data);
                 setReviews(reviewsRes.data);
 
+                // 2. Verificar si está en watchlist
                 if (user) {
-                    const profileRes = await api.get('/users/me').catch(() => null);
-                    if (profileRes?.data?.watchlist) {
-                        const found = profileRes.data.watchlist.some(w => (w.item?._id || w.item || w) === id);
+                    const me = await api.get('/users/me').catch(() => null);
+                    if (me?.data?.watchlist) {
+                        const found = me.data.watchlist.some(w => (w.item?._id || w.item || w) === id);
                         setInWatchlist(found);
                     }
                 }
             } catch (error) {
-                console.error("Error al cargar la vista:", error);
+                console.error("Error al cargar detalles:", error);
             } finally {
                 setLoading(false);
             }
@@ -49,6 +53,7 @@ const MovieDetails = () => {
         if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'youtube.com/embed/');
         return url;
     };
+
     const trailerEmbedUrl = item ? getEmbedUrl(item.trailerUrl) : null;
 
     useEffect(() => {
@@ -60,45 +65,49 @@ const MovieDetails = () => {
             await api.post('/users/watchlist', { itemId: id, itemType: type });
             setInWatchlist(!inWatchlist);
         } catch (error) {
-            console.error(error);
-            alert("Error: La ruta POST /users/watchlist no existe en tu backend.");
+            console.error("Error Watchlist:", error);
+            alert("No se pudo actualizar la lista.");
         }
     };
 
     const handleReviewSubmit = async (e) => {
         e.preventDefault();
+        if (!newReview.text.trim()) return;
+
         try {
             if (editingReviewId) {
                 await api.put(`/reviews/${editingReviewId}`, {
                     rating: newReview.rating,
-                    text: newReview.text // Campo 'text' según tu modelo
-                });
-            } else {
-                await api.post('/reviews', {
-                    movieId: id,        // Campo 'movieId' según tu modelo
-                    contentType: type,  // Campo 'contentType' según tu controlador
-                    rating: newReview.rating,
                     text: newReview.text
                 });
+                setEditingReviewId(null);
+            } else {
+                // CAMPOS EXACTOS DEL BACKEND: movieId, contentType, text, rating
+                await api.post('/reviews', {
+                    movieId: id,
+                    contentType: type,
+                    text: newReview.text,
+                    rating: newReview.rating
+                });
             }
-            // Recargar reseñas después de enviar
-            const reviewsRes = await api.get(`/reviews/${id}`);
-            setReviews(reviewsRes.data);
+
+            // CORRECCIÓN: Recargamos usando la ruta /movie/:id
+            const res = await api.get(`/reviews/movie/${id}`);
+            setReviews(res.data);
             setNewReview({ rating: 5, text: '' });
         } catch (error) {
-            console.error("Error en backend:", error.response?.data);
-            alert("Error al procesar la reseña: " + (error.response?.data?.message || "Campos inválidos"));
+            console.error("Error Reseña:", error.response?.data);
+            alert("Error al procesar la reseña: " + (error.response?.data?.message || "Verifica los campos"));
         }
     };
 
     const handleDeleteReview = async (reviewId) => {
-        if (window.confirm("¿Eliminar reseña?")) {
-            try {
-                await api.delete(`/reviews/${reviewId}`);
-                setReviews(reviews.filter(r => r._id !== reviewId));
-            } catch (error) {
-                alert("Error al eliminar.");
-            }
+        if (!window.confirm("¿Seguro que quieres borrar tu opinión?")) return;
+        try {
+            await api.delete(`/reviews/${reviewId}`);
+            setReviews(reviews.filter(r => r._id !== reviewId));
+        } catch (error) {
+            alert("Error al eliminar la reseña.");
         }
     };
 
@@ -108,7 +117,7 @@ const MovieDetails = () => {
         window.scrollTo({ top: document.querySelector('.add-review-card').offsetTop - 100, behavior: 'smooth' });
     };
 
-    if (loading) return <div className="loading-screen">Cargando experiencia...</div>;
+    if (loading) return <div className="loading-screen">Sincronizando Arcast...</div>;
     if (!item) return <div className="loading-screen">Contenido no encontrado</div>;
 
     const tmdbId = item.tmdbId || item.id || id;
@@ -148,12 +157,12 @@ const MovieDetails = () => {
 
                         <div className="synopsis">
                             <h3>Sinopsis</h3>
-                            <p>{item.overview || "Sin descripción disponible."}</p>
+                            <p>{item.overview || "No hay una descripción disponible para este título."}</p>
                         </div>
 
                         <div className="action-buttons">
                             <button className={`btn-secondary-outline ${inWatchlist ? 'active' : ''}`} onClick={toggleWatchlist}>
-                                {inWatchlist ? '✓ EN MI LISTA' : '+ MI LISTA'}
+                                {inWatchlist ? '✓ EN MI LISTA' : '+ AÑADIR A MI LISTA'}
                             </button>
                         </div>
                     </div>
@@ -161,10 +170,14 @@ const MovieDetails = () => {
 
                 <div className="player-section">
                     <div className="player-tabs">
+                        <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>
+                            Ver {type === 'movie' ? 'Película' : 'Contenido'}
+                        </button>
                         {trailerEmbedUrl && (
-                            <button className={activeVideo === 'trailer' ? 'active' : ''} onClick={() => setActiveVideo('trailer')}>Ver Trailer</button>
+                            <button className={activeVideo === 'trailer' ? 'active' : ''} onClick={() => setActiveVideo('trailer')}>
+                                Ver Trailer
+                            </button>
                         )}
-                        <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>Ver Contenido</button>
                     </div>
 
                     <div className="player-glass-container">
@@ -182,7 +195,7 @@ const MovieDetails = () => {
 
                     <div className="reviews-layout">
                         <div className="add-review-card">
-                            <h3>{editingReviewId ? 'Editar Calificación' : 'Tu Opinión'}</h3>
+                            <h3>{editingReviewId ? 'Editando tu opinión' : 'Deja tu calificación'}</h3>
                             <form onSubmit={handleReviewSubmit}>
                                 <div className="star-rating-container">
                                     {[1, 2, 3, 4, 5].map((star) => (
@@ -198,7 +211,7 @@ const MovieDetails = () => {
 
                                 <textarea
                                     className="modern-textarea"
-                                    placeholder="Escribe aquí tu reseña..."
+                                    placeholder="¿Qué te pareció?"
                                     value={newReview.text}
                                     onChange={(e) => setNewReview({...newReview, text: e.target.value})}
                                     required
@@ -208,37 +221,50 @@ const MovieDetails = () => {
                                         {editingReviewId ? 'Actualizar' : 'Publicar'}
                                     </button>
                                     {editingReviewId && (
-                                        <button type="button" className="cancel-edit-btn" onClick={() => {setEditingReviewId(null); setNewReview({rating: 5, text: ''});}}>Cancelar</button>
+                                        <button
+                                            type="button"
+                                            className="cancel-edit-btn"
+                                            onClick={() => { setEditingReviewId(null); setNewReview({ rating: 5, text: '' }); }}
+                                        >
+                                            Cancelar
+                                        </button>
                                     )}
                                 </div>
                             </form>
                         </div>
 
                         <div className="reviews-list">
-                            {reviews.map(rev => {
-                                const isOwner = user && (rev.username === user.username || rev.userId === user._id);
+                            {reviews.length > 0 ? (
+                                reviews.map(rev => {
+                                    const isOwner = user && (rev.username === user.username || rev.userId === user._id || rev.userId === user.id);
 
-                                return (
-                                    <div key={rev._id} className="review-card-premium">
-                                        <div className="review-user">
-                                            <div className="user-avatar-mini">{rev.username?.charAt(0) || 'U'}</div>
-                                            <div className="user-info-mini">
-                                                <h4>{rev.username}</h4>
-                                                <span>{new Date(rev.date || rev.createdAt).toLocaleDateString()}</span>
-                                            </div>
-
-                                            {isOwner && (
-                                                <div className="review-actions">
-                                                    <button onClick={() => handleEditReview(rev)}>✏️</button>
-                                                    <button onClick={() => handleDeleteReview(rev._id)}>🗑️</button>
+                                    return (
+                                        <div key={rev._id} className="review-card-premium">
+                                            <div className="review-user">
+                                                <div className="user-avatar-mini">{rev.username?.charAt(0) || 'U'}</div>
+                                                <div className="user-info-mini">
+                                                    <h4>{rev.username}</h4>
+                                                    <span>{new Date(rev.date || rev.createdAt).toLocaleDateString()}</span>
                                                 </div>
-                                            )}
-                                            <div className="user-rating-badge">★ {rev.rating}</div>
+
+                                                {isOwner && (
+                                                    <div className="review-actions">
+                                                        <button onClick={() => handleEditReview(rev)}>✏️</button>
+                                                        <button onClick={() => handleDeleteReview(rev._id)}>🗑️</button>
+                                                    </div>
+                                                )}
+
+                                                <div className="user-rating-badge">★ {rev.rating}</div>
+                                            </div>
+                                            <p className="review-text">"{rev.text}"</p>
                                         </div>
-                                        <p className="review-text">"{rev.text}"</p>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <div className="empty-reviews">
+                                    <p>Nadie ha comentado aún. ¡Sé el primero!</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

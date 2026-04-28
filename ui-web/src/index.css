@@ -451,7 +451,17 @@ body {
 .detail-poster img { width: 100%; display: block; }
 
 .detail-main-info { flex: 1; padding-top: 20px; }
-.detail-title { font-size: 4rem; font-weight: 900; margin: 15px 0; line-height: 1.1; }
+.detail-title {
+    font-size: 4.5rem;
+    font-weight: 900;
+    margin: 0 0 20px 0;
+    line-height: 0.95;
+    letter-spacing: -3px;
+    /* Por qué: El degradado sutil y el espaciado negativo dan un look de revista de cine */
+    background: linear-gradient(to bottom, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
 .badge-row { display: flex; gap: 10px; }
 .type-badge { background: var(--accent); color: black; padding: 4px 15px; border-radius: 50px; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
@@ -557,12 +567,15 @@ body {
 }
 
 .add-review-card {
-    background: rgba(20, 22, 28, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    background: rgba(255, 255, 255, 0.03); /* Color muy tenue */
+    backdrop-filter: blur(15px); /* Por qué: El efecto de cristal real solo se logra con esta propiedad */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 35px;
+    border-radius: 30px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    position: sticky;
+    top: 120px;
+    box-sizing: border-box;
 }
 .add-review-card h3 { margin-top: 0; color: white; font-size: 1.3rem; }
 .rating-selector { margin: 20px 0; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.9rem; }
@@ -582,13 +595,6 @@ body {
     border-radius: 50px; font-weight: 800; cursor: pointer; transition: 0.3s; font-size: 1rem;
 }
 .submit-review-btn:hover { background: var(--accent); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(56, 189, 248, 0.3); }
-
-.review-card-premium {
-    background: rgba(20, 22, 28, 0.5);
-    border: 1px solid rgba(255,255,255,0.05);
-    padding: 25px; border-radius: 15px; margin-bottom: 20px; transition: 0.3s;
-}
-.review-card-premium:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
 
 .review-user { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
 .user-avatar-mini {
@@ -643,12 +649,11 @@ body {
     width: 100%;
     max-width: 1000px;
     aspect-ratio: 16/9;
-    border-radius: 20px;
+    border-radius: 30px; /* Bordes más redondeados son tendencia en UI moderna */
     overflow: hidden;
-    background: rgba(10, 12, 16, 0.8);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    background: #000;
+    border: 8px solid rgba(255, 255, 255, 0.03); /* Por qué: Un borde grueso y traslúcido simula un marco físico */
+    box-shadow: 0 50px 100px rgba(0,0,0,0.9); /* Por qué: Una sombra profunda le da peso visual al video */
     position: relative;
 }
 .player-glass-container iframe { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -667,18 +672,6 @@ body {
     .reviews-layout { grid-template-columns: 350px 1fr; }
 }
 
-.add-review-card {
-    background: linear-gradient(145deg, rgba(30, 32, 40, 0.9), rgba(20, 22, 28, 0.9));
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 35px 30px;
-    border-radius: 25px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-    position: sticky;
-    top: 120px;
-    box-sizing: border-box; /* PREVIENE QUE SE SALGA DE LA PANTALLA */
-    width: 100%;
-}
-.add-review-card h3 { margin-top: 0; color: white; font-size: 1.3rem; text-align: center; margin-bottom: 20px; }
 
 /* ESTRELLAS INTERACTIVAS (Lógica y Hitbox mejorados) */
 .star-rating-container {
@@ -722,12 +715,21 @@ body {
 
 /* LISTA DE RESEÑAS Y BOTONES DE ACCIÓN */
 .review-card-premium {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    padding: 25px; border-radius: 20px; margin-bottom: 20px; transition: 0.3s;
+    background: rgba(255, 255, 255, 0.02); /* Fondo casi invisible */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 30px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
     box-sizing: border-box;
 }
-.review-card-premium:hover { background: rgba(255,255,255,0.04); border-color: rgba(56, 189, 248, 0.3); }
+
+.review-card-premium:hover {
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateX(10px); /* Por qué: Un desplazamiento lateral al pasar el mouse hace que la lista se sienta viva */
+    border-color: rgba(56, 189, 248, 0.3);
+}
+
 .review-card-premium.editing { border-color: var(--accent); box-shadow: 0 0 20px rgba(56, 189, 248, 0.15); }
 
 .review-user { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
@@ -752,15 +754,6 @@ body {
     padding: 6px 14px; border-radius: 50px; font-weight: 900; border: 1px solid rgba(255,215,0,0.3);
 }
 .review-text { line-height: 1.7; color: #cbd5e1; font-size: 1.05rem; margin: 0; font-style: italic; }
-
-.add-review-card {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 30px;
-    background: linear-gradient(145deg, rgba(30, 32, 40, 0.9), rgba(20, 22, 28, 0.9));
-    border-radius: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
 
 .modern-textarea {
     box-sizing: border-box;
