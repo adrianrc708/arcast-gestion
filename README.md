@@ -35,7 +35,7 @@ API REST desarrollada en Express que gestiona la lógica de negocio y la base de
 ```bash
 cd api-core
 npm install
-
+```
 **Configuración:**  
 Crea un archivo `.env` basado en `.env.example` y define:
 
@@ -48,11 +48,11 @@ Crea un archivo `.env` basado en `.env.example` y define:
 **Carga Inicial:**
 ```bash
 node seed.js
-
+```
 **Ejecución:**
 ```bash
 node server.js
-
+```
 **Puerto:** 5001
 
 ---
@@ -65,4 +65,5 @@ Interfaz de usuario moderna construida con React y Vite.
 cd ui-web
 npm install
 npm run dev
+```
 **Acceso:** http://localhost:5173
