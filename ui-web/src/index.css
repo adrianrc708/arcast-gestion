@@ -1391,115 +1391,172 @@ body {
 
 
 /* =========================================
-   LOGIN: REDISEÑO PREMIUM VIOLETA
+   REDISEÑO TOTAL: FORMULARIO PREMIUM ARCAST
    ========================================= */
 
-.login-page-root {
-    min-height: 100vh;
+/* 1. Wrapper que fuerza el centrado y fondo total */
+.auth-screen-wrapper {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, #0f1014 100%);
-    position: relative;
+    background: radial-gradient(circle at center, #1e1b4b 0%, #0f1014 100%);
     overflow: hidden;
+    z-index: 9999;
 }
 
-.login-glass-card {
+.auth-main-container {
     width: 100%;
-    max-width: 420px;
-    background: rgba(15, 23, 42, 0.7) !important;
-    backdrop-filter: blur(25px) !important;
-    -webkit-backdrop-filter: blur(25px);
-    border: 1px solid rgba(139, 92, 246, 0.3) !important;
-    border-radius: 35px !important;
-    padding: 60px 45px !important;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
-    z-index: 10;
+    max-width: 400px;
+    padding: 20px;
+    animation: fadeInScale 0.5s ease-out;
 }
 
-.login-title {
-    font-size: 4rem !important;
-    font-weight: 950 !important;
-    letter-spacing: -3px;
-    background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+/* 2. Títulos con diseño tipográfico */
+.auth-header-text {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header-text h1 {
+    font-size: 2.8rem !important;
+    font-weight: 900;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #fff 40%, #a78bfa 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin: 0 !important;
-    font-style: italic;
-    text-align: center;
+    margin-bottom: 5px;
 }
 
-.login-subtitle {
-    color: #64748b !important;
-    font-size: 0.75rem !important;
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    margin-bottom: 45px;
-    text-align: center;
-}
-
-.login-input-group {
-    margin-bottom: 25px;
-}
-
-.login-input-group label {
-    display: block;
+.auth-header-text p {
     color: #94a3b8;
+    text-transform: uppercase;
     font-size: 0.7rem;
     font-weight: 800;
+    letter-spacing: 2px;
+}
+
+/* 3. La Tarjeta (Glassmorphism) */
+.arcast-auth-card {
+    background: rgba(15, 16, 20, 0.7) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 25px;
+    padding: 35px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+}
+
+/* 4. Estilo de los Inputs y Labels */
+.auth-input-field {
+    margin-bottom: 20px;
+    margin-right: 20px;
+}
+
+.auth-input-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #e2e8f0;
     margin-bottom: 8px;
-    margin-left: 10px;
+    margin-left: 5px;
+    text-transform: uppercase;
 }
 
-.login-input {
-    width: 100%;
+.arcast-auth-input {
+    width: 100% !important;
     background: rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid rgba(139, 92, 246, 0.2) !important;
-    border-radius: 18px !important;
-    padding: 16px 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
     color: white !important;
-    font-size: 0.95rem !important;
-    transition: 0.3s ease !important;
-    outline: none;
+    font-size: 0.9rem;
+    transition: 0.3s;
 }
 
-.login-input:focus {
+.arcast-auth-input:focus {
     border-color: #a78bfa !important;
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
-    background: rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+    outline: none;
+    background: rgba(0, 0, 0, 0.6) !important;
 }
 
-.login-btn {
-    width: 100%;
+/* 5. El Botón con Brillo Neón */
+.arcast-auth-btn {
+    width: 100% !important;
     background: linear-gradient(135deg, #7c3aed, #3b82f6) !important;
     color: white !important;
-    border: none !important;
-    padding: 18px !important;
-    border-radius: 50px !important;
     font-weight: 900 !important;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
+    padding: 15px !important;
+    border-radius: 50px !important;
+    border: none !important;
+    box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3) !important;
     cursor: pointer;
-    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3) !important;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
-    margin-top: 15px;
+    transition: 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    margin-top: 10px;
 }
 
-.login-btn:hover {
-    transform: translateY(-4px);
+.arcast-auth-btn:hover {
+    transform: translateY(-3px);
     box-shadow: 0 15px 30px rgba(124, 58, 237, 0.5) !important;
     filter: brightness(1.1);
 }
 
-.login-error {
-    background: rgba(239, 68, 68, 0.1) !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
-    color: #ef4444 !important;
-    padding: 14px !important;
-    border-radius: 15px !important;
-    font-size: 0.8rem !important;
-    font-weight: 700;
-    margin-bottom: 25px;
+/* 6. Cuadro Inferior (Unificado) */
+.auth-footer-box {
+    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 15px;
     text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.auth-footer-box p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+.auth-footer-box button {
+    background: none;
+    border: none;
+    color: #38bdf8;
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.auth-footer-box button:hover {
+    text-decoration: underline;
+}
+
+/* Extras: Alertas y Links */
+.auth-error-msg {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.forgot-link {
+    font-size: 0.7rem;
+    color: #38bdf8;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
