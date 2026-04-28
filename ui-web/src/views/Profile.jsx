@@ -5,119 +5,116 @@ import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
     const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('settings');
     const [watchlist, setWatchlist] = useState([]);
+    const [myReviews, setMyReviews] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isEditing, setIsEditing] = useState(false);
-    const [newUsername, setNewUsername] = useState(user?.username || '');
+
+    // Estados de formulario
+    const [username, setUsername] = useState(user?.username || '');
+    const [passwords, setPasswords] = useState({ current: '', new: '' });
     const [msg, setMsg] = useState({ text: '', type: '' });
 
     useEffect(() => {
-        const fetchWatchlist = async () => {
+        const fetchData = async () => {
             try {
-                // Recupera la lista guardada desde el backend
-                const res = await api.get('/users/watchlist');
-                // Sincronización: El backend devuelve { watchlist: [...] }
-                setWatchlist(res.data.watchlist || []);
+                const [wRes, rRes] = await Promise.all([
+                    api.get('/users/watchlist'),
+                    api.get('/reviews/me')
+                ]);
+                setWatchlist(wRes.data.watchlist || []);
+                setMyReviews(rRes.data || []);
             } catch (err) {
-                console.error("Error al cargar Watchlist:", err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-
-        if (user) {
-            fetchWatchlist();
-            setNewUsername(user.username);
-        }
+        if (user) fetchData();
     }, [user]);
 
-    const handleUpdateProfile = async (e) => {
+    const handleUpdateName = async (e) => {
         e.preventDefault();
-        setMsg({ text: 'Actualizando...', type: 'info' });
         try {
-            await api.put('/users/me', { username: newUsername });
-            setMsg({ text: 'Perfil actualizado exitosamente.', type: 'success' });
-            setIsEditing(false);
-            // Opcional: Podrías forzar una recarga del contexto de auth aquí si es necesario
-        } catch (error) {
-            setMsg({ text: error.response?.data?.message || 'Error al actualizar.', type: 'error' });
-        }
+            await api.put('/users/me', { username });
+            setMsg({ text: 'Nombre actualizado. Reinicia sesión para ver los cambios.', type: 'success' });
+        } catch (err) { setMsg({ text: 'Error al actualizar nombre.', type: 'error' }); }
     };
 
-    if (!user) return <div className="py-20 text-center text-red-400 font-bold uppercase tracking-tighter">Acceso denegado</div>;
+    const handleUpdatePassword = async (e) => {
+        e.preventDefault();
+        try {
+            await api.put('/users/update-password', {
+                currentPassword: passwords.current,
+                newPassword: passwords.new
+            });
+            setMsg({ text: 'Contraseña actualizada.', type: 'success' });
+            setPasswords({ current: '', new: '' });
+        } catch (err) { setMsg({ text: err.response?.data?.message || 'Error.', type: 'error' }); }
+    };
+
+    if (!user) return <div className="py-20 text-center">Acceso Denegado</div>;
 
     return (
-        <div className="max-w-6xl mx-auto py-12 px-4 space-y-12 animate-in fade-in duration-700">
-            {/* CABECERA DE PERFIL */}
-            <div className="bg-[#161b22] border border-[#30363d] rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
-                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#38bdf8] to-[#1e3a8a] flex items-center justify-center text-5xl font-black text-white shadow-xl">
-                        {user.username?.charAt(0).toUpperCase()}
-                    </div>
-
-                    <div className="flex-1 w-full text-center md:text-left">
-                        {!isEditing ? (
-                            <div className="space-y-4">
-                                <div>
-                                    <h1 className="text-4xl font-black text-white tracking-tighter">{user.username}</h1>
-                                    <p className="text-gray-500 font-medium">{user.email}</p>
-                                </div>
-                                <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                                    <span className="bg-[#38bdf8]/10 text-[#38bdf8] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#38bdf8]/20">
-                                        ROL: {user.role}
-                                    </span>
-                                    <button onClick={() => setIsEditing(true)} className="bg-[#21262d] hover:bg-[#30363d] text-white font-bold px-5 py-1.5 rounded-full border border-[#30363d] transition-all text-xs">Ajustar Perfil</button>
-                                </div>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-sm mx-auto md:mx-0">
-                                <input type="text" required value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className="w-full bg-[#0d1117] border border-[#30363d] text-white p-3 rounded-xl outline-none focus:border-[#38bdf8] text-sm font-bold" />
-                                <div className="flex gap-2">
-                                    <button type="submit" className="flex-1 bg-[#238636] text-white font-bold py-2 rounded-xl text-xs">Guardar</button>
-                                    <button type="button" onClick={() => setIsEditing(false)} className="flex-1 bg-[#21262d] text-gray-400 font-bold py-2 rounded-xl text-xs">Cancelar</button>
-                                </div>
-                            </form>
-                        )}
-                        {msg.text && <p className={`mt-4 text-xs font-bold ${msg.type === 'error' ? 'text-red-400' : 'text-[#38bdf8]'}`}>{msg.text}</p>}
-                    </div>
+        <div className="max-w-6xl mx-auto py-12 px-6">
+            <div className="profile-header-premium">
+                <div className="avatar-large">{user.username?.charAt(0).toUpperCase()}</div>
+                <div>
+                    <h1 className="text-4xl font-black">{user.username}</h1>
+                    <p className="text-muted">{user.email} • <span className="text-accent uppercase">{user.role}</span></p>
                 </div>
             </div>
 
-            {/* SECCIÓN MI LISTA */}
-            <div className="space-y-8">
-                <div className="flex items-center justify-between border-b border-[#30363d] pb-4">
-                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Mi Lista de Seguimiento</h2>
-                    <span className="text-[10px] font-black text-gray-500 bg-[#161b22] px-3 py-1 rounded-full border border-[#30363d] uppercase">{watchlist.length} Títulos Guardados</span>
-                </div>
+            <div className="profile-tabs">
+                <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Ajustes</button>
+                <button className={activeTab === 'watchlist' ? 'active' : ''} onClick={() => setActiveTab('watchlist')}>Mi Lista ({watchlist.length})</button>
+                <button className={activeTab === 'reviews' ? 'active' : ''} onClick={() => setActiveTab('reviews')}>Mis Reseñas ({myReviews.length})</button>
+            </div>
 
-                {loading ? (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-6 animate-pulse">
-                        {[1,2,3,4,5].map(i => <div key={i} className="aspect-[2/3] bg-[#161b22] rounded-2xl"></div>)}
+            <div className="mt-10">
+                {activeTab === 'settings' && (
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div className="add-review-card">
+                            <h3 className="mb-6">Información Personal</h3>
+                            <form onSubmit={handleUpdateName} className="space-y-4">
+                                <input className="modern-textarea" style={{height: '50px'}} type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nuevo nombre" />
+                                <button type="submit" className="submit-review-btn">Guardar Cambios</button>
+                            </form>
+                        </div>
+                        <div className="add-review-card">
+                            <h3 className="mb-6">Seguridad</h3>
+                            <form onSubmit={handleUpdatePassword} className="space-y-4">
+                                <input className="modern-textarea" style={{height: '50px'}} type="password" value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})} placeholder="Contraseña actual" />
+                                <input className="modern-textarea" style={{height: '50px'}} type="password" value={passwords.new} onChange={e => setPasswords({...passwords, new: e.target.value})} placeholder="Nueva contraseña" />
+                                <button type="submit" className="submit-review-btn">Cambiar Contraseña</button>
+                            </form>
+                        </div>
+                        {msg.text && <p className={`col-span-full text-center font-bold ${msg.type === 'error' ? 'text-red-400' : 'text-accent'}`}>{msg.text}</p>}
                     </div>
-                ) : watchlist.length === 0 ? (
-                    <div className="bg-[#161b22] border-2 border-dashed border-[#30363d] rounded-[2rem] py-20 text-center">
-                        <p className="text-gray-400 font-bold">Tu lista está vacía actualmente.</p>
-                        <Link to="/" className="text-[#38bdf8] text-xs font-black mt-4 inline-block hover:underline uppercase tracking-widest">Explorar Catálogo</Link>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {watchlist.map((entry) => (
-                            <Link
-                                key={entry._id}
-                                to={`/item/${entry.kind === 'Movie' ? 'movie' : 'tvshow'}/${entry.item._id}`}
-                                className="group relative aspect-[2/3] rounded-2xl overflow-hidden bg-[#161b22] border border-[#30363d] block"
-                            >
-                                <img
-                                    src={entry.item.posterUrl || "https://via.placeholder.com/300x450"}
-                                    alt={entry.item.title || entry.item.name}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <p className="text-white font-black text-[10px] leading-tight uppercase tracking-tighter">
-                                        {entry.item.title || entry.item.name}
-                                    </p>
-                                </div>
+                )}
+
+                {activeTab === 'watchlist' && (
+                    <div className="catalog-grid">
+                        {watchlist.map(entry => (
+                            <Link key={entry._id} to={`/item/${entry.kind.toLowerCase()}/${entry.item._id}`} className="media-card">
+                                <div className="poster-wrapper"><img src={entry.item.posterUrl} alt="" /></div>
+                                <div className="card-info"><h3>{entry.item.title || entry.item.name}</h3></div>
                             </Link>
+                        ))}
+                    </div>
+                )}
+
+                {activeTab === 'reviews' && (
+                    <div className="space-y-4">
+                        {myReviews.map(rev => (
+                            <div key={rev._id} className="review-card-premium">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-accent font-black">{rev.movieTitle}</h4>
+                                    <span className="user-rating-badge">★ {rev.rating}</span>
+                                </div>
+                                <p className="review-text">"{rev.text}"</p>
+                                <p className="text-[10px] mt-4 opacity-50">{new Date(rev.date).toLocaleDateString()}</p>
+                            </div>
                         ))}
                     </div>
                 )}

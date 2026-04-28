@@ -157,3 +157,21 @@ exports.toggleWatchlist = catchAsync(async (req, res) => {
     await user.save();
     res.json(user.watchlist);
 });
+
+exports.updateMe = catchAsync(async (req, res) => {
+    const user = await User.findByIdAndUpdate(req.user.id, { username: req.body.username }, { new: true, runValidators: true });
+    res.json(user);
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!(await user.correctPassword(currentPassword, user.password))) {
+        return next(new AppError('La contraseña actual es incorrecta', 401));
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.json({ message: 'Contraseña actualizada correctamente' });
+});

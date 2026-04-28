@@ -90,3 +90,8 @@ exports.getAllReviews = catchAsync(async (req, res, _next) => {
     const reviews = await Review.find().sort({ createdAt: -1 });
     res.json(reviews);
 });
+
+exports.getMyReviews = catchAsync(async (req, res) => {
+    const reviews = await Review.find({ userId: req.user.id }).sort({ date: -1 });
+    res.json(reviews);
+});

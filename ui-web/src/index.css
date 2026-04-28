@@ -774,3 +774,294 @@ body {
 .star.active { color: #ffd700; transform: scale(1.15); text-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
 .form-actions { display: flex; gap: 10px; width: 100%; }
 
+
+
+
+/* Agrega esto al final de tu index.css */
+.profile-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 200px;
+    background: #1b1d24; /* El color de tu variable --bg-card */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-dropdown-menu a, .profile-dropdown-menu button {
+    background: transparent;
+    border: none;
+    padding: 10px 15px;
+    color: white;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.profile-dropdown-menu a:hover, .profile-dropdown-menu button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--accent);
+}
+
+/* =========================================
+   MEJORA PROFESIONAL: DROPDOWN Y PERFIL
+   ========================================= */
+
+/* 1. Menú Desplegable con efecto Cristal (Navbar) */
+.profile-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    min-width: 240px;
+    background: rgba(27, 29, 36, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 12px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    transform-origin: top right;
+    animation: dropdownPop 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes dropdownPop {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.profile-dropdown-menu a, .profile-dropdown-menu button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 12px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.profile-dropdown-menu a:hover, .profile-dropdown-menu button:hover {
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--accent);
+    transform: translateX(5px);
+}
+
+/* 2. Cabecera del Perfil (Vista Mi Perfil) */
+.profile-header-premium {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 60px;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.05) 0%, transparent 100%);
+    padding: 40px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.avatar-large {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #1e3a8a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    font-weight: 900;
+    color: white;
+    box-shadow: 0 15px 35px rgba(56, 189, 248, 0.3);
+    border: 5px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 3. Pestañas estilo Píldora */
+.profile-tabs {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-tabs button {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.profile-tabs button.active {
+    background: var(--accent);
+    color: black;
+    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4);
+}
+
+/* 4. Tarjetas de Reseña con Hover */
+.review-card-premium {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding: 30px !important;
+    border-radius: 24px !important;
+    transition: 0.3s ease !important;
+}
+
+.review-card-premium:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: var(--accent) !important;
+    transform: translateY(-5px);
+}
+
+
+/* =========================================
+   MEJORA UI: PERFIL Y MENÚ DESPLEGABLE
+   ========================================= */
+
+/* 1. FIX SOBRECARGA: Centrado y ancho controlado */
+/* Esto evita que el perfil se "estire" demasiado en monitores grandes */
+.max-w-6xl {
+    max-width: 1000px !important;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 2. MENÚ DESPLEGABLE (Navbar) - Estilo Premium */
+.profile-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    min-width: 240px;
+    background: rgba(27, 29, 36, 0.95); /* Menos oscuro, más azulado */
+    backdrop-filter: blur(20px); /* Efecto cristal real */
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 12px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    animation: dropdownPop 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes dropdownPop {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.profile-dropdown-menu a, .profile-dropdown-menu button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 12px;
+    color: #e2e8f0; /* Blanco suave, no puro */
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.profile-dropdown-menu a:hover, .profile-dropdown-menu button:hover {
+    background: rgba(56, 189, 248, 0.15); /* Tu color --accent */
+    color: var(--accent);
+    transform: translateX(5px);
+}
+
+/* 3. CABECERA DEL PERFIL - Adiós al blanco plano */
+.profile-header-premium {
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, transparent 100%);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 40px;
+    border-radius: 32px;
+    margin-bottom: 50px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #1e3a8a);
+    box-shadow: 0 15px 35px rgba(56, 189, 248, 0.3);
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: white;
+}
+
+/* 4. PESTAÑAS (Tabs) - Diseño de Píldora */
+.profile-tabs {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-tabs button {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+.profile-tabs button.active {
+    background: var(--accent);
+    color: black;
+    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4);
+}
+
+/* 5. TARJETAS DE CRISTAL (Para ajustes y reseñas) */
+.add-review-card, .review-card-premium {
+    background: rgba(255, 255, 255, 0.02) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 24px !important;
+    padding: 30px !important;
+    transition: 0.3s ease;
+}
+
+.review-card-premium:hover {
+    border-color: var(--accent) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Inputs con estilo moderno */
+.modern-textarea, input[type="text"], input[type="password"] {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    color: #cbd5e1 !important;
+    padding: 12px 15px !important;
+}
+
+.modern-textarea:focus, input:focus {
+    border-color: var(--accent) !important;
+    outline: none;
+}
