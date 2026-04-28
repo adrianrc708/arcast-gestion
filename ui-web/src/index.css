@@ -1563,136 +1563,208 @@ body {
 
 
 /* =========================================
-   ADMIN PANEL: REDISEÑO TOTAL PROFESIONAL
+   ADMIN PANEL: REDISEÑO PREMIUM ESTÁTICO
    ========================================= */
 
-.admin-page-wrapper {
-    display: flex;
-    max-width: 1400px;
-    margin: 40px auto;
-    gap: 30px;
-    padding: 0 20px;
-    align-items: flex-start;
+/* 1. LAYOUT CENTRADO Y ESTÁTICO (Evita que el diseño baile) */
+.max-w-7xl.mx-auto.flex-col.md\:flex-row {
+    display: grid !important;
+    /* Sidebar fijo a 300px, el contenido toma el resto */
+    grid-template-columns: 300px 1fr !important;
+    gap: 50px !important;
+    align-items: start !important;
+    margin: 40px auto !important;
+    width: 100% !important;
+    max-width: 1350px !important;
+    padding: 0 30px !important;
 }
 
-/* Sidebar Estilo Consola */
-.admin-sidebar-nav {
-    width: 260px;
-    background: rgba(15, 17, 23, 0.4);
-    backdrop-filter: blur(15px);
-    border-radius: 25px;
-    padding: 25px 15px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    flex-shrink: 0;
+/* 2. SIDEBAR: DISEÑO LIMPIO Y MODERNO */
+aside.w-full.md\:w-64 {
+    width: 300px !important;
+    position: sticky !important;
+    top: 100px !important;
+    flex-shrink: 0 !important;
 }
 
-.sidebar-header-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 15px 25px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 20px;
+/* Título Centro de Control (Estático, sin hover, sin clics) */
+aside h2.text-[#58a6ff] {
+    background: transparent !important;
+    border: none !important;
+    border-left: 4px solid #58a6ff !important;
+    padding: 2px 0 2px 18px !important;
+    margin-bottom: 35px !important;
+    color: #58a6ff !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.25em !important;
+    text-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+    pointer-events: none !important; /* Desactiva interacción */
+    cursor: default !important;
 }
 
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 10px #38bdf8; }
-.sidebar-header-title h2 { font-size: 0.7rem; letter-spacing: 2px; color: #94a3b8; font-weight: 900; }
+/* Botones de navegación lateral */
+aside button.w-full {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    border-radius: 16px !important;
+    margin-bottom: 8px !important;
+    padding: 15px 22px !important;
+    color: #94a3b8 !important;
+    font-weight: 800 !important;
+    font-size: 0.85rem !important;
+    text-align: left !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
 
-.nav-item {
-    width: 100%;
-    text-align: left;
-    padding: 12px 18px;
-    border-radius: 12px;
-    color: #64748b;
-    font-weight: 800;
-    font-size: 0.85rem;
+aside button.w-full:hover:not(.bg-\[\#58a6ff\]) {
+    background: rgba(88, 166, 255, 0.08) !important;
+    color: white !important;
+    border-color: rgba(88, 166, 255, 0.2) !important;
+    transform: translateX(8px);
+}
+
+/* 3. DISEÑO DENTRO DE LAS TABLAS (Peliculas y Series) */
+.admin-table-container {
+    background: rgba(13, 17, 23, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Lanzamiento y Temporadas (Labels Estilizados) */
+.text-xs.font-mono.opacity-50 {
+    font-family: 'Inter', sans-serif !important;
+    background: rgba(88, 166, 255, 0.1) !important;
+    color: #58a6ff !important;
+    padding: 5px 12px !important;
+    border-radius: 8px !important;
+    font-weight: 900 !important;
+    opacity: 1 !important;
+    border: 1px solid rgba(88, 166, 255, 0.15) !important;
+    font-size: 0.7rem !important;
+}
+
+/* Botones Editar y Eliminar (Forma de Píldora) */
+.text-\[\#58a6ff\].text-xs.font-black,
+.text-red-500.text-xs.font-black {
+    padding: 8px 18px !important;
+    border-radius: 50px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    transition: 0.2s !important;
+    display: inline-block !important;
+    font-size: 0.65rem !important;
+}
+
+.text-\[\#58a6ff\].text-xs.font-black {
+    background: rgba(88, 166, 255, 0.1) !important;
+    border: 1px solid rgba(88, 166, 255, 0.2) !important;
+    color: #58a6ff !important;
+}
+.text-\[\#58a6ff\].text-xs.font-black:hover {
+    background: #58a6ff !important;
+    color: #000 !important;
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.4);
+}
+
+.text-red-500.text-xs.font-black {
+    background: rgba(248, 81, 73, 0.1) !important;
+    border: 1px solid rgba(248, 81, 73, 0.2) !important;
+    color: #f85149 !important;
+}
+.text-red-500.text-xs.font-black:hover {
+    background: #f85149 !important;
+    color: white !important;
+    box-shadow: 0 0 15px rgba(248, 81, 73, 0.4);
+}
+
+/* 4. SISTEMA GLOBAL (Ordenado y Potente) */
+.space-y-6.max-w-2xl {
+    max-width: 100% !important; /* Llena el contenedor */
+}
+
+/* Cuadro de Modo Mantenimiento */
+.space-y-4 label.bg-white\/5 {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    padding: 30px !important;
+    border-radius: 25px !important;
+    margin-bottom: 25px !important;
     transition: 0.3s;
-    margin-bottom: 5px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
 }
 
-.nav-item:hover { color: white; background: rgba(255,255,255,0.02); }
-.nav-item.active {
-    background: linear-gradient(135deg, #38bdf8, #1e3a8a);
-    color: white;
-    box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+.space-y-4 label.bg-white\/5:hover {
+    border-color: #58a6ff !important;
+    background: rgba(88, 166, 255, 0.02) !important;
 }
 
-/* Main Container */
-.admin-content-main { flex: 1; min-width: 0; }
-.admin-glass-container {
-    background: rgba(22, 27, 34, 0.5);
-    backdrop-filter: blur(25px);
-    border-radius: 35px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 40px;
-    min-height: 600px;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+/* Área de CSS */
+textarea.bg-black\/40 {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 20px !important;
+    padding: 25px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    line-height: 1.6 !important;
+    font-size: 0.8rem !important;
+    box-shadow: inset 0 4px 20px rgba(0,0,0,0.5) !important;
 }
 
-/* Table Management */
-.admin-table-box { width: 100%; overflow: hidden; border-radius: 20px; margin-top: 20px; }
-.pro-admin-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 8px;
-    table-layout: fixed; /* Fuerza el orden y evita estiramientos */
+/* Botón Aplicar Cambios */
+.bg-white.text-black.font-black.py-4 {
+    background: linear-gradient(135deg, #ffffff, #cbd5e1) !important;
+    border-radius: 50px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 2px !important;
+    font-size: 0.85rem !important;
+    transition: 0.3s !important;
+    margin-top: 20px !important;
+    color: black !important;
 }
 
-.pro-admin-table th {
-    padding: 0 20px 10px;
-    text-align: left;
-    font-size: 0.65rem;
+.bg-white.text-black.font-black.py-4:hover {
+    background: #58a6ff !important;
+    color: black !important;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(88, 166, 255, 0.3);
+}
+
+/* 5. BASE DE TABLA (Tus clases originales mejoradas) */
+.admin-table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 12px !important;
+}
+
+.admin-table th {
+    padding: 0 20px 25px !important;
+    color: #475569 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.15em !important;
+    font-size: 0.65rem !important;
+}
+
+.admin-table td {
+    padding: 15px 20px !important;
+    vertical-align: middle !important;
+}
+
+/* Miniaturas con brillo */
+.admin-table img {
+    width: 45px !important;
+    height: 65px !important;
+    border-radius: 10px !important;
+    object-fit: cover !important;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+/* 6. NO TOCAR: SELECTOR DE ROLES (Tal como pediste) */
+select.bg-black\/40 {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(88, 166, 255, 0.3) !important;
+    color: #58a6ff !important;
+    font-weight: 900 !important;
     text-transform: uppercase;
-    color: #475569;
-    letter-spacing: 1.5px;
+    padding: 5px 10px !important;
+    border-radius: 8px !important;
 }
-
-.pro-admin-table tr { background: rgba(255, 255, 255, 0.02); }
-.pro-admin-table td { padding: 12px 20px; vertical-align: middle; }
-.pro-admin-table td:first-child { border-radius: 12px 0 0 12px; }
-.pro-admin-table td:last-child { border-radius: 0 12px 12px 0; }
-
-/* FIX GIGANTE: Tamaño de póster */
-.admin-mini-poster {
-    width: 40px !important; /* Ahora sí son mini */
-    height: 58px !important;
-    border-radius: 6px;
-    object-fit: cover;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.txt-bold { color: white; font-weight: 800; font-size: 0.9rem; }
-.txt-muted { color: #64748b; font-size: 0.8rem; font-weight: 600; }
-
-/* Column Widths */
-.w-poster { width: 80px; }
-.w-date { width: 100px; }
-.w-actions { width: 160px; }
-
-/* Buttons & Selects */
-.btn-primary-admin {
-    background: white; color: black; border: none; padding: 10px 22px;
-    border-radius: 50px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;
-    cursor: pointer; transition: 0.3s;
-}
-
-.btn-edit { color: #38bdf8; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; margin-right: 15px; border: none; background: none; cursor: pointer; }
-.btn-del { color: #f85149; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; border: none; background: none; cursor: pointer; }
-
-.admin-select {
-    background: rgba(0,0,0,0.5); border: 1px solid rgba(56, 189, 248, 0.3);
-    color: #38bdf8; font-weight: 900; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem;
-}
-
-/* Paginator */
-.admin-paginator { display: flex; justify-content: center; gap: 8px; margin-top: 30px; }
-.admin-paginator button {
-    width: 32px; height: 32px; border-radius: 50%; border: none;
-    background: rgba(255,255,255,0.03); color: #64748b; font-weight: 800; cursor: pointer;
-}
-.admin-paginator button.active { background: #38bdf8; color: black; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
-
-.placeholder-msg { padding: 80px 0; text-align: center; color: #475569; font-weight: 800; font-style: italic; }
