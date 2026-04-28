@@ -11,5 +11,7 @@ router.get('/', requiredAuth, authorize(['admin', 'boss']), userController.getAl
 router.post('/progress', requiredAuth, userController.updateProgress);
 router.get('/stats', requiredAuth, authorize(['boss', 'admin']), userController.getBossStats);
 router.put('/:id/role', requiredAuth, authorize(['admin']), userController.updateUserRole);
+router.post('/watchlist', requiredAuth, userController.toggleWatchlist);
+router.get('/watchlist', requiredAuth, userController.getWatchlist);
 
 module.exports = router;

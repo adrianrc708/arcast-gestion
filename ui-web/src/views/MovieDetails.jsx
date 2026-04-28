@@ -9,9 +9,9 @@ const MovieDetails = () => {
     const [item, setItem] = useState(null);
     const [reviews, setReviews] = useState([]);
 
-    // Estado para el nuevo sistema de estrellas interactivo
-    const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+    const [newReview, setNewReview] = useState({ rating: 5, text: '' });
     const [hoverRating, setHoverRating] = useState(0);
+    const [editingReviewId, setEditingReviewId] = useState(null);
 
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
@@ -22,20 +22,27 @@ const MovieDetails = () => {
             try {
                 const [itemRes, reviewsRes] = await Promise.all([
                     api.get(`/catalog/${type === 'movie' ? 'movies' : 'tvshows'}/${id}`),
-                    api.get(`/reviews/${type}/${id}`).catch(() => ({ data: [] }))
+                    api.get(`/reviews/${id}`).catch(() => ({ data: [] }))
                 ]);
                 setItem(itemRes.data);
                 setReviews(reviewsRes.data);
+
+                if (user) {
+                    const profileRes = await api.get('/users/me').catch(() => null);
+                    if (profileRes?.data?.watchlist) {
+                        const found = profileRes.data.watchlist.some(w => (w.item?._id || w.item || w) === id);
+                        setInWatchlist(found);
+                    }
+                }
             } catch (error) {
-                console.error("Error al cargar detalles", error);
+                console.error("Error al cargar la vista:", error);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [id, type]);
+    }, [id, type, user]);
 
-    // Ocultar pestaña de tráiler si no existe
     const getEmbedUrl = (url) => {
         if (!url) return null;
         if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
@@ -45,44 +52,60 @@ const MovieDetails = () => {
     const trailerEmbedUrl = item ? getEmbedUrl(item.trailerUrl) : null;
 
     useEffect(() => {
-        if (item && !trailerEmbedUrl) {
-            setActiveVideo('movie'); // Salta directo a la película si no hay tráiler
-        }
+        if (item && !trailerEmbedUrl) setActiveVideo('movie');
     }, [item, trailerEmbedUrl]);
 
-    // UI OPTIMISTA: Las reseñas se agregan visualmente sin importar si el backend falla
-    const handleReviewSubmit = async (e) => {
-        e.preventDefault();
-        if (!newReview.comment.trim()) return;
-
-        // Creamos una reseña falsa al instante para la interfaz
-        const optimisticReview = {
-            _id: Date.now().toString(),
-            userId: { name: user?.name || 'Yo' },
-            rating: newReview.rating,
-            comment: newReview.comment,
-            createdAt: new Date().toISOString()
-        };
-
-        setReviews([optimisticReview, ...reviews]);
-        const payload = { ...newReview, itemId: id, itemType: type };
-        setNewReview({ rating: 5, comment: '' });
-
+    const toggleWatchlist = async () => {
         try {
-            await api.post('/reviews', payload);
+            await api.post('/users/watchlist', { itemId: id, itemType: type });
+            setInWatchlist(!inWatchlist);
         } catch (error) {
-            console.warn("Silenciando error de backend (Reseñas):", error);
+            console.error(error);
+            alert("Error: La ruta POST /users/watchlist no existe en tu backend.");
         }
     };
 
-    // UI OPTIMISTA: El botón se activa inmediatamente
-    const toggleWatchlist = async () => {
-        setInWatchlist(!inWatchlist);
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
         try {
-            await api.post('/users/watchlist', { itemId: id, itemType: type });
+            if (editingReviewId) {
+                await api.put(`/reviews/${editingReviewId}`, {
+                    rating: newReview.rating,
+                    text: newReview.text // Campo 'text' según tu modelo
+                });
+            } else {
+                await api.post('/reviews', {
+                    movieId: id,        // Campo 'movieId' según tu modelo
+                    contentType: type,  // Campo 'contentType' según tu controlador
+                    rating: newReview.rating,
+                    text: newReview.text
+                });
+            }
+            // Recargar reseñas después de enviar
+            const reviewsRes = await api.get(`/reviews/${id}`);
+            setReviews(reviewsRes.data);
+            setNewReview({ rating: 5, text: '' });
         } catch (error) {
-            console.warn("Silenciando error de backend (Watchlist):", error);
+            console.error("Error en backend:", error.response?.data);
+            alert("Error al procesar la reseña: " + (error.response?.data?.message || "Campos inválidos"));
         }
+    };
+
+    const handleDeleteReview = async (reviewId) => {
+        if (window.confirm("¿Eliminar reseña?")) {
+            try {
+                await api.delete(`/reviews/${reviewId}`);
+                setReviews(reviews.filter(r => r._id !== reviewId));
+            } catch (error) {
+                alert("Error al eliminar.");
+            }
+        }
+    };
+
+    const handleEditReview = (rev) => {
+        setEditingReviewId(rev._id);
+        setNewReview({ rating: rev.rating, text: rev.text });
+        window.scrollTo({ top: document.querySelector('.add-review-card').offsetTop - 100, behavior: 'smooth' });
     };
 
     if (loading) return <div className="loading-screen">Cargando experiencia...</div>;
@@ -125,101 +148,97 @@ const MovieDetails = () => {
 
                         <div className="synopsis">
                             <h3>Sinopsis</h3>
-                            <p>{item.overview || "No hay una descripción disponible para este título."}</p>
+                            <p>{item.overview || "Sin descripción disponible."}</p>
                         </div>
 
                         <div className="action-buttons">
                             <button className={`btn-secondary-outline ${inWatchlist ? 'active' : ''}`} onClick={toggleWatchlist}>
-                                {inWatchlist ? '✓ EN MI LISTA' : '+ AÑADIR A MI LISTA'}
+                                {inWatchlist ? '✓ EN MI LISTA' : '+ MI LISTA'}
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* REPRODUCTOR MEJORADO */}
                 <div className="player-section">
                     <div className="player-tabs">
                         {trailerEmbedUrl && (
-                            <button
-                                className={activeVideo === 'trailer' ? 'active' : ''}
-                                onClick={() => setActiveVideo('trailer')}
-                            >
-                                Ver Trailer
-                            </button>
+                            <button className={activeVideo === 'trailer' ? 'active' : ''} onClick={() => setActiveVideo('trailer')}>Ver Trailer</button>
                         )}
-                        <button
-                            className={activeVideo === 'movie' ? 'active' : ''}
-                            onClick={() => setActiveVideo('movie')}
-                        >
-                            Ver {type === 'movie' ? 'Película' : 'Capítulo 1'}
-                        </button>
+                        <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>Ver Contenido</button>
                     </div>
 
                     <div className="player-glass-container">
-                        {activeVideo === 'trailer' ? (
-                            <iframe src={trailerEmbedUrl} title="Trailer" frameBorder="0" allowFullScreen></iframe>
-                        ) : (
-                            <iframe src={movieEmbedUrl} title="Reproductor" frameBorder="0" allowFullScreen></iframe>
-                        )}
+                        <iframe
+                            src={activeVideo === 'trailer' ? trailerEmbedUrl : movieEmbedUrl}
+                            title="Reproductor"
+                            frameBorder="0"
+                            allowFullScreen
+                        ></iframe>
                     </div>
                 </div>
 
-                {/* RESEÑAS CON NUEVO FORMULARIO */}
                 <div className="reviews-section">
                     <h2 className="section-title">Comunidad <span>({reviews.length})</span></h2>
 
                     <div className="reviews-layout">
                         <div className="add-review-card">
-                            <h3>Deja tu calificación</h3>
+                            <h3>{editingReviewId ? 'Editar Calificación' : 'Tu Opinión'}</h3>
                             <form onSubmit={handleReviewSubmit}>
-
-                                {/* NUEVAS ESTRELLAS INTERACTIVAS */}
                                 <div className="star-rating-container">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <span
                                             key={star}
-                                            className={`star ${(hoverRating || newReview.rating) >= star ? 'active' : ''}`}
+                                            className={`star ${star <= (hoverRating || newReview.rating) ? 'active' : ''}`}
                                             onMouseEnter={() => setHoverRating(star)}
                                             onMouseLeave={() => setHoverRating(0)}
                                             onClick={() => setNewReview({ ...newReview, rating: star })}
-                                        >
-                                            ★
-                                        </span>
+                                        >★</span>
                                     ))}
                                 </div>
 
                                 <textarea
                                     className="modern-textarea"
-                                    placeholder="Escribe tu opinión sin spoilers..."
-                                    value={newReview.comment}
-                                    onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
+                                    placeholder="Escribe aquí tu reseña..."
+                                    value={newReview.text}
+                                    onChange={(e) => setNewReview({...newReview, text: e.target.value})}
                                     required
                                 />
-                                <button type="submit" className="submit-review-btn">Publicar Opinión</button>
+                                <div className="form-actions">
+                                    <button type="submit" className="submit-review-btn">
+                                        {editingReviewId ? 'Actualizar' : 'Publicar'}
+                                    </button>
+                                    {editingReviewId && (
+                                        <button type="button" className="cancel-edit-btn" onClick={() => {setEditingReviewId(null); setNewReview({rating: 5, text: ''});}}>Cancelar</button>
+                                    )}
+                                </div>
                             </form>
                         </div>
 
                         <div className="reviews-list">
-                            {reviews.length > 0 ? (
-                                reviews.map(rev => (
+                            {reviews.map(rev => {
+                                const isOwner = user && (rev.username === user.username || rev.userId === user._id);
+
+                                return (
                                     <div key={rev._id} className="review-card-premium">
                                         <div className="review-user">
-                                            <div className="user-avatar-mini">{rev.userId?.name?.charAt(0) || 'U'}</div>
+                                            <div className="user-avatar-mini">{rev.username?.charAt(0) || 'U'}</div>
                                             <div className="user-info-mini">
-                                                <h4>{rev.userId?.name || 'Usuario Anónimo'}</h4>
-                                                <span>{new Date(rev.createdAt).toLocaleDateString()}</span>
+                                                <h4>{rev.username}</h4>
+                                                <span>{new Date(rev.date || rev.createdAt).toLocaleDateString()}</span>
                                             </div>
-                                            {/* Adaptado a 5 estrellas */}
-                                            <div className="user-rating-badge">★ {rev.rating > 5 ? Math.round(rev.rating/2) : rev.rating}</div>
+
+                                            {isOwner && (
+                                                <div className="review-actions">
+                                                    <button onClick={() => handleEditReview(rev)}>✏️</button>
+                                                    <button onClick={() => handleDeleteReview(rev._id)}>🗑️</button>
+                                                </div>
+                                            )}
+                                            <div className="user-rating-badge">★ {rev.rating}</div>
                                         </div>
-                                        <p className="review-text">"{rev.comment}"</p>
+                                        <p className="review-text">"{rev.text}"</p>
                                     </div>
-                                ))
-                            ) : (
-                                <div className="empty-reviews">
-                                    <p>Nadie ha comentado aún. ¡Sé el primero!</p>
-                                </div>
-                            )}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

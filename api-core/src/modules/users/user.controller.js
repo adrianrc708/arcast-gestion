@@ -141,3 +141,19 @@ exports.updateUserRole = catchAsync(async (req, res, _next) => {
 
     res.json({ message: 'Rol actualizado exitosamente', user });
 });
+
+exports.toggleWatchlist = catchAsync(async (req, res) => {
+    const { itemId, itemType } = req.body;
+    const user = await User.findById(req.user.id);
+    const kind = itemType === 'movie' ? 'Movie' : 'TVShow';
+
+    const index = user.watchlist.findIndex(w => w.item.toString() === itemId);
+    if (index > -1) {
+        user.watchlist.splice(index, 1);
+    } else {
+        user.watchlist.push({ item: itemId, kind });
+    }
+
+    await user.save();
+    res.json(user.watchlist);
+});
