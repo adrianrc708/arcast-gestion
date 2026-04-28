@@ -5,119 +5,135 @@ import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('settings');
+    const [activeTab, setActiveTab] = useState('watchlist'); // Watchlist por defecto
     const [watchlist, setWatchlist] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Estados de formulario
     const [username, setUsername] = useState(user?.username || '');
-    const [passwords, setPasswords] = useState({ current: '', new: '' });
+    const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
     const [msg, setMsg] = useState({ text: '', type: '' });
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchAll = async () => {
             try {
                 const [wRes, rRes] = await Promise.all([
                     api.get('/users/watchlist'),
-                    api.get('/reviews/me')
+                    api.get('/reviews/me').catch(() => ({ data: [] })) // Cambiado a /me
                 ]);
                 setWatchlist(wRes.data.watchlist || []);
                 setMyReviews(rRes.data || []);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { console.error(err); }
+            finally { setLoading(false); }
         };
-        if (user) fetchData();
+        if (user) fetchAll();
     }, [user]);
 
     const handleUpdateName = async (e) => {
         e.preventDefault();
         try {
             await api.put('/users/me', { username });
-            setMsg({ text: 'Nombre actualizado. Reinicia sesión para ver los cambios.', type: 'success' });
+            setMsg({ text: 'Nombre actualizado. Se verá reflejado al reiniciar sesión.', type: 'success' });
         } catch (err) { setMsg({ text: 'Error al actualizar nombre.', type: 'error' }); }
     };
 
     const handleUpdatePassword = async (e) => {
         e.preventDefault();
+        if (passData.new !== passData.confirm) {
+            return setMsg({ text: 'Las nuevas contraseñas no coinciden.', type: 'error' });
+        }
         try {
             await api.put('/users/update-password', {
-                currentPassword: passwords.current,
-                newPassword: passwords.new
+                currentPassword: passData.current,
+                newPassword: passData.new
             });
-            setMsg({ text: 'Contraseña actualizada.', type: 'success' });
-            setPasswords({ current: '', new: '' });
-        } catch (err) { setMsg({ text: err.response?.data?.message || 'Error.', type: 'error' }); }
+            setMsg({ text: 'Contraseña cambiada con éxito.', type: 'success' });
+            setPassData({ current: '', new: '', confirm: '' });
+        } catch (err) {
+            setMsg({ text: err.response?.data?.message || 'Error al cambiar clave.', type: 'error' });
+        }
     };
 
-    if (!user) return <div className="py-20 text-center">Acceso Denegado</div>;
+    if (!user) return <div className="py-20 text-center font-black">ACCESO DENEGADO</div>;
 
     return (
-        <div className="max-w-6xl mx-auto py-12 px-6">
-            <div className="profile-header-premium">
-                <div className="avatar-large">{user.username?.charAt(0).toUpperCase()}</div>
-                <div>
-                    <h1 className="text-4xl font-black">{user.username}</h1>
-                    <p className="text-muted">{user.email} • <span className="text-accent uppercase">{user.role}</span></p>
-                </div>
-            </div>
-
-            <div className="profile-tabs">
-                <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Ajustes</button>
-                <button className={activeTab === 'watchlist' ? 'active' : ''} onClick={() => setActiveTab('watchlist')}>Mi Lista ({watchlist.length})</button>
-                <button className={activeTab === 'reviews' ? 'active' : ''} onClick={() => setActiveTab('reviews')}>Mis Reseñas ({myReviews.length})</button>
-            </div>
-
-            <div className="mt-10">
-                {activeTab === 'settings' && (
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="add-review-card">
-                            <h3 className="mb-6">Información Personal</h3>
-                            <form onSubmit={handleUpdateName} className="space-y-4">
-                                <input className="modern-textarea" style={{height: '50px'}} type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nuevo nombre" />
-                                <button type="submit" className="submit-review-btn">Guardar Cambios</button>
-                            </form>
-                        </div>
-                        <div className="add-review-card">
-                            <h3 className="mb-6">Seguridad</h3>
-                            <form onSubmit={handleUpdatePassword} className="space-y-4">
-                                <input className="modern-textarea" style={{height: '50px'}} type="password" value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})} placeholder="Contraseña actual" />
-                                <input className="modern-textarea" style={{height: '50px'}} type="password" value={passwords.new} onChange={e => setPasswords({...passwords, new: e.target.value})} placeholder="Nueva contraseña" />
-                                <button type="submit" className="submit-review-btn">Cambiar Contraseña</button>
-                            </form>
-                        </div>
-                        {msg.text && <p className={`col-span-full text-center font-bold ${msg.type === 'error' ? 'text-red-400' : 'text-accent'}`}>{msg.text}</p>}
+        <div className="profile-page-root">
+            <div className="profile-container">
+                <header className="profile-header">
+                    <div className="avatar-circle-large">{user.username?.charAt(0).toUpperCase()}</div>
+                    <div className="profile-titles">
+                        <h1>{user.username}</h1>
+                        <p>{user.email} • <span className="tag-premium">{user.role}</span></p>
                     </div>
-                )}
+                </header>
 
-                {activeTab === 'watchlist' && (
-                    <div className="catalog-grid">
-                        {watchlist.map(entry => (
-                            <Link key={entry._id} to={`/item/${entry.kind.toLowerCase()}/${entry.item._id}`} className="media-card">
-                                <div className="poster-wrapper"><img src={entry.item.posterUrl} alt="" /></div>
-                                <div className="card-info"><h3>{entry.item.title || entry.item.name}</h3></div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
+                <nav className="profile-tabs-nav">
+                    <button className={activeTab === 'watchlist' ? 'active' : ''} onClick={() => setActiveTab('watchlist')}>Mi Lista ({watchlist.length})</button>
+                    <button className={activeTab === 'reviews' ? 'active' : ''} onClick={() => setActiveTab('reviews')}>Mis Reseñas ({myReviews.length})</button>
+                    <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Ajustes de Cuenta</button>
+                </nav>
 
-                {activeTab === 'reviews' && (
-                    <div className="space-y-4">
-                        {myReviews.map(rev => (
-                            <div key={rev._id} className="review-card-premium">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="text-accent font-black">{rev.movieTitle}</h4>
-                                    <span className="user-rating-badge">★ {rev.rating}</span>
+                <div className="profile-content">
+                    {activeTab === 'watchlist' && (
+                        <div className="profile-grid-watchlist">
+                            {watchlist.map(w => (
+                                <Link key={w._id} to={`/item/${w.kind.toLowerCase() === 'movie' ? 'movie' : 'tvshow'}/${w.item?._id}`} className="p-card">
+                                    <div className="p-card-img"><img src={w.item?.posterUrl} alt="" /></div>
+                                    <div className="p-card-info"><h4>{w.item?.title || w.item?.name}</h4></div>
+                                </Link>
+                            ))}
+                            {watchlist.length === 0 && <p className="empty-info">Tu lista está vacía actualmente.</p>}
+                        </div>
+                    )}
+
+                    {activeTab === 'reviews' && (
+                        <div className="profile-reviews-list">
+                            {myReviews.map(r => (
+                                <div key={r._id} className="p-review-card">
+                                    <div className="p-review-header">
+                                        <h4>{r.movieTitle}</h4>
+                                        <span className="p-rating">★ {r.rating}</span>
+                                    </div>
+                                    <p className="p-text">"{r.text}"</p>
+                                    <span className="p-date">{new Date(r.date).toLocaleDateString()}</span>
                                 </div>
-                                <p className="review-text">"{rev.text}"</p>
-                                <p className="text-[10px] mt-4 opacity-50">{new Date(rev.date).toLocaleDateString()}</p>
+                            ))}
+                            {myReviews.length === 0 && <p className="empty-info">Aún no has escrito ninguna reseña.</p>}
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="profile-settings-grid">
+                            <div className="glass-form-card">
+                                <h3>Información Personal</h3>
+                                <form onSubmit={handleUpdateName}>
+                                    <div className="form-group-p">
+                                        <label>Nuevo nombre de usuario</label>
+                                        <input type="text" value={username} onChange={e => setUsername(e.target.value)} />
+                                    </div>
+                                    <button type="submit" className="btn-p-main">Guardar Cambios</button>
+                                </form>
                             </div>
-                        ))}
-                    </div>
-                )}
+
+                            <div className="glass-form-card">
+                                <h3>Cambiar Contraseña</h3>
+                                <form onSubmit={handleUpdatePassword}>
+                                    <div className="form-group-p">
+                                        <input type="password" placeholder="Contraseña Actual" value={passData.current} onChange={e => setPassData({...passData, current: e.target.value})} required />
+                                    </div>
+                                    <div className="form-group-p">
+                                        <input type="password" placeholder="Nueva Contraseña" value={passData.new} onChange={e => setPassData({...passData, new: e.target.value})} required />
+                                    </div>
+                                    <div className="form-group-p">
+                                        <input type="password" placeholder="Confirmar Nueva Contraseña" value={passData.confirm} onChange={e => setPassData({...passData, confirm: e.target.value})} required />
+                                    </div>
+                                    <button type="submit" className="btn-p-alt">Actualizar Seguridad</button>
+                                </form>
+                            </div>
+                            {msg.text && <div className={`p-alert ${msg.type}`}>{msg.text}</div>}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -159,19 +159,25 @@ exports.toggleWatchlist = catchAsync(async (req, res) => {
 });
 
 exports.updateMe = catchAsync(async (req, res) => {
-    const user = await User.findByIdAndUpdate(req.user.id, { username: req.body.username }, { new: true, runValidators: true });
+    const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { username: req.body.username },
+        { new: true, runValidators: true }
+    );
     res.json(user);
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user.id).select('+password');
 
+    const user = await User.findById(req.user.id).select('+password');
+    // noinspection JSUnresolvedFunction
     if (!(await user.correctPassword(currentPassword, user.password))) {
-        return next(new AppError('La contraseña actual es incorrecta', 401));
+        return next(new AppError('La contraseña actual es incorrecta.', 401));
     }
 
     user.password = newPassword;
     await user.save();
-    res.json({ message: 'Contraseña actualizada correctamente' });
+
+    res.json({ message: 'Contraseña actualizada con éxito.' });
 });
