@@ -1261,7 +1261,7 @@ body {
     background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(10px);
     padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08);
 }
-.form-group-p { margin-bottom: 15px; }
+.form-group-p { margin-bottom: 15px; margin-right: 15px;}
 .form-group-p label { display: block; font-size: 0.75rem; color: #475569; margin-bottom: 5px; font-weight: 700; }
 .form-group-p input {
     width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
@@ -1276,4 +1276,230 @@ body {
 .p-alert.error { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
 
 
+/* =========================================
+   REDISEÑO DE PERFIL: ESTILO NEÓN VIOLETA
+   ========================================= */
 
+/* 1. CONTENEDOR DE LA WATCHLIST (Cuadrícula compacta) */
+.profile-grid-watchlist, .watchlist-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    gap: 25px !important;
+    padding: 20px 0;
+}
+
+/* 2. TARJETAS DE LA WATCHLIST (Efecto de la imagen) */
+.p-card, .watchlist-card-glass {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important; /* Borde violeta sutil */
+    border-radius: 20px !important;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    position: relative;
+}
+
+.p-card:hover, .watchlist-card-glass:hover {
+    transform: translateY(-10px) scale(1.02);
+    border-color: #a78bfa !important; /* Violeta brillante */
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4) !important; /* Brillo violeta como la imagen */
+}
+
+.p-card-img img, .poster-container img {
+    filter: brightness(0.8);
+    transition: 0.4s;
+}
+
+.p-card:hover img, .watchlist-card-glass:hover img {
+    filter: brightness(1.1);
+}
+
+.p-card-info h4, .watchlist-card-glass h4 {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    padding: 12px !important;
+    color: #e2e8f0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 3. FORMULARIOS (Glassmorphism y Neon) */
+.glass-form-card, .glass-form-box {
+    background: rgba(15, 23, 42, 0.6) !important; /* Fondo oscuro traslúcido */
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 30px !important;
+    padding: 35px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Títulos de los formularios */
+.glass-form-card h3, .glass-form-box h3 {
+    font-size: 1.2rem !important;
+    letter-spacing: 1px;
+    background: linear-gradient(to right, #fff, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 25px !important;
+}
+
+/* Inputs mejorados */
+.p-input, .p-field input, .modern-input {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    border-radius: 15px !important;
+    padding: 14px 18px !important;
+    color: white !important;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.p-input:focus, .p-field input:focus {
+    border-color: #a78bfa !important;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Botones con el brillo de la foto */
+.btn-p-main, .btn-p-glow {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6) !important; /* Degradado violeta a azul */
+    color: white !important;
+    border: none !important;
+    padding: 14px !important;
+    border-radius: 50px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4) !important;
+    transition: 0.3s !important;
+}
+
+.btn-p-main:hover, .btn-p-glow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.6) !important;
+    filter: brightness(1.2);
+}
+
+/* Etiquetas de campo */
+.p-field label {
+    color: #94a3b8 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase;
+    font-weight: 800 !important;
+    margin-bottom: 8px !important;
+}
+
+
+/* =========================================
+   LOGIN: REDISEÑO PREMIUM VIOLETA
+   ========================================= */
+
+.login-page-root {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, #0f1014 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-glass-card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(15, 23, 42, 0.7) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 35px !important;
+    padding: 60px 45px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
+    z-index: 10;
+}
+
+.login-title {
+    font-size: 4rem !important;
+    font-weight: 950 !important;
+    letter-spacing: -3px;
+    background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 !important;
+    font-style: italic;
+    text-align: center;
+}
+
+.login-subtitle {
+    color: #64748b !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 45px;
+    text-align: center;
+}
+
+.login-input-group {
+    margin-bottom: 25px;
+}
+
+.login-input-group label {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    margin-left: 10px;
+}
+
+.login-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    border-radius: 18px !important;
+    padding: 16px 20px !important;
+    color: white !important;
+    font-size: 0.95rem !important;
+    transition: 0.3s ease !important;
+    outline: none;
+}
+
+.login-input:focus {
+    border-color: #a78bfa !important;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.login-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6) !important;
+    color: white !important;
+    border: none !important;
+    padding: 18px !important;
+    border-radius: 50px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    margin-top: 15px;
+}
+
+.login-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 30px rgba(124, 58, 237, 0.5) !important;
+    filter: brightness(1.1);
+}
+
+.login-error {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    color: #ef4444 !important;
+    padding: 14px !important;
+    border-radius: 15px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700;
+    margin-bottom: 25px;
+    text-align: center;
+}
