@@ -1563,15 +1563,14 @@ body {
 
 
 /* =========================================
-   ADMIN PANEL: REDISEÑO PREMIUM ESTÁTICO
+   ADMIN PANEL: REDISEÑO PREMIUM ARCAST
    ========================================= */
 
-/* 1. LAYOUT CENTRADO Y ESTÁTICO (Evita que el diseño baile) */
+/* 1. LAYOUT CENTRADO Y SIDEBAR ESTRICTO */
 .max-w-7xl.mx-auto.flex-col.md\:flex-row {
     display: grid !important;
-    /* Sidebar fijo a 300px, el contenido toma el resto */
-    grid-template-columns: 300px 1fr !important;
-    gap: 50px !important;
+    grid-template-columns: 280px 1fr !important;
+    gap: 40px !important;
     align-items: start !important;
     margin: 40px auto !important;
     width: 100% !important;
@@ -1579,192 +1578,370 @@ body {
     padding: 0 30px !important;
 }
 
-/* 2. SIDEBAR: DISEÑO LIMPIO Y MODERNO */
 aside.w-full.md\:w-64 {
-    width: 300px !important;
+    width: 100% !important;
     position: sticky !important;
     top: 100px !important;
-    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
 }
 
-/* Título Centro de Control (Estático, sin hover, sin clics) */
-aside h2.text-[#58a6ff] {
+/* Título del Sidebar */
+aside h2.text-\[\#58a6ff\] {
     background: transparent !important;
-    border: none !important;
-    border-left: 4px solid #58a6ff !important;
+    border-left: 4px solid #a78bfa !important;
     padding: 2px 0 2px 18px !important;
-    margin-bottom: 35px !important;
-    color: #58a6ff !important;
-    font-size: 0.75rem !important;
+    margin-bottom: 20px !important;
+    color: #a78bfa !important;
+    font-size: 0.8rem !important;
     letter-spacing: 0.25em !important;
-    text-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
-    pointer-events: none !important; /* Desactiva interacción */
-    cursor: default !important;
+    text-shadow: 0 0 15px rgba(167, 139, 250, 0.4) !important;
+    text-transform: uppercase;
 }
 
-/* Botones de navegación lateral */
+/* Botones del Sidebar (ESTRICTOS: Misma dimensión) */
 aside button.w-full {
     background: rgba(255, 255, 255, 0.02) !important;
-    border: 1px solid rgba(255, 255, 255, 0.04) !important;
-    border-radius: 16px !important;
-    margin-bottom: 8px !important;
-    padding: 15px 22px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 14px !important;
+    margin: 0 !important;
+    height: 55px !important;
+    padding: 0 20px !important;
     color: #94a3b8 !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     font-size: 0.85rem !important;
-    text-align: left !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: all 0.2s ease-in-out !important;
+    box-sizing: border-box !important;
+    transform: none !important;
 }
 
+/* Hover del Sidebar */
 aside button.w-full:hover:not(.bg-\[\#58a6ff\]) {
-    background: rgba(88, 166, 255, 0.08) !important;
+    background: rgba(139, 92, 246, 0.1) !important;
     color: white !important;
-    border-color: rgba(88, 166, 255, 0.2) !important;
-    transform: translateX(8px);
+    border-color: rgba(139, 92, 246, 0.3) !important;
+    transform: none !important;
 }
 
-/* 3. DISEÑO DENTRO DE LAS TABLAS (Peliculas y Series) */
-.admin-table-container {
-    background: rgba(13, 17, 23, 0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Lanzamiento y Temporadas (Labels Estilizados) */
-.text-xs.font-mono.opacity-50 {
-    font-family: 'Inter', sans-serif !important;
-    background: rgba(88, 166, 255, 0.1) !important;
-    color: #58a6ff !important;
-    padding: 5px 12px !important;
-    border-radius: 8px !important;
+/* Pestaña Activa (Degradado Neón) */
+aside button.bg-\[\#58a6ff\] {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3) !important;
     font-weight: 900 !important;
-    opacity: 1 !important;
-    border: 1px solid rgba(88, 166, 255, 0.15) !important;
-    font-size: 0.7rem !important;
+    transform: none !important;
 }
 
-/* Botones Editar y Eliminar (Forma de Píldora) */
-.text-\[\#58a6ff\].text-xs.font-black,
-.text-red-500.text-xs.font-black {
-    padding: 8px 18px !important;
-    border-radius: 50px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    transition: 0.2s !important;
-    display: inline-block !important;
-    font-size: 0.65rem !important;
+/* 2. ÁREA PRINCIPAL (Efecto Cristal Real) */
+main .bg-\[\#161b22\]\/60 {
+    background: rgba(15, 16, 20, 0.7) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    border-radius: 30px !important;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6) !important;
+    padding: 45px !important;
 }
 
-.text-\[\#58a6ff\].text-xs.font-black {
-    background: rgba(88, 166, 255, 0.1) !important;
-    border: 1px solid rgba(88, 166, 255, 0.2) !important;
-    color: #58a6ff !important;
-}
-.text-\[\#58a6ff\].text-xs.font-black:hover {
-    background: #58a6ff !important;
-    color: #000 !important;
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.4);
-}
-
-.text-red-500.text-xs.font-black {
-    background: rgba(248, 81, 73, 0.1) !important;
-    border: 1px solid rgba(248, 81, 73, 0.2) !important;
-    color: #f85149 !important;
-}
-.text-red-500.text-xs.font-black:hover {
-    background: #f85149 !important;
-    color: white !important;
-    box-shadow: 0 0 15px rgba(248, 81, 73, 0.4);
-}
-
-/* 4. SISTEMA GLOBAL (Ordenado y Potente) */
-.space-y-6.max-w-2xl {
-    max-width: 100% !important; /* Llena el contenedor */
-}
-
-/* Cuadro de Modo Mantenimiento */
-.space-y-4 label.bg-white\/5 {
-    background: rgba(255, 255, 255, 0.02) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    padding: 30px !important;
-    border-radius: 25px !important;
-    margin-bottom: 25px !important;
-    transition: 0.3s;
-}
-
-.space-y-4 label.bg-white\/5:hover {
-    border-color: #58a6ff !important;
-    background: rgba(88, 166, 255, 0.02) !important;
-}
-
-/* Área de CSS */
-textarea.bg-black\/40 {
+/* 3. INPUTS Y FORMULARIOS */
+.modern-input-admin, .admin-search-input {
+    width: 100%;
     background: rgba(0, 0, 0, 0.4) !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 20px !important;
-    padding: 25px !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    line-height: 1.6 !important;
-    font-size: 0.8rem !important;
-    box-shadow: inset 0 4px 20px rgba(0,0,0,0.5) !important;
+    border-radius: 12px !important;
+    padding: 12px 18px !important;
+    color: white !important;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
 }
 
-/* Botón Aplicar Cambios */
-.bg-white.text-black.font-black.py-4 {
-    background: linear-gradient(135deg, #ffffff, #cbd5e1) !important;
-    border-radius: 50px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 2px !important;
-    font-size: 0.85rem !important;
-    transition: 0.3s !important;
+.admin-search-input { padding-left: 45px !important; }
+.modern-input-admin:focus, .admin-search-input:focus {
+    border-color: #a78bfa !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    outline: none;
+}
+
+form.bg-\[\#0d1117\] {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    border-radius: 24px !important;
+    padding: 30px !important;
     margin-top: 20px !important;
-    color: black !important;
 }
 
-.bg-white.text-black.font-black.py-4:hover {
-    background: #58a6ff !important;
-    color: black !important;
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(88, 166, 255, 0.3);
+/* 4. BOTONES: TAMAÑO Y ESPACIADO */
+.btn-new-item {
+    background: linear-gradient(135deg, #38bdf8, #3b82f6) !important;
+    color: #000 !important;
+    font-weight: 900 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 22px !important;
+    font-size: 0.8rem !important;
+    border-radius: 50px !important;
+    border: none !important;
+    cursor: pointer;
+    transition: 0.3s ease;
 }
 
-/* 5. BASE DE TABLA (Tus clases originales mejoradas) */
+.max-w-2xl.bg-black\/20 {
+    padding: 20px !important;
+    align-items: center !important;
+    gap: 15px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+button.bg-\[\#238636\] {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 10px 22px !important;
+    font-weight: 800 !important;
+    font-size: 0.8rem !important;
+    border: none !important;
+    transition: 0.3s !important;
+}
+
+button.bg-\[\#8957e5\] {
+    background: linear-gradient(135deg, #a855f7, #7e22ce) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 10px 22px !important;
+    font-weight: 800 !important;
+    font-size: 0.8rem !important;
+    border: none !important;
+    transition: 0.3s !important;
+}
+
+.text-gray-500.font-bold.text-sm {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #e2e8f0 !important;
+    padding: 10px 22px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.3s ease !important;
+    font-size: 0.8rem !important;
+}
+
+form.bg-\[\#0d1117\] .flex.gap-4.justify-end {
+    gap: 15px !important;
+    margin-top: 25px !important;
+}
+
+
+/* 5. TABLAS: CORRECCIÓN DE IMÁGENES, FECHAS TEXTO PLANO Y CENTRADO */
+.admin-table-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
 .admin-table {
-    width: 100% !important;
+    width: 100%;
     border-collapse: separate !important;
     border-spacing: 0 12px !important;
 }
 
+/* Encabezados */
 .admin-table th {
-    padding: 0 20px 25px !important;
-    color: #475569 !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.15em !important;
-    font-size: 0.65rem !important;
+    padding: 0 25px 15px !important;
+    color: #94a3b8 !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    font-size: 0.75rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.admin-table th:first-child { text-align: left !important; }
+.admin-table th:nth-child(2), .admin-table th:last-child { text-align: center !important; }
+
+/* Filas */
+.admin-table tbody tr {
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.3s ease;
+}
+.admin-table tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+.admin-table tbody tr td:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; }
+.admin-table tbody tr td:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; }
+
+/* COLUMNA 1: Imagen y Título alineados a la izquierda */
+.admin-table td.flex.items-center.gap-4 {
+    display: flex !important;
+    align-items: center !important; /* Centrado vertical entre la imagen y el texto */
+    justify-content: flex-start !important; /* Alineado a la izquierda */
+    gap: 25px !important; /* Separación marcada entre la imagen y el título */
+    min-height: 80px !important; /* Establece la altura base para centrar las demás columnas */
+    padding-left: 25px !important;
 }
 
-.admin-table td {
-    padding: 15px 20px !important;
-    vertical-align: middle !important;
-}
-
-/* Miniaturas con brillo */
 .admin-table img {
     width: 45px !important;
     height: 65px !important;
-    border-radius: 10px !important;
-    object-fit: cover !important;
-    box-shadow: 0 8px 15px rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 8px !important;
+    object-fit: cover;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    flex-shrink: 0 !important; /* Evita que la imagen se aplaste */
 }
 
-/* 6. NO TOCAR: SELECTOR DE ROLES (Tal como pediste) */
-select.bg-black\/40 {
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid rgba(88, 166, 255, 0.3) !important;
-    color: #58a6ff !important;
+/* COLUMNA 2: Fecha / Temporadas (Diseño limpio sin rectángulos raros) */
+.admin-table td.font-mono {
+    background: transparent !important;
+    border: none !important;
+    color: #cbd5e1 !important; /* Color gris claro limpio */
+    font-family: 'Inter', system-ui, sans-serif !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    display: table-cell !important; /* Quita el comportamiento de bloque */
+    vertical-align: middle !important;
+    padding: 15px 20px !important;
+}
+
+/* COLUMNA 3: Botones (Centrado vertical y horizontal puro) */
+.admin-table td.text-right {
+    display: table-cell !important; /* Restaura el comportamiento natural de tabla */
+    text-align: center !important; /* Botones al centro */
+    vertical-align: middle !important; /* Centrado vertical matemático */
+}
+
+/* Alinea los botones inline para evitar bugs de flexbox en celdas de tabla */
+.admin-table td.text-right > * {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 5px !important;
+}
+
+.admin-table button.text-\[\#58a6ff\], .admin-table button.text-red-500 {
+    padding: 8px 18px !important;
+    border-radius: 50px !important;
+    font-weight: 800 !important;
+    font-size: 0.7rem !important;
+}
+.admin-table button.text-\[\#58a6ff\] { background: rgba(139, 92, 246, 0.1) !important; color: #a78bfa !important; border: 1px solid rgba(139, 92, 246, 0.2) !important; }
+.admin-table button.text-red-500 { background: rgba(244, 63, 94, 0.1) !important; color: #f43f5e !important; border: 1px solid rgba(244, 63, 94, 0.2) !important; }
+
+
+/* 6. MODERAR RESEÑAS */
+.grid.gap-4 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+}
+
+.grid.gap-4 .bg-white\/5 {
+    background: rgba(15, 16, 20, 0.6) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.15) !important;
+    padding: 25px !important;
+    border-radius: 20px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
+}
+
+.grid.gap-4 button.text-red-500 {
+    background: rgba(244, 63, 94, 0.1) !important;
+    color: #f43f5e !important;
+    border: 1px solid rgba(244, 63, 94, 0.2) !important;
+    padding: 10px 22px !important;
+    border-radius: 50px !important;
+    font-weight: 800 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase;
+    transition: 0.3s ease !important;
+}
+.grid.gap-4 button.text-red-500:hover {
+    background: #f43f5e !important;
+    color: white !important;
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.4) !important;
+}
+
+
+/* 7. SISTEMA GLOBAL: ALINEACIÓN PERFECTA DEL MISMO ANCHO */
+.space-y-6.max-w-2xl {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+.space-y-4 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 25px !important;
+}
+
+label.bg-white\/5, textarea.bg-black\/40, button.w-full.bg-white.text-black {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+label.bg-white\/5 {
+    display: flex !important;
+    align-items: center !important;
+    padding: 22px 25px !important;
+    border-radius: 16px !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+input[type="checkbox"].accent-\[\#58a6ff\] {
+    width: 24px !important;
+    height: 24px !important;
+    accent-color: #a78bfa !important;
+}
+
+textarea.bg-black\/40 {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #a78bfa !important;
+    padding: 25px !important;
+    min-height: 180px !important;
+}
+textarea.bg-black\/40:focus { border-color: #a78bfa !important; outline: none; }
+
+button.w-full.bg-white.text-black {
+    background: linear-gradient(135deg, #e2e8f0, #ffffff) !important;
+    color: #0f1014 !important;
+    border-radius: 16px !important;
+    padding: 18px !important;
+    font-size: 0.95rem !important;
     font-weight: 900 !important;
     text-transform: uppercase;
-    padding: 5px 10px !important;
-    border-radius: 8px !important;
+    letter-spacing: 2px;
+    border: none !important;
+}
+button.w-full.bg-white.text-black:hover {
+    background: #a78bfa !important;
+    color: white !important;
+}
+
+
+/* 8. USUARIOS Y ROLES */
+select.bg-black\/40 {
+    appearance: none;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a78bfa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 1.2em;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    color: #a78bfa !important;
+    border-radius: 10px !important;
+    padding: 8px 35px 8px 15px !important;
+    font-weight: 900 !important;
+    outline: none;
+    cursor: pointer;
+}
+select.bg-black\/40 option {
+    background-color: #0f1014 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    padding: 10px !important;
 }
