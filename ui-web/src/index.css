@@ -1560,3 +1560,139 @@ body {
     from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
 }
+
+
+/* =========================================
+   ADMIN PANEL: REDISEÑO TOTAL PROFESIONAL
+   ========================================= */
+
+.admin-page-wrapper {
+    display: flex;
+    max-width: 1400px;
+    margin: 40px auto;
+    gap: 30px;
+    padding: 0 20px;
+    align-items: flex-start;
+}
+
+/* Sidebar Estilo Consola */
+.admin-sidebar-nav {
+    width: 260px;
+    background: rgba(15, 17, 23, 0.4);
+    backdrop-filter: blur(15px);
+    border-radius: 25px;
+    padding: 25px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    flex-shrink: 0;
+}
+
+.sidebar-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 15px 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 20px;
+}
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 10px #38bdf8; }
+.sidebar-header-title h2 { font-size: 0.7rem; letter-spacing: 2px; color: #94a3b8; font-weight: 900; }
+
+.nav-item {
+    width: 100%;
+    text-align: left;
+    padding: 12px 18px;
+    border-radius: 12px;
+    color: #64748b;
+    font-weight: 800;
+    font-size: 0.85rem;
+    transition: 0.3s;
+    margin-bottom: 5px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.nav-item:hover { color: white; background: rgba(255,255,255,0.02); }
+.nav-item.active {
+    background: linear-gradient(135deg, #38bdf8, #1e3a8a);
+    color: white;
+    box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+}
+
+/* Main Container */
+.admin-content-main { flex: 1; min-width: 0; }
+.admin-glass-container {
+    background: rgba(22, 27, 34, 0.5);
+    backdrop-filter: blur(25px);
+    border-radius: 35px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    min-height: 600px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Table Management */
+.admin-table-box { width: 100%; overflow: hidden; border-radius: 20px; margin-top: 20px; }
+.pro-admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    table-layout: fixed; /* Fuerza el orden y evita estiramientos */
+}
+
+.pro-admin-table th {
+    padding: 0 20px 10px;
+    text-align: left;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #475569;
+    letter-spacing: 1.5px;
+}
+
+.pro-admin-table tr { background: rgba(255, 255, 255, 0.02); }
+.pro-admin-table td { padding: 12px 20px; vertical-align: middle; }
+.pro-admin-table td:first-child { border-radius: 12px 0 0 12px; }
+.pro-admin-table td:last-child { border-radius: 0 12px 12px 0; }
+
+/* FIX GIGANTE: Tamaño de póster */
+.admin-mini-poster {
+    width: 40px !important; /* Ahora sí son mini */
+    height: 58px !important;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.txt-bold { color: white; font-weight: 800; font-size: 0.9rem; }
+.txt-muted { color: #64748b; font-size: 0.8rem; font-weight: 600; }
+
+/* Column Widths */
+.w-poster { width: 80px; }
+.w-date { width: 100px; }
+.w-actions { width: 160px; }
+
+/* Buttons & Selects */
+.btn-primary-admin {
+    background: white; color: black; border: none; padding: 10px 22px;
+    border-radius: 50px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;
+    cursor: pointer; transition: 0.3s;
+}
+
+.btn-edit { color: #38bdf8; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; margin-right: 15px; border: none; background: none; cursor: pointer; }
+.btn-del { color: #f85149; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; border: none; background: none; cursor: pointer; }
+
+.admin-select {
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8; font-weight: 900; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem;
+}
+
+/* Paginator */
+.admin-paginator { display: flex; justify-content: center; gap: 8px; margin-top: 30px; }
+.admin-paginator button {
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.03); color: #64748b; font-weight: 800; cursor: pointer;
+}
+.admin-paginator button.active { background: #38bdf8; color: black; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+
+.placeholder-msg { padding: 80px 0; text-align: center; color: #475569; font-weight: 800; font-style: italic; }

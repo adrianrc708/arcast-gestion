@@ -5,7 +5,13 @@ import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('watchlist'); // Watchlist por defecto
+
+    // ✅ Determinamos si el usuario es administrador o jefe
+    const isAdmin = user?.role === 'admin' || user?.role === 'boss';
+
+    // ✅ Si es admin, la pestaña por defecto es 'settings', de lo contrario es 'watchlist'
+    const [activeTab, setActiveTab] = useState(isAdmin ? 'settings' : 'watchlist');
+
     const [watchlist, setWatchlist] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,7 +25,7 @@ const Profile = () => {
             try {
                 const [wRes, rRes] = await Promise.all([
                     api.get('/users/watchlist'),
-                    api.get('/reviews/me').catch(() => ({ data: [] })) // Cambiado a /me
+                    api.get('/reviews/me').catch(() => ({ data: [] }))
                 ]);
                 setWatchlist(wRes.data.watchlist || []);
                 setMyReviews(rRes.data || []);
@@ -68,13 +74,19 @@ const Profile = () => {
                 </header>
 
                 <nav className="profile-tabs-nav">
-                    <button className={activeTab === 'watchlist' ? 'active' : ''} onClick={() => setActiveTab('watchlist')}>Mi Lista ({watchlist.length})</button>
-                    <button className={activeTab === 'reviews' ? 'active' : ''} onClick={() => setActiveTab('reviews')}>Mis Reseñas ({myReviews.length})</button>
+                    {/* ✅ Ocultamos las pestañas sociales si el usuario es administrador */}
+                    {!isAdmin && (
+                        <>
+                            <button className={activeTab === 'watchlist' ? 'active' : ''} onClick={() => setActiveTab('watchlist')}>Mi Lista ({watchlist.length})</button>
+                            <button className={activeTab === 'reviews' ? 'active' : ''} onClick={() => setActiveTab('reviews')}>Mis Reseñas ({myReviews.length})</button>
+                        </>
+                    )}
                     <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Ajustes de Cuenta</button>
                 </nav>
 
                 <div className="profile-content">
-                    {activeTab === 'watchlist' && (
+                    {/* ✅ Solo renderizamos la watchlist si no es admin */}
+                    {activeTab === 'watchlist' && !isAdmin && (
                         <div className="profile-grid-watchlist">
                             {watchlist.map(w => (
                                 <Link key={w._id} to={`/item/${w.kind.toLowerCase() === 'movie' ? 'movie' : 'tvshow'}/${w.item?._id}`} className="p-card">
@@ -86,7 +98,8 @@ const Profile = () => {
                         </div>
                     )}
 
-                    {activeTab === 'reviews' && (
+                    {/* ✅ Solo renderizamos las reseñas si no es admin */}
+                    {activeTab === 'reviews' && !isAdmin && (
                         <div className="profile-reviews-list">
                             {myReviews.map(r => (
                                 <div key={r._id} className="p-review-card">
