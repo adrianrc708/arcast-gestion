@@ -1,64 +1,40 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
+
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
 import AdminPanel from './views/AdminPanel';
 import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
+import Profile from './views/Profile';
 
-const AppContent = () => {
-    const { isAuthenticated, user, loading } = useAuth();
-
-    if (loading) return <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-[#58a6ff]">Validando sesión...</div>;
+const App = () => {
+    const { isAuthenticated, user } = useAuth();
 
     if (!isAuthenticated) return <Auth />;
 
-    // LÓGICA REALISTA: Redirigir a la landing correcta según el rol
-    const getLandingRoute = () => {
-        if (user?.role === 'admin') return <Navigate to="/admin" replace />;
-        if (user?.role === 'boss') return <Navigate to="/boss" replace />;
-        return <Home />; // Solo los usuarios normales ven el catálogo
-    };
-
     return (
-        <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans selection:bg-[#58a6ff] selection:text-white flex flex-col">
+        <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex flex-col">
             <Navbar />
-            <main className="flex-1">
+            <main className="flex-1 pt-16">
                 <Routes>
-                    {/* Ruta Raíz Dinámica */}
-                    <Route path="/" element={getLandingRoute()} />
+                    {/* REDIRECCIÓN DIRECTA: Sin funciones externas que causen crasheos */}
+                    <Route path="/" element={
+                        user?.role === 'admin' ? <Navigate to="/admin" replace /> :
+                            user?.role === 'boss'  ? <Navigate to="/boss" replace />  :
+                                <Home />
+                    } />
 
-                    {/* Rutas para Usuarios Normales */}
-                    {user?.role === 'user' && (
-                        <Route path="/item/:type/:id" element={<MovieDetails />} />
-                    )}
-
-                    {/* Rutas Exclusivas para Admin */}
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/item/:type/:id" element={<MovieDetails />} />
                     <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
-
-                    {/* Rutas Exclusivas para Boss */}
                     <Route path="/boss" element={user?.role === 'boss' ? <BossDashboard /> : <Navigate to="/" replace />} />
-
-                    {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>
-            <footer className="py-8 border-t border-[#30363d] text-center mt-auto">
-                <p className="text-xs text-gray-600 font-medium tracking-widest uppercase">
-                    &copy; {new Date().getFullYear()} Arcast System
-                </p>
-            </footer>
         </div>
-    );
-};
-
-const App = () => {
-    return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
     );
 };
 

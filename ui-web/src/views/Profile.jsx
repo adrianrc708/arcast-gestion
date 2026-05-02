@@ -5,148 +5,111 @@ import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
     const { user } = useAuth();
-
-    // ✅ Determinamos si el usuario es administrador o jefe
-    const isAdmin = user?.role === 'admin' || user?.role === 'boss';
-
-    // ✅ Si es admin, la pestaña por defecto es 'settings', de lo contrario es 'watchlist'
-    const [activeTab, setActiveTab] = useState(isAdmin ? 'settings' : 'watchlist');
-
     const [watchlist, setWatchlist] = useState([]);
-    const [myReviews, setMyReviews] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    const [username, setUsername] = useState(user?.username || '');
-    const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
+    const [isEditing, setIsEditing] = useState(false);
+    const [newUsername, setNewUsername] = useState(user?.username || '');
     const [msg, setMsg] = useState({ text: '', type: '' });
 
     useEffect(() => {
-        const fetchAll = async () => {
+        const fetchWatchlist = async () => {
             try {
-                const [wRes, rRes] = await Promise.all([
-                    api.get('/users/watchlist'),
-                    api.get('/reviews/me').catch(() => ({ data: [] }))
-                ]);
-                setWatchlist(wRes.data.watchlist || []);
-                setMyReviews(rRes.data || []);
-            } catch (err) { console.error(err); }
-            finally { setLoading(false); }
+                // Recupera la lista guardada desde el backend
+                const res = await api.get('/users/watchlist');
+                setWatchlist(res.data);
+            } catch (err) {
+                console.error("Error al cargar Watchlist:", err);
+            } finally {
+                setLoading(false);
+            }
         };
-        if (user) fetchAll();
+
+        if (user) {
+            fetchWatchlist();
+            setNewUsername(user.username);
+        }
     }, [user]);
 
-    const handleUpdateName = async (e) => {
+    const handleUpdateProfile = async (e) => {
         e.preventDefault();
+        setMsg({ text: 'Actualizando...', type: 'info' });
         try {
-            await api.put('/users/me', { username });
-            setMsg({ text: 'Nombre actualizado. Se verá reflejado al reiniciar sesión.', type: 'success' });
-        } catch (err) { setMsg({ text: 'Error al actualizar nombre.', type: 'error' }); }
-    };
-
-    const handleUpdatePassword = async (e) => {
-        e.preventDefault();
-        if (passData.new !== passData.confirm) {
-            return setMsg({ text: 'Las nuevas contraseñas no coinciden.', type: 'error' });
-        }
-        try {
-            await api.put('/users/update-password', {
-                currentPassword: passData.current,
-                newPassword: passData.new
-            });
-            setMsg({ text: 'Contraseña cambiada con éxito.', type: 'success' });
-            setPassData({ current: '', new: '', confirm: '' });
-        } catch (err) {
-            setMsg({ text: err.response?.data?.message || 'Error al cambiar clave.', type: 'error' });
+            // Llama a la ruta PUT /api/users/me (Con soporte para auditoría)
+            await api.put('/users/me', { username: newUsername });
+            setMsg({ text: 'Perfil actualizado exitosamente.', type: 'success' });
+            setIsEditing(false);
+        } catch (error) {
+            setMsg({ text: error.response?.data?.message || 'Error al actualizar.', type: 'error' });
         }
     };
 
-    if (!user) return <div className="py-20 text-center font-black">ACCESO DENEGADO</div>;
+    if (!user) return <div className="py-20 text-center text-red-400 font-bold uppercase tracking-tighter">Acceso denegado</div>;
 
     return (
-        <div className="profile-page-root">
-            <div className="profile-container">
-                <header className="profile-header">
-                    <div className="avatar-circle-large">{user.username?.charAt(0).toUpperCase()}</div>
-                    <div className="profile-titles">
-                        <h1>{user.username}</h1>
-                        <p>{user.email} • <span className="tag-premium">{user.role}</span></p>
+        <div className="max-w-6xl mx-auto py-12 px-4 space-y-12 animate-in fade-in duration-700">
+            {/* CABECERA DE PERFIL */}
+            <div className="bg-[#161b22] border border-[#30363d] rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
+                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#8957e5] flex items-center justify-center text-5xl font-black text-white shadow-xl">
+                        {user.username?.charAt(0).toUpperCase()}
                     </div>
-                </header>
 
-                <nav className="profile-tabs-nav">
-                    {/* ✅ Ocultamos las pestañas sociales si el usuario es administrador */}
-                    {!isAdmin && (
-                        <>
-                            <button className={activeTab === 'watchlist' ? 'active' : ''} onClick={() => setActiveTab('watchlist')}>Mi Lista ({watchlist.length})</button>
-                            <button className={activeTab === 'reviews' ? 'active' : ''} onClick={() => setActiveTab('reviews')}>Mis Reseñas ({myReviews.length})</button>
-                        </>
-                    )}
-                    <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Ajustes de Cuenta</button>
-                </nav>
-
-                <div className="profile-content">
-                    {/* ✅ Solo renderizamos la watchlist si no es admin */}
-                    {activeTab === 'watchlist' && !isAdmin && (
-                        <div className="profile-grid-watchlist">
-                            {watchlist.map(w => (
-                                <Link key={w._id} to={`/item/${w.kind.toLowerCase() === 'movie' ? 'movie' : 'tvshow'}/${w.item?._id}`} className="p-card">
-                                    <div className="p-card-img"><img src={w.item?.posterUrl} alt="" /></div>
-                                    <div className="p-card-info"><h4>{w.item?.title || w.item?.name}</h4></div>
-                                </Link>
-                            ))}
-                            {watchlist.length === 0 && <p className="empty-info">Tu lista está vacía actualmente.</p>}
-                        </div>
-                    )}
-
-                    {/* ✅ Solo renderizamos las reseñas si no es admin */}
-                    {activeTab === 'reviews' && !isAdmin && (
-                        <div className="profile-reviews-list">
-                            {myReviews.map(r => (
-                                <div key={r._id} className="p-review-card">
-                                    <div className="p-review-header">
-                                        <h4>{r.movieTitle}</h4>
-                                        <span className="p-rating">★ {r.rating}</span>
-                                    </div>
-                                    <p className="p-text">"{r.text}"</p>
-                                    <span className="p-date">{new Date(r.date).toLocaleDateString()}</span>
+                    <div className="flex-1 w-full text-center md:text-left">
+                        {!isEditing ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <h1 className="text-4xl font-black text-white tracking-tighter">{user.username}</h1>
+                                    <p className="text-gray-500 font-medium">{user.email}</p>
                                 </div>
-                            ))}
-                            {myReviews.length === 0 && <p className="empty-info">Aún no has escrito ninguna reseña.</p>}
-                        </div>
-                    )}
-
-                    {activeTab === 'settings' && (
-                        <div className="profile-settings-grid">
-                            <div className="glass-form-card">
-                                <h3>Información Personal</h3>
-                                <form onSubmit={handleUpdateName}>
-                                    <div className="form-group-p">
-                                        <label>Nuevo nombre de usuario</label>
-                                        <input type="text" value={username} onChange={e => setUsername(e.target.value)} />
-                                    </div>
-                                    <button type="submit" className="btn-p-main">Guardar Cambios</button>
-                                </form>
+                                <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                                    <span className="bg-[#58a6ff]/10 text-[#58a6ff] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#58a6ff]/20">
+                                        ROL: {user.role}
+                                    </span>
+                                    <button onClick={() => setIsEditing(true)} className="bg-[#21262d] hover:bg-[#30363d] text-white font-bold px-5 py-1.5 rounded-full border border-[#30363d] transition-all text-xs">Ajustar Perfil</button>
+                                </div>
                             </div>
-
-                            <div className="glass-form-card">
-                                <h3>Cambiar Contraseña</h3>
-                                <form onSubmit={handleUpdatePassword}>
-                                    <div className="form-group-p">
-                                        <input type="password" placeholder="Contraseña Actual" value={passData.current} onChange={e => setPassData({...passData, current: e.target.value})} required />
-                                    </div>
-                                    <div className="form-group-p">
-                                        <input type="password" placeholder="Nueva Contraseña" value={passData.new} onChange={e => setPassData({...passData, new: e.target.value})} required />
-                                    </div>
-                                    <div className="form-group-p">
-                                        <input type="password" placeholder="Confirmar Nueva Contraseña" value={passData.confirm} onChange={e => setPassData({...passData, confirm: e.target.value})} required />
-                                    </div>
-                                    <button type="submit" className="btn-p-alt">Actualizar Seguridad</button>
-                                </form>
-                            </div>
-                            {msg.text && <div className={`p-alert ${msg.type}`}>{msg.text}</div>}
-                        </div>
-                    )}
+                        ) : (
+                            <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-sm mx-auto md:mx-0">
+                                <input type="text" required value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className="w-full bg-[#0d1117] border border-[#30363d] text-white p-3 rounded-xl outline-none focus:border-[#58a6ff] text-sm font-bold" />
+                                <div className="flex gap-2">
+                                    <button type="submit" className="flex-1 bg-[#238636] text-white font-bold py-2 rounded-xl text-xs">Guardar</button>
+                                    <button type="button" onClick={() => setIsEditing(false)} className="flex-1 bg-[#21262d] text-gray-400 font-bold py-2 rounded-xl text-xs">Cancelar</button>
+                                </div>
+                            </form>
+                        )}
+                        {msg.text && <p className={`mt-4 text-xs font-bold ${msg.type === 'error' ? 'text-red-400' : 'text-[#58a6ff]'}`}>{msg.text}</p>}
+                    </div>
                 </div>
+            </div>
+
+            {/* SECCIÓN MI LISTA */}
+            <div className="space-y-8">
+                <div className="flex items-center justify-between border-b border-[#30363d] pb-4">
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Mi Lista de Seguimiento</h2>
+                    <span className="text-[10px] font-black text-gray-500 bg-[#161b22] px-3 py-1 rounded-full border border-[#30363d] uppercase">{watchlist.length} Títulos Guardados</span>
+                </div>
+
+                {loading ? (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-6 animate-pulse">
+                        {[1,2,3,4,5].map(i => <div key={i} className="aspect-[2/3] bg-[#161b22] rounded-2xl"></div>)}
+                    </div>
+                ) : watchlist.length === 0 ? (
+                    <div className="bg-[#161b22] border-2 border-dashed border-[#30363d] rounded-[2rem] py-20 text-center">
+                        <p className="text-gray-400 font-bold">Tu lista está vacía actualmente.</p>
+                        <Link to="/" className="text-[#58a6ff] text-xs font-black mt-4 inline-block hover:underline uppercase tracking-widest">Explorar Catálogo</Link>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {watchlist.map((item) => (
+                            <Link key={item._id} to={`/item/${item.title ? 'movie' : 'tv'}/${item._id}`} className="group relative aspect-[2/3] rounded-2xl overflow-hidden bg-[#161b22] border border-[#30363d] block">
+                                <img src={item.posterUrl || "https://via.placeholder.com/300x450"} alt={item.title || item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <p className="text-white font-black text-[10px] leading-tight uppercase tracking-tighter">{item.title || item.name}</p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
