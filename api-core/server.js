@@ -12,7 +12,7 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
-
+app.get('/api/system/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 // ─── Módulos de negocio ────────────────────────────────────────────────────
 /** @type {any} */ const authModule    = require('./src/modules/auth');
 /** @type {any} */ const usersModule   = require('./src/modules/users');
