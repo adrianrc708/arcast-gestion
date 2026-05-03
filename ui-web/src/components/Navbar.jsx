@@ -1,59 +1,117 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const Navbar = () => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
     const location = useLocation();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { user } = useAuth();
 
-    const handleLogout = () => {
-        logout();
-        navigate('/');
-        setIsMenuOpen(false);
-    };
+    const isMainView = location.pathname === '/' || location.pathname.startsWith('/item');
+    const currentView = searchParams.get('view') || 'home';
+    const currentType = searchParams.get('type') || 'movies';
 
-    const isActive = (path) => location.pathname === path;
+    // Estados para el buscador en vivo
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+
+    const goHome = () => navigate('/');
+    const goCatalog = (type) => navigate(`/?view=catalog&type=${type}`);
+
+    // Búsqueda en tiempo real
+    useEffect(() => {
+        if (searchTerm.length > 2) {
+            // Buscamos en películas y series al mismo tiempo
+            Promise.all([
+                api.get('/catalog/movies', { params: { search: searchTerm } }),
+                api.get('/catalog/tvshows', { params: { search: searchTerm } })
+            ]).then(([moviesRes, tvRes]) => {
+                const combined = [
+                    ...moviesRes.data.map(i => ({ ...i, mediaType: 'movie' })),
+                    ...tvRes.data.map(i => ({ ...i, mediaType: 'tvshow' }))
+                ];
+                setSearchResults(combined.slice(0, 5)); // Mostramos solo los 5 mejores resultados
+                setShowDropdown(true);
+            }).catch(() => setShowDropdown(false));
+        } else {
+            setShowDropdown(false);
+        }
+    }, [searchTerm]);
+
+    // Cerrar desplegable al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setShowDropdown(false);
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
-        <nav className="fixed top-0 w-full bg-[#0d1117]/80 backdrop-blur-xl border-b border-[#30363d] z-[100] h-16">
-            <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-                {/* LOGO: Solo texto, sin el cuadro azul/icono */}
-                <Link to="/" className="flex items-center">
-                    <span className="text-xl font-black tracking-tighter text-white uppercase">Arcast</span>
-                </Link>
+        <header className="main-header">
+            <Link to="/" className="logo-container" onClick={goHome}>
+                <img src="/favicon.svg" alt="Arcast Logo" className="logo-img" />
+                <span className="logo-text">ARCAST<span className="accent-dot">.</span></span>
+            </Link>
 
-                {/* MENU DESKTOP */}
-                <div className="hidden md:flex items-center space-x-1">
-                    <Link to="/" className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${isActive('/') ? 'bg-[#58a6ff]/10 text-[#58a6ff]' : 'text-gray-400 hover:text-white'}`}>Catálogo</Link>
-                    {user ? (
-                        <div className="flex items-center gap-1">
-                            <Link to="/profile" className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${isActive('/profile') ? 'bg-[#58a6ff]/10 text-[#58a6ff]' : 'text-gray-400 hover:text-white'}`}>Mi Perfil</Link>
+            {isMainView && (
+                <div className="navbar-filters">
+                    <div className="nav-links">
+                        <button className={currentView === 'catalog' && currentType === 'movies' ? 'active' : ''} onClick={() => goCatalog('movies')}>Películas</button>
+                        <button className={currentView === 'catalog' && currentType === 'tvshows' ? 'active' : ''} onClick={() => goCatalog('tvshows')}>Series</button>
+                    </div>
 
-                            {user.role === 'admin' && <Link to="/admin" className="px-4 py-2 text-xs font-black uppercase text-red-400 hover:bg-red-500/10 rounded-lg">Panel Admin</Link>}
-                            {user.role === 'boss' && <Link to="/boss" className="px-4 py-2 text-xs font-black uppercase text-purple-400 hover:bg-purple-500/10 rounded-lg">Métricas</Link>}
-
-                            <div className="w-px h-6 bg-[#30363d] mx-4"></div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="text-right hidden lg:block leading-none">
-                                    <p className="text-[10px] font-black text-white mb-0.5">{user.username}</p>
-                                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{user.role}</p>
-                                </div>
-                                <button onClick={handleLogout} className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all uppercase">Salir</button>
-                            </div>
+                    {/* Buscador Desplegable */}
+                    <div className="search-container-live" ref={dropdownRef}>
+                        <div className="search-bar">
+                            <span className="search-icon">🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Buscar título..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onFocus={() => searchTerm.length > 2 && setShowDropdown(true)}
+                            />
                         </div>
-                    ) : (
-                        <Link to="/auth" className="ml-4 bg-white text-black font-black px-6 py-2 rounded-xl text-xs tracking-widest hover:scale-105 transition-all">ACCEDER</Link>
-                    )}
-                </div>
 
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-gray-400 p-2">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                </button>
+                        {showDropdown && (
+                            <div className="search-dropdown">
+                                {searchResults.length > 0 ? (
+                                    searchResults.map(item => (
+                                        <div key={item._id} className="search-item" onClick={() => {
+                                            setShowDropdown(false);
+                                            setSearchTerm('');
+                                            navigate(`/item/${item.mediaType}/${item._id}`);
+                                        }}>
+                                            <img src={item.posterUrl} alt={item.title || item.name} />
+                                            <div className="search-item-info">
+                                                <h4>{item.title || item.name}</h4>
+                                                <span>{item.releaseDate?.split('-')[0]} • {item.mediaType === 'movie' ? 'Película' : 'Serie'}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="search-item-empty">No se encontraron resultados</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <div className="user-controls">
+                <Link to="/profile" className="profile-pill-premium">
+                    <div className="avatar-gradient">
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <span className="username-premium hidden-mobile">{user?.name || 'Perfil'}</span>
+                </Link>
             </div>
-        </nav>
+        </header>
     );
 };
 
