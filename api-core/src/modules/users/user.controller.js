@@ -36,18 +36,48 @@ exports.getBossStats = catchAsync(async (req, res, _next) => {
 });
 
 exports.getRecommendations = catchAsync(async (req, res, _next) => {
+    // 1. Obtener géneros reales del usuario a partir de su watchlist
+    /** @type {UserDoc|null} */
+    const user = await (/** @type {any} */ (require('./user.model'))).findById(req.user.id);
+
+    let preferredGenres = ['Acción']; // fallback por defecto
+
+    if (user && user.watchlist && user.watchlist.length > 0) {
+        const movieIds = user.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
+        if (movieIds.length > 0) {
+            const watchedMovies = await (/** @type {any} */ (require('../catalog/movie.model')))
+                .find({ _id: { $in: movieIds } }).select('genres').limit(20);
+
+            const genreCount = {};
+            for (const movie of watchedMovies) {
+                for (const genre of (movie.genres || [])) {
+                    genreCount[genre] = (genreCount[genre] || 0) + 1;
+                }
+            }
+
+            // Ordenar géneros por frecuencia descendente
+            const sorted = Object.entries(genreCount)
+                .sort((a, b) => b[1] - a[1])
+                .map(([genre]) => genre);
+
+            if (sorted.length > 0) preferredGenres = sorted.slice(0, 4);
+        }
+    }
+
+    // 2. Llamar al motor de IA con los géneros reales
+    const AI_URL = process.env.AI_ENGINE_URL || 'http://localhost:5000';
     try {
-        const response = await axios.post('http://localhost:5000/recommend', {
+        const response = await axios.post(`${AI_URL}/recommend`, {
             userId: req.user.id,
-            preferredGenres: ["Sci-Fi", "Acción"]
-        }, { timeout: 3000 });
+            preferredGenres,
+            limit: 6
+        }, { timeout: 4000 });
 
         // noinspection JSUnresolvedVariable
-        const recommendations = response.data.recommendations;
-
-        res.json(await catalogApi.getRecommendedContent(recommendations));
-    } catch (err) {
-        // Fallback silencioso si la IA no responde
+        const tmdbIds = response.data.recommendations || [];
+        res.json(await catalogApi.getRecommendedContent(tmdbIds));
+    } catch (_aiErr) {
+        // Fallback silencioso: devolvemos las mejor calificadas del catálogo
         res.json(await catalogApi.getRecommendedContent([]));
     }
 });

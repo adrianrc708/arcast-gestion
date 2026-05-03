@@ -1,6 +1,7 @@
 const usersApi = require('../users/users.api');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { catchAsync, AppError } = require('../../common/error.utils');
 
 /**
  * @typedef {Object} User
@@ -11,55 +12,57 @@ const jwt = require('jsonwebtoken');
  * @property {string} role
  */
 
-exports.registerUser = async (req, res) => {
+exports.registerUser = catchAsync(async (req, res, next) => {
     const { username, email, password } = req.body;
-    try {
-        let user = await usersApi.findByEmailOrUsername(email, username);
-        if (user) return res.status(400).json({ message: 'El email o usuario ya existe.' });
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        await usersApi.createUser({ username, email, password: hashedPassword });
-        res.status(201).json({ message: 'Usuario registrado exitosamente.' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (!username || !email || !password) {
+        return next(new AppError('username, email y password son obligatorios.', 400));
     }
-};
 
-exports.loginUser = async (req, res) => {
+    const existing = await usersApi.findByEmailOrUsername(email, username);
+    if (existing) return next(new AppError('El email o nombre de usuario ya están registrados.', 409));
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    await usersApi.createUser({ username, email, password: hashedPassword });
+    res.status(201).json({ message: 'Usuario registrado exitosamente.' });
+});
+
+exports.loginUser = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
-    try {
-        /** @type {User|null} */
-        const user = await (/** @type {Promise<User|null>} */ usersApi.findByEmail(email));
 
-        if (!user) return res.status(400).json({ message: 'Credenciales inválidas.' });
-
-        // noinspection JSUnresolvedVariable
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Credenciales inválidas.' });
-
-        // noinspection JSUnresolvedVariable
-        const token = jwt.sign(
-            { id: user._id, username: user.username, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        res.json({
-            token,
-            user: {
-                // noinspection JSUnresolvedVariable
-                id: user._id,
-                // noinspection JSUnresolvedVariable
-                username: user.username,
-                // noinspection JSUnresolvedVariable
-                email: user.email,
-                // noinspection JSUnresolvedVariable
-                role: user.role
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (!email || !password) {
+        return next(new AppError('email y password son obligatorios.', 400));
     }
-};
+
+    /** @type {User|null} */
+    const user = await (/** @type {Promise<User|null>} */ usersApi.findByEmail(email));
+
+    if (!user) return next(new AppError('Credenciales inválidas.', 401));
+
+    // noinspection JSUnresolvedVariable
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return next(new AppError('Credenciales inválidas.', 401));
+
+    // noinspection JSUnresolvedVariable
+    const token = jwt.sign(
+        { id: user._id, username: user.username, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
+    res.json({
+        token,
+        user: {
+            // noinspection JSUnresolvedVariable
+            id: user._id,
+            // noinspection JSUnresolvedVariable
+            username: user.username,
+            // noinspection JSUnresolvedVariable
+            email: user.email,
+            // noinspection JSUnresolvedVariable
+            role: user.role
+        }
+    });
+});

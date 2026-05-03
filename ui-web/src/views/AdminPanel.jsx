@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const AdminPanel = () => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('import');
     const [msg, setMsg] = useState({ text: '', type: '' });
 
@@ -21,6 +23,7 @@ const AdminPanel = () => {
                     { id: 'reviews', label: '4. Moderar Reseñas' },
                     { id: 'users', label: '5. Usuarios y Roles' },
                     { id: 'system', label: '6. Sistema Global' },
+                    { id: 'audit', label: '7. Registro de Auditoría' },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -54,6 +57,7 @@ const AdminPanel = () => {
                     {activeTab === 'reviews' && <TabReviews onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'users' && <TabUsers onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'system' && <TabSystem onSuccess={showSuccess} onError={showError} />}
+                    {activeTab === 'audit' && <TabAudit onSuccess={showSuccess} onError={showError} />}
                 </div>
             </main>
         </div>
@@ -445,6 +449,106 @@ const TabSystem = ({ onSuccess, onError }) => {
                 <textarea value={config.customCSS} onChange={e => setConfig({...config, customCSS: e.target.value})} className="w-full bg-black/40 border border-white/10 text-green-400 p-5 rounded-2xl font-mono text-xs" rows="6" placeholder="CSS Global..."></textarea>
                 <button onClick={handleSave} className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-[#58a6ff] transition-colors uppercase tracking-widest">Aplicar Cambios</button>
             </div>
+        </div>
+    );
+};
+
+// ==========================================
+// PESTAÑA 7: REGISTRO DE AUDITORÍA
+// ==========================================
+const ACTION_COLORS = {
+    USER_ROLE_MUTATION:    'text-yellow-400',
+    USER_PROFILE_MUTATION: 'text-blue-400',
+    SYSTEM_UI_MUTATION:    'text-purple-400',
+    CATALOG_IMPORT:        'text-green-400',
+};
+
+const TabAudit = ({ onError }) => {
+    const [logs, setLogs]     = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [limit, setLimit]   = useState(50);
+
+    const fetchLogs = () => {
+        setLoading(true);
+        api.get(`/system/audit?limit=${limit}`)
+            .then(res => setLogs(res.data))
+            .catch(() => onError('Error al cargar el registro de auditoría.'))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => { fetchLogs(); }, [limit]);
+
+    const formatDate = (iso) =>
+        new Date(iso).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'medium' });
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-6">
+                <div>
+                    <h3 className="text-xl font-bold text-white">Registro de Auditoría</h3>
+                    <p className="text-xs text-gray-500 mt-1">Historial de mutaciones administrativas del sistema</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <label className="text-xs text-gray-400 font-bold">Mostrar:</label>
+                    <select
+                        value={limit}
+                        onChange={e => setLimit(Number(e.target.value))}
+                        className="bg-black/40 border border-white/10 text-white text-xs rounded-lg px-3 py-2"
+                    >
+                        {[25, 50, 100, 200].map(n => (
+                            <option key={n} value={n}>{n} registros</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={fetchLogs}
+                        className="bg-[#58a6ff]/10 border border-[#58a6ff]/30 text-[#58a6ff] text-xs font-black px-4 py-2 rounded-lg hover:bg-[#58a6ff]/20 transition-colors"
+                    >
+                        ↻ Actualizar
+                    </button>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="flex justify-center py-20">
+                    <div className="w-8 h-8 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
+                </div>
+            ) : logs.length === 0 ? (
+                <div className="text-center py-20 text-gray-600">
+                    <p className="text-4xl mb-4">📋</p>
+                    <p className="font-bold">Sin registros de auditoría aún.</p>
+                </div>
+            ) : (
+                <div className="admin-table-container">
+                    <table className="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Acción</th>
+                            <th>Usuario ID</th>
+                            <th>Detalles</th>
+                            <th>IP</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {logs.map(log => (
+                            <tr key={log._id}>
+                                <td className="text-xs font-mono opacity-60 whitespace-nowrap">{formatDate(log.timestamp)}</td>
+                                <td>
+                                        <span className={`text-xs font-black uppercase tracking-wider ${ACTION_COLORS[log.action] || 'text-gray-400'}`}>
+                                            {log.action}
+                                        </span>
+                                </td>
+                                <td className="text-xs font-mono opacity-50 truncate max-w-[120px]">{log.userId}</td>
+                                <td className="text-xs opacity-70 max-w-[200px] truncate">
+                                    {JSON.stringify(log.details)}
+                                </td>
+                                <td className="text-xs font-mono opacity-40">{log.ip}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };

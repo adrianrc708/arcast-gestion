@@ -7,4 +7,7 @@ const { requiredAuth, authorize } = require('../../common/auth.middleware');
 router.get('/config', systemController.getConfig);
 router.put('/config', requiredAuth, authorize(['admin']), systemController.updateConfig);
 
+// Registro de auditoría: solo admin y boss
+router.get('/audit', requiredAuth, authorize(['admin', 'boss']), systemController.getAuditLogs);
+
 module.exports = router;
