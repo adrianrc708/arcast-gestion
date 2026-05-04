@@ -1,5 +1,5 @@
 const usersApi = require('../users/users.api');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); // sólo se usa en loginUser para compare
 const jwt = require('jsonwebtoken');
 const { catchAsync, AppError } = require('../../common/error.utils');
 
@@ -22,10 +22,7 @@ exports.registerUser = catchAsync(async (req, res, next) => {
     const existing = await usersApi.findByEmailOrUsername(email, username);
     if (existing) return next(new AppError('El email o nombre de usuario ya están registrados.', 409));
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    await usersApi.createUser({ username, email, password: hashedPassword });
+    await usersApi.createUser({ username, email, password });
     res.status(201).json({ message: 'Usuario registrado exitosamente.' });
 });
 
