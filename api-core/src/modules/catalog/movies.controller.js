@@ -55,7 +55,19 @@ exports.getAllMovies = async (req, res) => {
 
 exports.getMovieById = async (req, res) => {
     try {
-        const movie = await Movie.findById(req.params.id);
+        // Intenta buscar por _id de MongoDB primero
+        let movie = null;
+        if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+            movie = await Movie.findById(req.params.id);
+        }
+        // Si no encontró, busca por tmdbId en MongoDB
+        if (!movie) {
+            movie = await Movie.findOne({ tmdbId: req.params.id });
+        }
+        // Si tampoco está en MongoDB, lo trae directo de TMDB
+        if (!movie) {
+            movie = await tmdbProvider.getMovieDetails(req.params.id);
+        }
         if (!movie) return res.status(404).json({ message: 'Película no encontrada' });
         res.json(movie);
     } catch (err) {
