@@ -47,7 +47,7 @@ const explorePeruvianMovies = async (page = 1, filters = {}) => {
     try {
         const { genre, sort, search } = filters;
 
-        let sortBy = 'popularity.desc';
+        let sortBy = 'vote_count.desc'; // default: más conocidas primero
         if (sort === 'rating') sortBy = 'vote_average.desc';
         if (sort === 'newest') sortBy = 'primary_release_date.desc';
 
@@ -56,7 +56,9 @@ const explorePeruvianMovies = async (page = 1, filters = {}) => {
             language: 'es-ES',
             with_origin_country: 'PE',
             page,
-            sort_by: sortBy
+            sort_by: sortBy,
+            'primary_release_date.lte': '2024-12-31',  // solo hasta 2024
+            'vote_count.gte': 5  // mínimo 5 valoraciones para filtrar desconocidas
         };
 
         if (search) {

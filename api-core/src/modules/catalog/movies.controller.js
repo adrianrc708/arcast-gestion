@@ -119,9 +119,13 @@ exports.exploreMovies = async (req, res) => {
             productionCountries: m.productionCountries 
         })), null, 2));*/
 
-        const movies = detailedResults.filter(m => 
-            m.productionCountries && m.productionCountries.includes('PE')
-        );
+        const movies = detailedResults
+            .filter(m => m.productionCountries && m.productionCountries.includes('PE'))
+            .filter(m => m.posterUrl) // que tengan poster
+            /*.filter(m => {
+                if (!m.releaseDate) return false;
+                return new Date(m.releaseDate) <= new Date(); // solo películas ya estrenadas
+        });*/
 
         res.json({ results: movies, totalPages, page: Number(page) });
     } catch (err) {
