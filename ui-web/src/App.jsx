@@ -22,18 +22,13 @@ const App = () => {
             <Navbar />
             <main className="flex-1 pt-16">
                 <Routes>
-                    {/* REDIRECCIÓN DIRECTA: Sin funciones externas que causen crasheos */}
-                    <Route path="/" element={
-                        user?.role === 'admin' ? <Navigate to="/admin" replace /> :
-                            user?.role === 'boss'  ? <Navigate to="/boss" replace />  :
-                                <Home />
-                    } />
-
+                    <Route path="/" element={<Home />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/item/:type/:id" element={<MovieDetails />} />
                     <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
                     <Route path="/boss" element={user?.role === 'boss' ? <BossDashboard /> : <Navigate to="/" replace />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="/admin" element={user?.role === 'admin' || user?.role === 'boss' ? <AdminPanel /> : <Navigate to="/" replace />} />
                 </Routes>
             </main>
         </div>

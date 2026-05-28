@@ -16,7 +16,7 @@ const CarouselRow = ({ title, items, type }) => {
                 <button className="carousel-btn prev" onClick={() => scroll('left')}>&#10094;</button>
                 <div className="carousel-track" ref={trackRef}>
                     {items.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                        <div key={item.tmdbId} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -47,18 +47,40 @@ const Home = () => {
 
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    // Estados para Paginación
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 15;
 
     useEffect(() => {
         setLoading(true);
-        api.get(`/catalog/${type}`, { params: { genre, sort } })
-            .then(res => setItems(res.data))
-            .finally(() => setLoading(false));
+        const fetchAll = async () => {
+            try {
+                const params = { sort };
+                if (genre && genre !== 'Todas') params.genre = genre;
+
+                const first = await api.get(`/catalog/${type}/explore`, { params });
+                const totalPages = first.data.totalPages;
+                const allResults = [...first.data.results];
+
+                const maxPages = Math.min(totalPages, 5);
+                if (maxPages > 1) {
+                    const requests = [];
+                    for (let p = 2; p <= maxPages; p++) {
+                        requests.push(api.get(`/catalog/${type}/explore`, { params: { ...params, page: p } }));
+                    }
+                    const responses = await Promise.all(requests);
+                    responses.forEach(r => allResults.push(...r.data.results));
+                }
+
+                setItems(allResults);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAll();
     }, [type, genre, sort]);
 
-    // Resetear a la página 1 cuando se cambia de pestaña o filtro
     useEffect(() => { setCurrentPage(1); }, [type, genre, sort]);
 
     const heroItems = items.slice(0, 5);
@@ -106,7 +128,7 @@ const Home = () => {
 
                 <div className="catalog-grid">
                     {currentItems.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                        <div key={item.tmdbId} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -139,22 +161,21 @@ const Home = () => {
             <div className="hero-container">
                 {heroItems.map((item, index) => (
                     <div
-                        key={item._id}
+                        key={item.tmdbId}
                         className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
                         style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})`, cursor: 'pointer' }}
-                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}
+                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId}`)}
                     >
                         <div className="hero-overlay">
                             <div className="hero-content">
                                 <span className="hero-label">Destacado #{index + 1}</span>
                                 <h1 className="hero-title">{item.title || item.name}</h1>
-                                {/* Si la API no tiene resumen, pone un texto predeterminado */}
                                 <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic en la imagen o en el botón para ver todos los detalles y calificaciones."}</p>
                                 <button
                                     className="hero-btn"
                                     onClick={(e) => {
-                                        e.stopPropagation(); // Evita doble clic si pinchas directo en el botón
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
+                                        e.stopPropagation();
+                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId}`);
                                     }}
                                 >
                                     Ver Detalles
@@ -164,7 +185,6 @@ const Home = () => {
                     </div>
                 ))}
 
-                {/* Puntos para cambiar de slide manualmente */}
                 <div className="slider-dots">
                     {heroItems.map((_, index) => (
                         <div

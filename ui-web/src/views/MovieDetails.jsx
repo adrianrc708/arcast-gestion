@@ -173,6 +173,11 @@ const MovieDetails = () => {
                         <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>
                             Ver {type === 'movie' ? 'Película' : 'Contenido'}
                         </button>
+                        {item.watchLink && (
+                            <button className={activeVideo === 'alt' ? 'active' : ''} onClick={() => setActiveVideo('alt')}>
+                                Fuente Alternativa
+                            </button>
+                        )}
                         {trailerEmbedUrl && (
                             <button className={activeVideo === 'trailer' ? 'active' : ''} onClick={() => setActiveVideo('trailer')}>
                                 Ver Trailer
@@ -182,14 +187,17 @@ const MovieDetails = () => {
 
                     <div className="player-glass-container">
                         <iframe
-                            src={activeVideo === 'trailer' ? trailerEmbedUrl : movieEmbedUrl}
+                            src={
+                                activeVideo === 'trailer' ? trailerEmbedUrl :
+                                activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
+                                movieEmbedUrl
+                            }
                             title="Reproductor"
                             frameBorder="0"
                             allowFullScreen
                         ></iframe>
                     </div>
                 </div>
-
                 <div className="reviews-section">
                     <h2 className="section-title">Comunidad <span>({reviews.length})</span></h2>
 

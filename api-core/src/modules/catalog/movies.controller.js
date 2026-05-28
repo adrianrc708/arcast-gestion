@@ -55,7 +55,19 @@ exports.getAllMovies = async (req, res) => {
 
 exports.getMovieById = async (req, res) => {
     try {
-        const movie = await Movie.findById(req.params.id);
+        // Intenta buscar por _id de MongoDB primero
+        let movie = null;
+        if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+            movie = await Movie.findById(req.params.id);
+        }
+        // Si no encontró, busca por tmdbId en MongoDB
+        if (!movie) {
+            movie = await Movie.findOne({ tmdbId: req.params.id });
+        }
+        // Si tampoco está en MongoDB, lo trae directo de TMDB
+        if (!movie) {
+            movie = await tmdbProvider.getMovieDetails(req.params.id);
+        }
         if (!movie) return res.status(404).json({ message: 'Película no encontrada' });
         res.json(movie);
     } catch (err) {
@@ -83,5 +95,40 @@ exports.deleteMovie = async (req, res) => {
         res.status(200).json({ message: 'Película eliminada correctamente' });
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+};
+
+const tmdbProvider = require('./providers/tmdb.provider');
+
+exports.exploreMovies = async (req, res) => {
+    try {
+        const { genre, sort, search, page = 1 } = req.query;
+        const { results, totalPages } = await tmdbProvider.explorePeruvianMovies(
+            Number(page),
+            { genre, sort, search }
+        );
+
+        const detailedResults = await Promise.all(
+            results.map(m => tmdbProvider.getMovieDetails(m.id))
+        );
+
+        // LOG TEMPORAL
+        /*console.log(JSON.stringify(detailedResults.map(m => ({ 
+            title: m.title, 
+            originCountry: m.originCountry, 
+            productionCountries: m.productionCountries 
+        })), null, 2));*/
+
+        const movies = detailedResults
+            .filter(m => m.productionCountries && m.productionCountries.includes('PE'))
+            .filter(m => m.posterUrl) // que tengan poster
+            /*.filter(m => {
+                if (!m.releaseDate) return false;
+                return new Date(m.releaseDate) <= new Date(); // solo películas ya estrenadas
+        });*/
+
+        res.json({ results: movies, totalPages, page: Number(page) });
+    } catch (err) {
+        res.status(502).json({ message: err.message });
     }
 };
