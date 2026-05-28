@@ -9,9 +9,6 @@ const { catchAsync, AppError } = require('../../common/error.utils');
 /** @type {any} */
 const tmdbProvider = require('./providers/tmdb.provider');
 
-/**
- * VISTA ADMIN: Importación agnóstica al proveedor
- */
 exports.importMovie = catchAsync(async (req, res, next) => {
     const { externalId, provider = 'tmdb' } = req.body;
 
@@ -20,13 +17,11 @@ exports.importMovie = catchAsync(async (req, res, next) => {
     let movieData;
 
     if (provider === 'tmdb') {
-        // noinspection JSUnresolvedFunction
         movieData = await tmdbProvider.getMovieDetails(externalId);
     } else {
         return next(new AppError(`El proveedor '${provider}' no está implementado.`, 400));
     }
 
-    // noinspection JSUnresolvedFunction
     let movieExists = await Movie.findOne({ tmdbId: movieData.tmdbId });
 
     if (movieExists) {
@@ -44,9 +39,35 @@ exports.importMovie = catchAsync(async (req, res, next) => {
     res.status(201).json({ status: 'success', data: movie });
 });
 
-/**
- * Nota: Implementar importTVShow siguiendo el mismo patrón de Movie.
- */
 exports.importTVShow = catchAsync(async (req, res, _next) => {
     res.status(501).json({ message: "Importación de TV no implementada aún" });
+});
+
+exports.importPeruvianMovies = catchAsync(async (req, res, _next) => {
+    const { pages = 1 } = req.body;
+    let imported = 0;
+    let skipped = 0;
+
+    for (let page = 1; page <= pages; page++) {
+        const { results } = await tmdbProvider.getPeruvianMovies(page);
+
+        for (const item of results) {
+            const exists = await Movie.findOne({ tmdbId: String(item.id) });
+            if (exists) { skipped++; continue; }
+
+            const details = await tmdbProvider.getMovieDetails(item.id);
+            const movie = new Movie(details);
+            await movie.save();
+            imported++;
+        }
+    }
+
+    await audit.recordMutation(req.user.id, 'CATALOG_BULK_IMPORT', {
+        source: 'tmdb',
+        country: 'PE',
+        imported,
+        skipped
+    }, req.ip);
+
+    res.status(201).json({ status: 'success', imported, skipped });
 });

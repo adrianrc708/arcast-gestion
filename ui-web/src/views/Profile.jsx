@@ -62,12 +62,17 @@ const Profile = () => {
                                     <h1 className="text-4xl font-black text-white tracking-tighter">{user.username}</h1>
                                     <p className="text-gray-500 font-medium">{user.email}</p>
                                 </div>
-                                <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                                    <span className="bg-[#38bdf8]/10 text-[#38bdf8] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#38bdf8]/20">
-                                        ROL: {user.role}
-                                    </span>
-                                    <button onClick={() => setIsEditing(true)} className="bg-[#21262d] hover:bg-[#30363d] text-white font-bold px-5 py-1.5 rounded-full border border-[#30363d] transition-all text-xs">Ajustar Perfil</button>
-                                </div>
+                                    <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                                        <span className="bg-[#38bdf8]/10 text-[#38bdf8] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#38bdf8]/20">
+                                            ROL: {user.role}
+                                        </span>
+                                        <button onClick={() => setIsEditing(true)} className="bg-[#21262d] hover:bg-[#30363d] text-white font-bold px-5 py-1.5 rounded-full border border-[#30363d] transition-all text-xs">Ajustar Perfil</button>
+                                        {(user.role === 'admin' || user.role === 'boss') && (
+                                            <a href="/admin" className="bg-[#58a6ff]/10 hover:bg-[#58a6ff]/20 text-[#58a6ff] font-bold px-5 py-1.5 rounded-full border border-[#58a6ff]/20 transition-all text-xs">
+                                                Panel Admin
+                                            </a>
+                                        )}
+                                    </div>
                             </div>
                         ) : (
                             <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-sm mx-auto md:mx-0">
