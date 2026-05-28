@@ -10,6 +10,8 @@ import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
 import Profile from './views/Profile';
 
+import './index.css'; //Por si a caso, no funcionaba en el main.jsx, lo dejo aquí para asegurarme de que se cargue.
+
 const App = () => {
     const { isAuthenticated, user } = useAuth();
 
