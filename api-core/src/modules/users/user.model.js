@@ -21,7 +21,8 @@ const UserSchema = new Schema({
     date: { type: Date, default: Date.now },
     watchlist: [WatchlistSchema],
     // ✅ NUEVO: Array de progreso
-    watchHistory: [ProgressSchema]
+    watchHistory: [ProgressSchema],
+    role: { type: String, enum: ['user', 'admin', 'boss'], default: 'user' }
 });
 
 module.exports = mongoose.model('User', UserSchema);

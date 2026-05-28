@@ -52,11 +52,33 @@ const Home = () => {
 
     useEffect(() => {
         setLoading(true);
-        const params = { sort };
-        if (genre && genre !== 'Todas') params.genre = genre;
-        api.get(`/catalog/${type}/explore`, { params })
-            .then(res => setItems(res.data.results || []))
-            .finally(() => setLoading(false));
+        const fetchAll = async () => {
+            try {
+                const params = { sort };
+                if (genre && genre !== 'Todas') params.genre = genre;
+
+                const first = await api.get(`/catalog/${type}/explore`, { params });
+                const totalPages = first.data.totalPages;
+                const allResults = [...first.data.results];
+
+                const maxPages = Math.min(totalPages, 5);
+                if (maxPages > 1) {
+                    const requests = [];
+                    for (let p = 2; p <= maxPages; p++) {
+                        requests.push(api.get(`/catalog/${type}/explore`, { params: { ...params, page: p } }));
+                    }
+                    const responses = await Promise.all(requests);
+                    responses.forEach(r => allResults.push(...r.data.results));
+                }
+
+                setItems(allResults);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAll();
     }, [type, genre, sort]);
 
     useEffect(() => { setCurrentPage(1); }, [type, genre, sort]);
