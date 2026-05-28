@@ -85,3 +85,34 @@ exports.deleteMovie = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+const tmdbProvider = require('./providers/tmdb.provider');
+
+exports.exploreMovies = async (req, res) => {
+    try {
+        const { genre, sort, search, page = 1 } = req.query;
+        const { results, totalPages } = await tmdbProvider.explorePeruvianMovies(
+            Number(page),
+            { genre, sort, search }
+        );
+
+        const detailedResults = await Promise.all(
+            results.map(m => tmdbProvider.getMovieDetails(m.id))
+        );
+
+        // LOG TEMPORAL
+        /*console.log(JSON.stringify(detailedResults.map(m => ({ 
+            title: m.title, 
+            originCountry: m.originCountry, 
+            productionCountries: m.productionCountries 
+        })), null, 2));*/
+
+        const movies = detailedResults.filter(m => 
+            m.productionCountries && m.productionCountries.includes('PE')
+        );
+
+        res.json({ results: movies, totalPages, page: Number(page) });
+    } catch (err) {
+        res.status(502).json({ message: err.message });
+    }
+};
