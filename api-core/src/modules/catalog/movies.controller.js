@@ -62,3 +62,26 @@ exports.getMovieById = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+exports.updateMovie = async (req, res) => {
+    try {
+        const updated = await Movie.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!updated) return res.status(404).json({ message: 'Película no encontrada' });
+        res.json(updated);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+exports.deleteMovie = async (req, res) => {
+    try {
+        const deleted = await Movie.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ message: 'Película no encontrada' });
+        res.status(200).json({ message: 'Película eliminada correctamente' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

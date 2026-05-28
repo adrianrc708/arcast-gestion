@@ -47,6 +47,18 @@ const requiredAuth = (req, res, next) => {
         res.status(400).json({ message: 'Token inválido.' });
     }
 };
+const authorize = (roles = []) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ message: 'No autenticado.' });
+        }
 
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ message: 'No tienes permisos para realizar esta acción.' });
+        }
 
-module.exports = { optionalAuth, requiredAuth };
+        next();
+    };
+};
+
+module.exports = { optionalAuth, requiredAuth, authorize };
