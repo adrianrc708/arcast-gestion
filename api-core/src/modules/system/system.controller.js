@@ -1,5 +1,7 @@
 /** @type {any} */
 const SystemConfig = require('./system.model');
+/** @type {any} */
+const AuditLog = require('../../common/audit.model');
 const audit = require('../../common/audit.service');
 const { catchAsync } = require('../../common/error.utils');
 
@@ -24,4 +26,13 @@ exports.updateConfig = catchAsync(async (req, res, _next) => {
 
     await audit.recordMutation(req.user.id, 'SYSTEM_UI_MUTATION', { maintenance: maintenanceMode }, req.ip);
     res.json(config);
+});
+exports.getAuditLogs = catchAsync(async (req, res, _next) => {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    // noinspection JSUnresolvedFunction
+    const logs = await AuditLog.find()
+        .sort({ timestamp: -1 })
+        .limit(limit)
+        .lean();
+    res.json(logs);
 });

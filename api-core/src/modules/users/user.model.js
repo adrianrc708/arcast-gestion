@@ -1,27 +1,37 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const Schema = mongoose.Schema;
 
-const WatchlistSchema = new Schema({
-    item: { type: Schema.Types.ObjectId, required: true },
-    kind: { type: String, required: true, enum: ['Movie', 'TVShow'] }
-}, { _id: false });
-
-// ✅ NUEVO: Esquema para guardar el progreso estilo Netflix
-const ProgressSchema = new Schema({
-    contentId: { type: String, required: true },
-    contentType: { type: String, enum: ['Movie', 'TVShow'] },
-    lastTimeWatched: { type: Date, default: Date.now },
-    percentWatched: { type: Number, default: 0 }
-}, { _id: false });
-
 const UserSchema = new Schema({
-    username: { type: String, required: true, unique: true, trim: true },
-    email: { type: String, required: true, unique: true, trim: true },
-    password: { type: String, required: true },
-    date: { type: Date, default: Date.now },
-    watchlist: [WatchlistSchema],
-    // ✅ NUEVO: Array de progreso
-    watchHistory: [ProgressSchema]
+    username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true},
+    role: {
+        type: String,
+        enum: ['user', 'admin', 'boss'],
+        default: 'user'
+    },
+    watchlist: [{
+        item: { type: Schema.Types.ObjectId, required: true },
+        kind: { type: String, enum: ['Movie', 'TVShow'] }
+    }],
+    watchHistory: [{
+        contentId: String,
+        contentType: { type: String, enum: ['Movie', 'TVShow'] }, // Rescatado de tu compañero
+        percentWatched: Number,
+        lastTimeWatched: { type: Date, default: Date.now }
+    }],
+    date: { type: Date, default: Date.now }
+});
+
+UserSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
+    return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+UserSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return next();
+    this.password = await bcrypt.hash(this.password, 12);
+    next();
 });
 
 module.exports = mongoose.model('User', UserSchema);

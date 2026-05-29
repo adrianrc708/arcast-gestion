@@ -1,52 +1,38 @@
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
-// Middleware de autenticación opcional
-// Si hay token, verifica y adjunta datos de usuario.
-// Si no hay token, simplemente continúa.
-const optionalAuth = (req, res, next) => {
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-        return next(); // No hay token, continuar sin autenticar
-    }
 
-    const token = authHeader.split(' ')[1]; // Formato "Bearer <token>"
-    if (!token) {
-        return next(); // Formato de header incorrecto, continuar
-    }
+exports.optionalAuth = (req, res, next) => {
+    const token = req.header('x-auth-token') || req.header('Authorization');
+    if (!token) return next();
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Adjuntar payload del token (ej. { id, username })
+        const tokenString = token.startsWith('Bearer ') ? token.slice(7) : token;
+        req.user = jwt.verify(tokenString, process.env.JWT_SECRET);
         next();
-    } catch (err) {
-        // Token inválido, pero no bloqueamos la petición
-        console.warn("Token inválido recibido, continuando como anónimo.");
-        next();
+    } catch (err) { 
+        next(); // Si el token falla, lo dejamos pasar como anónimo
     }
 };
 
-// Middleware de autenticación REQUERIDA
-// Si no hay token válido, bloquea la petición.
-const requiredAuth = (req, res, next) => {
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-        return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token.' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ message: 'Formato de token inválido.' });
-    }
+exports.requiredAuth = (req, res, next) => {
+    const token = req.header('x-auth-token') || req.header('Authorization');
+    if (!token) return res.status(401).json({ message: 'No hay token.' });
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Adjuntar payload del token
+        const tokenString = token.startsWith('Bearer ') ? token.slice(7) : token;
+        req.user = jwt.verify(tokenString, process.env.JWT_SECRET);
         next();
-    } catch (err) {
-        res.status(400).json({ message: 'Token inválido.' });
-    }
+    } catch (err) { res.status(401).json({ message: 'Token no válido.' }); }
 };
 
 
-module.exports = { optionalAuth, requiredAuth };
+exports.authorize = (roles = []) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                message: `Acceso denegado. Se requiere rol: ${roles.join(' o ')}`
+            });
+        }
+        next();
+    };
+};
