@@ -89,4 +89,28 @@ const explorePeruvianMovies = async (page = 1, filters = {}) => {
     }
 };
 
-module.exports = { getMovieDetails, getPeruvianMovies, explorePeruvianMovies };
+const getTVShowDetails = async (id) => {
+    try {
+        const res = await axios.get(`https://api.themoviedb.org/3/tv/${id}`, {
+            params: { api_key: process.env.TMDB_API_KEY, language: 'es-ES' }
+        });
+        const d = res.data;
+
+        return {
+            // Mapeo crucial: TMDB usa 'name' para series, lo pasamos a 'title' o lo guardamos como 'name'
+            title: d.name, 
+            overview: d.overview,
+            posterUrl: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
+            backdropUrl: d.backdrop_path ? `https://image.tmdb.org/t/p/original${d.backdrop_path}` : null,
+            tmdbId: String(d.id),
+            releaseDate: d.first_air_date, // TMDB usa 'first_air_date' para series
+            voteAverage: d.vote_average,
+            originCountry: d.origin_country || [],
+            productionCountries: (d.production_countries || []).map(c => c.iso_3166_1)
+        };
+    } catch (err) {
+        throw new AppError('Error al conectar con el proveedor TMDB para TV', 502);
+    }
+};
+
+module.exports = { getMovieDetails, getPeruvianMovies, explorePeruvianMovies, getTVShowDetails };

@@ -1,5 +1,6 @@
 /** @type {any} */
 const Movie = require('./movie.model');
+const TVShow = require('./tvshow.model');
 
 /** @type {any} */
 const audit = require('../../common/audit.service');
@@ -47,8 +48,34 @@ exports.importMovie = catchAsync(async (req, res, next) => {
 /**
  * Nota: Implementar importTVShow siguiendo el mismo patrón de Movie.
  */
-exports.importTVShow = catchAsync(async (req, res, _next) => {
-    res.status(501).json({ message: "Importación de TV no implementada aún" });
+exports.importTVShow = catchAsync(async (req, res, next) => {
+    const { externalId, provider = 'tmdb' } = req.body;
+
+    if (!externalId) return next(new AppError('Se requiere un ID externo.', 400));
+
+    let tvData;
+
+    if (provider === 'tmdb') {
+        tvData = await tmdbProvider.getTVShowDetails(externalId);
+    } else {
+        return next(new AppError(`El proveedor '${provider}' no está implementado.`, 400));
+    }
+
+    let tvExists = await TVShow.findOne({ tmdbId: tvData.tmdbId });
+
+    if (tvExists) {
+        return next(new AppError('Este contenido ya existe en el catálogo.', 400));
+    }
+
+    const tvshow = new TVShow(tvData);
+    await tvshow.save();
+
+    await audit.recordMutation(req.user.id, 'CATALOG_IMPORT_TV', {
+        title: tvshow.title,
+        source: provider
+    }, req.ip);
+
+    res.status(201).json({ status: 'success', data: tvshow });
 });
 
 exports.importPeruvianMovies = catchAsync(async (req, res, _next) => {
