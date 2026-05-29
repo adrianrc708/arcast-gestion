@@ -13,7 +13,8 @@ const MovieSchema = new Schema({
     voteAverage: { type: Number },
     duration: { type: Number },
     languages: [{ type: String }],
-
+    originCountry: [{ type: String }],
+    
     // CAMBIO: Ahora guardamos un array de plataformas
     platforms: [{
         name: String,

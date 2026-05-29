@@ -17,6 +17,7 @@ const UserSchema = new Schema({
     }],
     watchHistory: [{
         contentId: String,
+        contentType: { type: String, enum: ['Movie', 'TVShow'] }, // Rescatado de tu compañero
         percentWatched: Number,
         lastTimeWatched: { type: Date, default: Date.now }
     }],

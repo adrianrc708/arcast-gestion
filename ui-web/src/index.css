@@ -1,7 +1,11 @@
-@tailwind base;
+/*@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+Estas librerías de Tailwind se importan para que podamos usar sus clases en nuestro CSS y JSX, pero no servían
+para nada
+*/
+@import "tailwindcss"; /*Ahora se usa esta que es más actual.*/
 :root {
     --bg-main: #0f1014;
     --bg-card: #1b1d24;

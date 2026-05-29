@@ -1,4 +1,5 @@
 const moviesService = require('./movies.service');
+const tmdbProvider = require('./providers/tmdb.provider');
 const { catchAsync, AppError } = require('../../common/error.utils');
 
 exports.getAllMovies = catchAsync(async (req, res, _next) => {
@@ -14,7 +15,18 @@ exports.getAllMovies = catchAsync(async (req, res, _next) => {
 });
 
 exports.getMovieById = catchAsync(async (req, res, _next) => {
-    const movie = await moviesService.findById(req.params.id);
+    let movie = null;
+
+    // 1. Intenta buscar por ID de MongoDB si el formato es correcto
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+        movie = await moviesService.findById(req.params.id);
+    }
+
+    // 2. Si no encontró en tu BD, hace el fallback y busca en la API de TMDB
+    if (!movie) {
+        movie = await tmdbProvider.getMovieDetails(req.params.id);
+    }
+
     if (!movie) throw new AppError('Película no encontrada', 404);
     res.json(movie);
 });
@@ -36,4 +48,22 @@ exports.updateMovie = catchAsync(async (req, res, _next) => {
 exports.deleteMovie = catchAsync(async (req, res, _next) => {
     await moviesService.delete(req.params.id);
     res.json({ message: 'Película eliminada' });
+});
+
+exports.exploreMovies = catchAsync(async (req, res, _next) => {
+    const { genre, sort, search, page = 1 } = req.query;
+    const { results, totalPages } = await tmdbProvider.explorePeruvianMovies(
+        Number(page),
+        { genre, sort, search }
+    );
+
+    const detailedResults = await Promise.all(
+        results.map(m => tmdbProvider.getMovieDetails(m.id))
+    );
+
+    const movies = detailedResults
+        .filter(m => m.productionCountries && m.productionCountries.includes('PE'))
+        .filter(m => m.posterUrl);
+
+    res.json({ results: movies, totalPages, page: Number(page) });
 });

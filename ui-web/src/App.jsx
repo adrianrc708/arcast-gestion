@@ -10,17 +10,16 @@ import AdminPanel from './views/AdminPanel';
 import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
 import Profile from './views/Profile';
+import './index.css';
 
 const App = () => {
     const { isAuthenticated, user } = useAuth();
 
-    // NUEVO: Efecto que inyecta el CSS global sin importar si está logueado
+    // Efecto que inyecta el CSS global sin importar si está logueado
     useEffect(() => {
-        // CORRECCIÓN 1: La ruta exacta de tu backend
         api.get('/system/config')
             .then(res => {
                 const config = Array.isArray(res.data) ? res.data[0] : res.data;
-                // CORRECCIÓN 2: El nombre exacto de la variable en tu BD
                 const customCSS = config?.customCSS;
 
                 if (customCSS) {
@@ -34,7 +33,7 @@ const App = () => {
                 }
             })
             .catch(err => console.error('No se pudo cargar la configuración del sistema:', err));
-    }, []); // Los corchetes vacíos hacen que se ejecute solo 1 vez al entrar a la página
+    }, []);
 
     if (!isAuthenticated) return <Auth />;
 

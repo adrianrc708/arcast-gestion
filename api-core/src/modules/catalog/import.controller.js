@@ -50,3 +50,32 @@ exports.importMovie = catchAsync(async (req, res, next) => {
 exports.importTVShow = catchAsync(async (req, res, _next) => {
     res.status(501).json({ message: "Importación de TV no implementada aún" });
 });
+
+exports.importPeruvianMovies = catchAsync(async (req, res, _next) => {
+    const { pages = 1 } = req.body;
+    let imported = 0;
+    let skipped = 0;
+
+    for (let page = 1; page <= pages; page++) {
+        const { results } = await tmdbProvider.getPeruvianMovies(page);
+
+        for (const item of results) {
+            const exists = await Movie.findOne({ tmdbId: String(item.id) });
+            if (exists) { skipped++; continue; }
+
+            const details = await tmdbProvider.getMovieDetails(item.id);
+            const movie = new Movie(details);
+            await movie.save();
+            imported++;
+        }
+    }
+
+    await audit.recordMutation(req.user.id, 'CATALOG_BULK_IMPORT', {
+        source: 'tmdb',
+        country: 'PE',
+        imported,
+        skipped
+    }, req.ip);
+
+    res.status(201).json({ status: 'success', imported, skipped });
+});

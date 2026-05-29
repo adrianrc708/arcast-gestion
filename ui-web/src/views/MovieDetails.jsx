@@ -9,7 +9,6 @@ const MovieDetails = () => {
     const [item, setItem] = useState(null);
     const [reviews, setReviews] = useState([]);
 
-    // Sincronizado con ReviewSchema: usamos 'text' en lugar de 'comment'
     const [newReview, setNewReview] = useState({ rating: 5, text: '' });
     const [hoverRating, setHoverRating] = useState(0);
     const [editingReviewId, setEditingReviewId] = useState(null);
@@ -21,8 +20,6 @@ const MovieDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Traemos el contenido y las reseñas reales
-                // CORRECCIÓN: La ruta correcta es /api/reviews/movie/:id
                 const [itemRes, reviewsRes] = await Promise.all([
                     api.get(`/catalog/${type === 'movie' ? 'movies' : 'tvshows'}/${id}`),
                     api.get(`/reviews/movie/${id}`).catch(() => ({ data: [] }))
@@ -30,7 +27,6 @@ const MovieDetails = () => {
                 setItem(itemRes.data);
                 setReviews(reviewsRes.data);
 
-                // 2. Verificar si está en watchlist
                 if (user) {
                     const me = await api.get('/users/me').catch(() => null);
                     if (me?.data?.watchlist) {
@@ -82,7 +78,6 @@ const MovieDetails = () => {
                 });
                 setEditingReviewId(null);
             } else {
-                // CAMPOS EXACTOS DEL BACKEND: movieId, contentType, text, rating
                 await api.post('/reviews', {
                     movieId: id,
                     contentType: type,
@@ -91,7 +86,6 @@ const MovieDetails = () => {
                 });
             }
 
-            // CORRECCIÓN: Recargamos usando la ruta /movie/:id
             const res = await api.get(`/reviews/movie/${id}`);
             setReviews(res.data);
             setNewReview({ rating: 5, text: '' });
@@ -173,6 +167,12 @@ const MovieDetails = () => {
                         <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>
                             Ver {type === 'movie' ? 'Película' : 'Contenido'}
                         </button>
+                        {/* RESCATADO DE TU COMPAÑERO */}
+                        {item.watchLink && (
+                            <button className={activeVideo === 'alt' ? 'active' : ''} onClick={() => setActiveVideo('alt')}>
+                                Fuente Alternativa
+                            </button>
+                        )}
                         {trailerEmbedUrl && (
                             <button className={activeVideo === 'trailer' ? 'active' : ''} onClick={() => setActiveVideo('trailer')}>
                                 Ver Trailer
@@ -182,7 +182,11 @@ const MovieDetails = () => {
 
                     <div className="player-glass-container">
                         <iframe
-                            src={activeVideo === 'trailer' ? trailerEmbedUrl : movieEmbedUrl}
+                            src={
+                                activeVideo === 'trailer' ? trailerEmbedUrl :
+                                activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
+                                movieEmbedUrl
+                            }
                             title="Reproductor"
                             frameBorder="0"
                             allowFullScreen
