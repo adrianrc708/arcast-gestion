@@ -9,7 +9,7 @@ const MovieDetails = () => {
     const [item, setItem] = useState(null);
     const [reviews, setReviews] = useState([]);
 
-    const [newReview, setNewReview] = useState({ rating: 5, text: '' });
+    const [newReview, setReview] = useState({ rating: 5, text: '' });
     const [hoverRating, setHoverRating] = useState(0);
     const [editingReviewId, setEditingReviewId] = useState(null);
 
@@ -88,7 +88,7 @@ const MovieDetails = () => {
 
             const res = await api.get(`/reviews/movie/${id}`);
             setReviews(res.data);
-            setNewReview({ rating: 5, text: '' });
+            setReview({ rating: 5, text: '' });
         } catch (error) {
             console.error("Error Reseña:", error.response?.data);
             alert("Error al procesar la reseña: " + (error.response?.data?.message || "Verifica los campos"));
@@ -107,7 +107,7 @@ const MovieDetails = () => {
 
     const handleEditReview = (rev) => {
         setEditingReviewId(rev._id);
-        setNewReview({ rating: rev.rating, text: rev.text });
+        setReview({ rating: rev.rating, text: rev.text });
         window.scrollTo({ top: document.querySelector('.add-review-card').offsetTop - 100, behavior: 'smooth' });
     };
 
@@ -119,39 +119,56 @@ const MovieDetails = () => {
         ? `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`
         : `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=1&episode=1`;
 
+    // Lógica para fondo por defecto si no hay imágenes
+    const bgImage = item.backdropUrl || item.posterUrl || 'https://via.placeholder.com/1920x1080/111111/111111';
+
     return (
         <div className="detail-page">
-            <div className="detail-backdrop" style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})` }}>
+            <div className="detail-backdrop" style={{ backgroundImage: `url(${bgImage})` }}>
                 <div className="detail-mask"></div>
             </div>
 
             <div className="detail-container">
                 <div className="detail-header">
                     <div className="detail-poster">
-                        <img src={item.posterUrl} alt={item.title || item.name} />
+                        {/* Renderizado condicional del póster */}
+                        <img 
+                            src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=P%C3%B3ster+no+disponible'} 
+                            alt={item.title || item.name} 
+                        />
                     </div>
 
                     <div className="detail-main-info">
                         <div className="badge-row">
                             <span className="type-badge">{type === 'movie' ? 'Película' : 'Serie'}</span>
-                            <span className="year-badge">{item.releaseDate?.split('-')[0]}</span>
+                            {/* Renderizado seguro del año */}
+                            <span className="year-badge">{item.releaseDate ? item.releaseDate.split('-')[0] : 'Año desconocido'}</span>
                         </div>
                         <h1 className="detail-title">{item.title || item.name}</h1>
 
                         <div className="stats-row">
-                            <div className="score-circle">
-                                <span className="score-val">{item.voteAverage?.toFixed(1) || '0'}</span>
-                                <span className="score-label">Rating</span>
-                            </div>
+                            {/* Solo muestra el círculo de Rating si existe un puntaje mayor a 0 */}
+                            {item.voteAverage ? (
+                                <div className="score-circle">
+                                    <span className="score-val">{item.voteAverage.toFixed(1)}</span>
+                                    <span className="score-label">Rating</span>
+                                </div>
+                            ) : null}
+
                             <div className="meta-info">
-                                <p><strong>Géneros:</strong> {item.genres?.join(', ') || 'General'}</p>
-                                <p><strong>Duración:</strong> {item.runtime ? `${item.runtime} min` : 'N/A'}</p>
+                                <p><strong>Géneros:</strong> {item.genres?.length > 0 ? item.genres.join(', ') : 'No clasificado'}</p>
+                                
+                                {/* Solo muestra la duración si existe */}
+                                {item.runtime ? (
+                                    <p><strong>Duración:</strong> {item.runtime} min</p>
+                                ) : null}
                             </div>
                         </div>
 
                         <div className="synopsis">
                             <h3>Sinopsis</h3>
-                            <p>{item.overview || "No hay una descripción disponible para este título."}</p>
+                            {/* Mensaje por defecto si no hay descripción */}
+                            <p>{item.overview || "La sinopsis de esta obra aún no está disponible en nuestro archivo."}</p>
                         </div>
 
                         <div className="action-buttons">
@@ -208,7 +225,7 @@ const MovieDetails = () => {
                                             className={`star ${star <= (hoverRating || newReview.rating) ? 'active' : ''}`}
                                             onMouseEnter={() => setHoverRating(star)}
                                             onMouseLeave={() => setHoverRating(0)}
-                                            onClick={() => setNewReview({ ...newReview, rating: star })}
+                                            onClick={() => setReview({ ...newReview, rating: star })}
                                         >★</span>
                                     ))}
                                 </div>
@@ -217,7 +234,7 @@ const MovieDetails = () => {
                                     className="modern-textarea"
                                     placeholder="¿Qué te pareció?"
                                     value={newReview.text}
-                                    onChange={(e) => setNewReview({...newReview, text: e.target.value})}
+                                    onChange={(e) => setReview({...newReview, text: e.target.value})}
                                     required
                                 />
                                 <div className="form-actions">
@@ -228,7 +245,7 @@ const MovieDetails = () => {
                                         <button
                                             type="button"
                                             className="cancel-edit-btn"
-                                            onClick={() => { setEditingReviewId(null); setNewReview({ rating: 5, text: '' }); }}
+                                            onClick={() => { setEditingReviewId(null); setReview({ rating: 5, text: '' }); }}
                                         >
                                             Cancelar
                                         </button>
