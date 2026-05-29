@@ -3,20 +3,20 @@
  */
 const Movie = require('./movie.model');
 
-/**
- * Crea una nueva película en la base de datos.
- */
 exports.create = async (data) => {
     return new Movie(data).save();
 };
 
-/**
- * Busca todas las películas aplicando filtros y ordenamiento.
- */
 exports.findAll = async (query, sort, search) => {
+    let finalQuery = { ...query };
+    
+    // Filtro nativo en MongoDB para el buscador
+    if (search) {
+        finalQuery.title = { $regex: search, $options: 'i' };
+    }
+
     if (!sort && !search) {
-        // noinspection JSUnresolvedFunction
-        const movies = await Movie.find(query);
+        const movies = await Movie.find(finalQuery);
         return movies.sort(() => Math.random() - 0.5);
     }
 
@@ -24,16 +24,25 @@ exports.findAll = async (query, sort, search) => {
     if (sort === 'rating') sortOption = { voteAverage: -1 };
     if (sort === 'newest') sortOption = { releaseDate: -1 };
 
-    // noinspection JSUnresolvedFunction
-    return Movie.find(query).sort(sortOption);
+    return Movie.find(finalQuery).sort(sortOption);
 };
 
-/**
- * Busca una película por su ID único.
- */
 exports.findById = async (id) => {
-    // noinspection JSUnresolvedFunction
-    return Movie.findById(id);
+    const movie = await Movie.findById(id);
+    if (!movie) return null;
+    
+    // Convertimos a objeto para inyectar la URL del trailer que React espera
+    const movieObj = movie.toObject();
+    if (movieObj.trailerKey) {
+        movieObj.trailerUrl = `https://www.youtube.com/watch?v=${movieObj.trailerKey}`;
+    }
+    return movieObj;
+};
+
+// Funciones añadidas para reemplazar a TMDB
+exports.getDetails = exports.findById;
+exports.search = async (queryTerm) => {
+    return Movie.find({ title: { $regex: queryTerm, $options: 'i' } });
 };
 
 exports.update = async (id, data) => Movie.findByIdAndUpdate(id, data, { new: true });

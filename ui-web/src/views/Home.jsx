@@ -16,7 +16,7 @@ const CarouselRow = ({ title, items, type }) => {
                 <button className="carousel-btn prev" onClick={() => scroll('left')}>&#10094;</button>
                 <div className="carousel-track" ref={trackRef}>
                     {items.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -61,7 +61,7 @@ const Home = () => {
                 const params = { sort };
                 if (genre && genre !== 'Todas') params.genre = genre;
 
-                const endpoint = genre !== 'Todas' || sort !== 'newest' ? `/catalog/${type}/explore` : `/catalog/${type}`;
+                const endpoint = `/catalog/${type}`;
                 const res = await api.get(endpoint, { params });
                 
                 // Asignación directa sin bucles de ataque a la API
@@ -133,7 +133,7 @@ const Home = () => {
 
                 <div className="catalog-grid">
                     {currentItems.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -169,7 +169,7 @@ const Home = () => {
                         key={item._id}
                         className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
                         style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})`, cursor: 'pointer' }}
-                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}
+                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}
                     >
                         <div className="hero-overlay">
                             <div className="hero-content">
@@ -180,7 +180,7 @@ const Home = () => {
                                     className="hero-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`);
+                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
                                     }}
                                 >
                                     Ver Detalles
