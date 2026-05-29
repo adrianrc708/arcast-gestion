@@ -2,9 +2,7 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-/**
- * @type {any}
- */
+/** @type {any} */
 const Movie = require('./src/modules/catalog/movie.model');
 /** @type {any} */
 const TVShow = require('./src/modules/catalog/tvshow.model');
@@ -14,46 +12,14 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 
-const GENRES_TO_FETCH = [28, 35, 27, 878, 16];
+// Solo definimos cuántas páginas queremos, quitamos los géneros hardcodeados
 const PAGES_TO_FETCH = 5;
-const GENRES_TO_EXCLUDE = [99];
 
-/**
- * @typedef {Object} TMDBVideo
- * @property {string} type
- * @property {string} site
- * @property {string} key
- *
- * @typedef {Object} TMDBProvider
- * @property {string} provider_name
- * @property {string} logo_path
- *
- * @typedef {Object} TMDBDetail
- * @property {number} id
- * @property {string} [title]
- * @property {string} [name]
- * @property {string} overview
- * @property {string} poster_path
- * @property {string} backdrop_path
- * @property {string} release_date
- * @property {string} first_air_date
- * @property {number} vote_average
- * @property {number} runtime
- * @property {number} number_of_seasons
- * @property {Array<{name: string}>} genres
- * @property {Array<{name: string}>} spoken_languages
- * @property {{results: TMDBVideo[]}} videos
- * @property {{results: Object.<string, {flatrate: TMDBProvider[], link: string}>}} [watch/providers]
- */
-
-// --- HELPERS ---
+// --- HELPERS (Se mantienen iguales) ---
 const findTrailer = (videos) => {
     if (!videos || !videos.results) return null;
-    // noinspection JSUnresolvedVariable
     let v = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-    // noinspection JSUnresolvedVariable
     if (!v) v = videos.results.find(v => v.type === 'Teaser' && v.site === 'YouTube');
-    // noinspection JSUnresolvedVariable
     if (!v) v = videos.results.find(v => v.site === 'YouTube');
     return v ? v.key : null;
 };
@@ -68,9 +34,7 @@ const isInTheaters = (releaseDateStr) => {
 
 const getWatchProviders = (providers, releaseDate) => {
     let results = [];
-    // noinspection JSUnresolvedVariable
     if (providers && providers.results && providers.results.PE && providers.results.PE.flatrate) {
-        // noinspection JSUnresolvedVariable
         results = providers.results.PE.flatrate.map(p => ({
             name: p.provider_name,
             logo: `${TMDB_IMG_URL}${p.logo_path}`,
@@ -87,25 +51,24 @@ const getWatchProviders = (providers, releaseDate) => {
     return results;
 };
 
-async function importMoviesByGenre(genreId) {
+// --- IMPORTACIÓN ESTRICTA DE PERÚ ---
+
+async function importPeruvianMovies() {
     try {
-        console.log(`\n🎬 Importando género ID ${genreId}...`);
+        console.log('\n🎬 Importando Películas Peruanas...');
         for (let page = 1; page <= PAGES_TO_FETCH; page++) {
             const response = await axios.get(`${TMDB_BASE_URL}/discover/movie`, {
                 params: {
                     api_key: TMDB_API_KEY,
                     language: 'es-ES',
                     include_adult: 'false',
-                    'vote_count.gte': 50,
-                    without_genres: GENRES_TO_EXCLUDE.join(','),
-                    with_genres: genreId,
+                    with_origin_country: 'PE', // <-- FILTRO DE PAÍS PE
                     sort_by: 'popularity.desc',
                     page: page
                 }
             });
 
             for (const basicData of response.data.results) {
-                // noinspection JSUnresolvedFunction
                 const existing = await Movie.findOne({ tmdbId: basicData.id });
                 if (!existing) {
                     try {
@@ -117,21 +80,14 @@ async function importMoviesByGenre(genreId) {
                                 include_video_language: 'es,en,null'
                             }
                         });
-                        /** @type {TMDBDetail} */
                         const d = detailRes.data;
-
-                        // ✅ Añadimos noinspection para release_date
-                        // noinspection JSUnresolvedVariable
                         const releaseDate = d.release_date;
                         const platforms = getWatchProviders(d['watch/providers'], releaseDate);
 
-                        // noinspection JSUnresolvedVariable
                         const movie = new Movie({
                             title: d.title,
                             overview: d.overview,
-                            // noinspection JSUnresolvedVariable
                             posterUrl: d.poster_path ? `${TMDB_IMG_URL}${d.poster_path}` : null,
-                            // noinspection JSUnresolvedVariable
                             backdropUrl: d.backdrop_path ? `${TMDB_BACKDROP_URL}${d.backdrop_path}` : null,
                             tmdbId: d.id,
                             releaseDate: releaseDate,
@@ -141,9 +97,9 @@ async function importMoviesByGenre(genreId) {
                             duration: d.runtime,
                             languages: d.spoken_languages.map(l => l.name),
                             platforms: platforms,
-                            watchLink: platforms.length > 0 ? platforms[0].link : null
+                            watchLink: platforms.length > 0 ? platforms[0].link : null,
+                            originCountry: ['PE'] // Aseguramos que guarde la etiqueta
                         });
-                        // noinspection JSUnresolvedFunction
                         await movie.save();
                         process.stdout.write('+');
                     } catch (innerErr) {
@@ -155,26 +111,27 @@ async function importMoviesByGenre(genreId) {
             }
         }
     } catch (err) {
-        console.error(`Error en género ${genreId}:`, err.message);
+        console.error('Error en Películas:', err.message);
     }
 }
 
-async function importPopularTVShows() {
+async function importPeruvianTVShows() {
     try {
-        console.log('\n\n📺 Importando Series Populares...');
+        // Cambiamos el /tv/popular por /discover/tv para poder filtrar por país
+        console.log('\n\n📺 Importando Series Peruanas...');
         for (let page = 1; page <= PAGES_TO_FETCH; page++) {
-            const response = await axios.get(`${TMDB_BASE_URL}/tv/popular`, {
+            const response = await axios.get(`${TMDB_BASE_URL}/discover/tv`, {
                 params: {
                     api_key: TMDB_API_KEY,
                     language: 'es-ES',
                     include_adult: 'false',
-                    'vote_count.gte': 50,
+                    with_origin_country: 'PE', // <-- FILTRO DE PAÍS PE
+                    sort_by: 'popularity.desc',
                     page: page
                 }
             });
 
             for (const basicData of response.data.results) {
-                // noinspection JSUnresolvedFunction
                 const existing = await TVShow.findOne({ tmdbId: basicData.id });
                 if (!existing) {
                     try {
@@ -186,21 +143,14 @@ async function importPopularTVShows() {
                                 include_video_language: 'es,en,null'
                             }
                         });
-                        /** @type {TMDBDetail} */
                         const d = detailRes.data;
-
-                        // ✅ Añadimos noinspection para first_air_date
-                        // noinspection JSUnresolvedVariable
                         const firstAirDate = d.first_air_date;
                         const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
 
-                        // noinspection JSUnresolvedVariable
                         const show = new TVShow({
                             name: d.name,
                             overview: d.overview,
-                            // noinspection JSUnresolvedVariable
                             posterUrl: d.poster_path ? `${TMDB_IMG_URL}${d.poster_path}` : null,
-                            // noinspection JSUnresolvedVariable
                             backdropUrl: d.backdrop_path ? `${TMDB_BACKDROP_URL}${d.backdrop_path}` : null,
                             tmdbId: d.id,
                             firstAirDate: firstAirDate,
@@ -210,9 +160,9 @@ async function importPopularTVShows() {
                             seasons: d.number_of_seasons,
                             languages: d.spoken_languages.map(l => l.name),
                             platforms: platforms,
-                            watchLink: platforms.length > 0 ? platforms[0].link : null
+                            watchLink: platforms.length > 0 ? platforms[0].link : null,
+                            originCountry: ['PE'] // Aseguramos que guarde la etiqueta
                         });
-                        // noinspection JSUnresolvedFunction
                         await show.save();
                         process.stdout.write('+');
                     } catch (innerErr) {
@@ -229,18 +179,20 @@ async function importPopularTVShows() {
 }
 
 async function runSeed() {
-    console.log('🚀 Iniciando Seeding Masivo...');
+    console.log('🚀 Iniciando Seeding Masivo Peruano...');
     try {
         await mongoose.connect(process.env.MONGO_URI);
-        console.log('Conectado a MongoDB.');
+        console.log('Conectado a MongoDB Atlas.');
 
-        for (const genreId of GENRES_TO_FETCH) {
-            await importMoviesByGenre(genreId);
-        }
+        console.log('🧹 Limpiando colecciones antiguas (Tierra arrasada)...');
+        await Movie.deleteMany({});
+        await TVShow.deleteMany({});
+        console.log('✨ Base de datos en blanco y lista.');
 
-        await importPopularTVShows();
+        await importPeruvianMovies();
+        await importPeruvianTVShows();
 
-        console.log('\n\n✅ ¡Base de datos poblada exitosamente!');
+        console.log('\n\n✅ ¡Base de datos poblada exitosamente SOLO con contenido de Perú!');
         process.exit(0);
     } catch (err) {
         console.error(err);
@@ -248,7 +200,6 @@ async function runSeed() {
     }
 }
 
-// ✅ Manejo de promesa para evitar 'Promise returned is ignored'
 runSeed().catch(err => {
     console.error(err);
     process.exit(1);
