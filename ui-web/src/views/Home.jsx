@@ -16,7 +16,7 @@ const CarouselRow = ({ title, items, type }) => {
                 <button className="carousel-btn prev" onClick={() => scroll('left')}>&#10094;</button>
                 <div className="carousel-track" ref={trackRef}>
                     {items.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -37,6 +37,10 @@ const CarouselRow = ({ title, items, type }) => {
 const Home = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // 1. ESTADO DE LAS RECOMENDACIONES (IA)
+    const [recommendations, setRecommendations] = useState([]);
+
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -47,18 +51,31 @@ const Home = () => {
 
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    // Estados para Paginación
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 15;
 
     useEffect(() => {
         setLoading(true);
-        api.get(`/catalog/${type}`, { params: { genre, sort } })
-            .then(res => setItems(res.data))
-            .finally(() => setLoading(false));
+        const fetchCatalog = async () => {
+            try {
+                const params = { sort };
+                if (genre && genre !== 'Todas') params.genre = genre;
+
+                const endpoint = genre !== 'Todas' || sort !== 'newest' ? `/catalog/${type}/explore` : `/catalog/${type}`;
+                const res = await api.get(endpoint, { params });
+                
+                // Asignación directa sin bucles de ataque a la API
+                setItems(res.data.results || res.data || []);
+            } catch (err) {
+                console.error("Error al cargar el catálogo:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCatalog();
     }, [type, genre, sort]);
 
-    // Resetear a la página 1 cuando se cambia de pestaña o filtro
     useEffect(() => { setCurrentPage(1); }, [type, genre, sort]);
 
     const heroItems = items.slice(0, 5);
@@ -67,6 +84,16 @@ const Home = () => {
         const interval = setInterval(() => setCurrentSlide(prev => (prev + 1) % heroItems.length), 5000);
         return () => clearInterval(interval);
     }, [heroItems, view]);
+
+    // 2. EFECTO QUE LLAMA A LA API DE LA IA
+    useEffect(() => {
+        const token = localStorage.getItem('arcast_token');
+        if (token) {
+            api.get('/users/recommendations')
+                .then(res => setRecommendations(res.data))
+                .catch(err => console.error(err));
+        }
+    }, []);
 
     const updateFilter = (key, value) => {
         const params = new URLSearchParams(searchParams);
@@ -106,7 +133,7 @@ const Home = () => {
 
                 <div className="catalog-grid">
                     {currentItems.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
                             <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
@@ -142,19 +169,18 @@ const Home = () => {
                         key={item._id}
                         className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
                         style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})`, cursor: 'pointer' }}
-                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}
+                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}
                     >
                         <div className="hero-overlay">
                             <div className="hero-content">
                                 <span className="hero-label">Destacado #{index + 1}</span>
                                 <h1 className="hero-title">{item.title || item.name}</h1>
-                                {/* Si la API no tiene resumen, pone un texto predeterminado */}
                                 <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic en la imagen o en el botón para ver todos los detalles y calificaciones."}</p>
                                 <button
                                     className="hero-btn"
                                     onClick={(e) => {
-                                        e.stopPropagation(); // Evita doble clic si pinchas directo en el botón
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
+                                        e.stopPropagation();
+                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`);
                                     }}
                                 >
                                     Ver Detalles
@@ -164,7 +190,6 @@ const Home = () => {
                     </div>
                 ))}
 
-                {/* Puntos para cambiar de slide manualmente */}
                 <div className="slider-dots">
                     {heroItems.map((_, index) => (
                         <div
@@ -178,6 +203,11 @@ const Home = () => {
                     ))}
                 </div>
             </div>
+
+            {/* 3. RENDERIZADO VISUAL DE LA IA */}
+            {recommendations.length > 0 && (
+                <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />
+            )}
 
             <CarouselRow title="Novedades Recientes" items={recent} type={type} />
             <CarouselRow title="Aclamadas por la Crítica" items={topRated} type={type} />

@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const { data } = await api.post('/auth/login', { email, password });
+            console.log('DATA DEL LOGIN:', data); //TEMPORAL
             localStorage.setItem('arcast_token', data.token);
             localStorage.setItem('arcast_user', JSON.stringify(data.user));
             setUser(data.user);
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.clear();
         setUser(null);
-        window.location.reload();
+        window.location.replace('/'); // Resetea la URL a / para que el próximo usuario empiece limpio
     };
 
     // FIX: Agregamos loading al value para que App.jsx lo detecte

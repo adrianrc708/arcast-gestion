@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import api from './services/api';
 
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
@@ -9,9 +10,30 @@ import AdminPanel from './views/AdminPanel';
 import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
 import Profile from './views/Profile';
+import './index.css';
 
 const App = () => {
     const { isAuthenticated, user } = useAuth();
+
+    // Efecto que inyecta el CSS global sin importar si está logueado
+    useEffect(() => {
+        api.get('/system/config')
+            .then(res => {
+                const config = Array.isArray(res.data) ? res.data[0] : res.data;
+                const customCSS = config?.customCSS;
+
+                if (customCSS) {
+                    let styleTag = document.getElementById('arcast-custom-css');
+                    if (!styleTag) {
+                        styleTag = document.createElement('style');
+                        styleTag.id = 'arcast-custom-css';
+                        document.head.appendChild(styleTag);
+                    }
+                    styleTag.innerHTML = customCSS;
+                }
+            })
+            .catch(err => console.error('No se pudo cargar la configuración del sistema:', err));
+    }, []);
 
     if (!isAuthenticated) return <Auth />;
 
@@ -20,7 +42,6 @@ const App = () => {
             <Navbar />
             <main className="flex-1 pt-16">
                 <Routes>
-                    {/* REDIRECCIÓN DIRECTA: Sin funciones externas que causen crasheos */}
                     <Route path="/" element={
                         user?.role === 'admin' ? <Navigate to="/admin" replace /> :
                             user?.role === 'boss'  ? <Navigate to="/boss" replace />  :
