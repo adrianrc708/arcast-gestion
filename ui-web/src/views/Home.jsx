@@ -16,12 +16,16 @@ const CarouselRow = ({ title, items, type }) => {
                 <button className="carousel-btn prev" onClick={() => scroll('left')}>&#10094;</button>
                 <div className="carousel-track" ref={trackRef}>
                     {items.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
-                            <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                            <div className="poster-wrapper">
+                                {/* Fallback si la película/serie no tiene imagen */}
+                                <img src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=Sin+Imagen'} alt={item.title || item.name} />
+                            </div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
                                 <div className="card-meta">
-                                    <span>{item.releaseDate?.split('-')[0]}</span>
+                                    {/* Compatible con Películas (releaseDate) y Series (firstAirDate) */}
+                                    <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || 'Año desconocido'}</span>
                                     <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
                                 </div>
                             </div>
@@ -38,7 +42,6 @@ const Home = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. ESTADO DE LAS RECOMENDACIONES (IA)
     const [recommendations, setRecommendations] = useState([]);
 
     const [searchParams, setSearchParams] = useSearchParams();
@@ -61,10 +64,10 @@ const Home = () => {
                 const params = { sort };
                 if (genre && genre !== 'Todas') params.genre = genre;
 
-                const endpoint = genre !== 'Todas' || sort !== 'newest' ? `/catalog/${type}/explore` : `/catalog/${type}`;
+                // CORRECCIÓN: Siempre usar el endpoint nativo
+                const endpoint = `/catalog/${type}`;
                 const res = await api.get(endpoint, { params });
                 
-                // Asignación directa sin bucles de ataque a la API
                 setItems(res.data.results || res.data || []);
             } catch (err) {
                 console.error("Error al cargar el catálogo:", err);
@@ -85,7 +88,6 @@ const Home = () => {
         return () => clearInterval(interval);
     }, [heroItems, view]);
 
-    // 2. EFECTO QUE LLAMA A LA API DE LA IA
     useEffect(() => {
         const token = localStorage.getItem('arcast_token');
         if (token) {
@@ -104,7 +106,6 @@ const Home = () => {
 
     if (loading) return <div style={{height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)'}}>Cargando Catálogo...</div>;
 
-    // VISTA 2: CATÁLOGO (Grid + Paginación)
     if (view === 'catalog') {
         const indexOfLastItem = currentPage * itemsPerPage;
         const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -133,12 +134,14 @@ const Home = () => {
 
                 <div className="catalog-grid">
                     {currentItems.map(item => (
-                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}>
-                            <div className="poster-wrapper"><img src={item.posterUrl} alt={item.title || item.name} /></div>
+                        <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
+                            <div className="poster-wrapper">
+                                <img src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=Sin+Imagen'} alt={item.title || item.name} />
+                            </div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
                                 <div className="card-meta">
-                                    <span>{item.releaseDate?.split('-')[0]}</span>
+                                    <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || 'Año desconocido'}</span>
                                     <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
                                 </div>
                             </div>
@@ -157,9 +160,8 @@ const Home = () => {
         );
     }
 
-    // VISTA 1: DASHBOARD
     const topRated = [...items].sort((a, b) => (b.voteAverage || 0) - (a.voteAverage || 0));
-    const recent = [...items].sort((a, b) => new Date(b.releaseDate || 0) - new Date(a.releaseDate || 0));
+    const recent = [...items].sort((a, b) => new Date(b.releaseDate || b.firstAirDate || 0) - new Date(a.releaseDate || a.firstAirDate || 0));
 
     return (
         <div style={{paddingBottom: '60px'}}>
@@ -168,8 +170,8 @@ const Home = () => {
                     <div
                         key={item._id}
                         className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
-                        style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})`, cursor: 'pointer' }}
-                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`)}
+                        style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl || 'https://via.placeholder.com/1920x1080/111111/111111'})`, cursor: 'pointer' }}
+                        onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}
                     >
                         <div className="hero-overlay">
                             <div className="hero-content">
@@ -180,7 +182,7 @@ const Home = () => {
                                     className="hero-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item.tmdbId || item._id}`);
+                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
                                     }}
                                 >
                                     Ver Detalles
@@ -204,7 +206,6 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* 3. RENDERIZADO VISUAL DE LA IA */}
             {recommendations.length > 0 && (
                 <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />
             )}
