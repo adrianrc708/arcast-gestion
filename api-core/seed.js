@@ -18,8 +18,11 @@ const PAGES_TO_FETCH = 5;
 // --- HELPERS (Se mantienen iguales) ---
 const findTrailer = (videos) => {
     if (!videos || !videos.results) return null;
+    // noinspection JSUnresolvedVariable
     let v = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+    // noinspection JSUnresolvedVariable
     if (!v) v = videos.results.find(v => v.type === 'Teaser' && v.site === 'YouTube');
+    // noinspection JSUnresolvedVariable
     if (!v) v = videos.results.find(v => v.site === 'YouTube');
     return v ? v.key : null;
 };
@@ -34,7 +37,9 @@ const isInTheaters = (releaseDateStr) => {
 
 const getWatchProviders = (providers, releaseDate) => {
     let results = [];
+    // noinspection JSUnresolvedVariable
     if (providers && providers.results && providers.results.PE && providers.results.PE.flatrate) {
+        // noinspection JSUnresolvedVariable
         results = providers.results.PE.flatrate.map(p => ({
             name: p.provider_name,
             logo: `${TMDB_IMG_URL}${p.logo_path}`,
@@ -69,6 +74,7 @@ async function importPeruvianMovies() {
             });
 
             for (const basicData of response.data.results) {
+                // noinspection JSUnresolvedFunction
                 const existing = await Movie.findOne({ tmdbId: basicData.id });
                 if (!existing) {
                     try {
@@ -80,14 +86,23 @@ async function importPeruvianMovies() {
                                 include_video_language: 'es,en,null'
                             }
                         });
+                        /** @type {TMDBDetail} */
                         const d = detailRes.data;
                         const releaseDate = d.release_date;
                         const platforms = getWatchProviders(d['watch/providers'], releaseDate);
 
+                        // ✅ Añadimos noinspection para release_date
+                        // noinspection JSUnresolvedVariable
+                        const releaseDate = d.release_date;
+                        const platforms = getWatchProviders(d['watch/providers'], releaseDate);
+
+                        // noinspection JSUnresolvedVariable
                         const movie = new Movie({
                             title: d.title,
                             overview: d.overview,
+                            // noinspection JSUnresolvedVariable
                             posterUrl: d.poster_path ? `${TMDB_IMG_URL}${d.poster_path}` : null,
+                            // noinspection JSUnresolvedVariable
                             backdropUrl: d.backdrop_path ? `${TMDB_BACKDROP_URL}${d.backdrop_path}` : null,
                             tmdbId: d.id,
                             releaseDate: releaseDate,
@@ -100,6 +115,7 @@ async function importPeruvianMovies() {
                             watchLink: platforms.length > 0 ? platforms[0].link : null,
                             originCountry: ['PE'] // Aseguramos que guarde la etiqueta
                         });
+                        // noinspection JSUnresolvedFunction
                         await movie.save();
                         process.stdout.write('+');
                     } catch (innerErr) {
@@ -132,6 +148,7 @@ async function importPeruvianTVShows() {
             });
 
             for (const basicData of response.data.results) {
+                // noinspection JSUnresolvedFunction
                 const existing = await TVShow.findOne({ tmdbId: basicData.id });
                 if (!existing) {
                     try {
@@ -143,14 +160,23 @@ async function importPeruvianTVShows() {
                                 include_video_language: 'es,en,null'
                             }
                         });
+                        /** @type {TMDBDetail} */
                         const d = detailRes.data;
                         const firstAirDate = d.first_air_date;
                         const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
 
+                        // ✅ Añadimos noinspection para first_air_date
+                        // noinspection JSUnresolvedVariable
+                        const firstAirDate = d.first_air_date;
+                        const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
+
+                        // noinspection JSUnresolvedVariable
                         const show = new TVShow({
                             name: d.name,
                             overview: d.overview,
+                            // noinspection JSUnresolvedVariable
                             posterUrl: d.poster_path ? `${TMDB_IMG_URL}${d.poster_path}` : null,
+                            // noinspection JSUnresolvedVariable
                             backdropUrl: d.backdrop_path ? `${TMDB_BACKDROP_URL}${d.backdrop_path}` : null,
                             tmdbId: d.id,
                             firstAirDate: firstAirDate,
@@ -163,6 +189,7 @@ async function importPeruvianTVShows() {
                             watchLink: platforms.length > 0 ? platforms[0].link : null,
                             originCountry: ['PE'] // Aseguramos que guarde la etiqueta
                         });
+                        // noinspection JSUnresolvedFunction
                         await show.save();
                         process.stdout.write('+');
                     } catch (innerErr) {
