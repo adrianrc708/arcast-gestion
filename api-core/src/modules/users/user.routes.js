@@ -12,6 +12,7 @@ router.put('/me', requiredAuth, userController.updateMe);
 router.put('/update-password', requiredAuth, userController.updatePassword);
 router.post('/progress', requiredAuth, userController.updateProgress);
 router.get('/stats', requiredAuth, authorize(['boss', 'admin']), userController.getBossStats);
+router.get('/activity', requiredAuth, authorize(['boss', 'admin']), userController.getActivityMetrics);
 router.put('/:id/role', requiredAuth, authorize(['admin']), userController.updateUserRole);
 router.post('/watchlist', requiredAuth, userController.toggleWatchlist);
 router.get('/watchlist', requiredAuth, userController.getWatchlist);
