@@ -56,6 +56,31 @@ const MovieDetails = () => {
         if (item && !trailerEmbedUrl) setActiveVideo('movie');
     }, [item, trailerEmbedUrl]);
 
+
+    useEffect(() => {
+        // Solo enviamos el registro si el usuario está autenticado y la pestaña activa es la película o fuente alternativa.
+        if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
+            const registerView = async () => {
+                try {
+                    // Aviso a la ruta updateProgress
+                    await api.post('/users/progress', {
+                        contentId: id,
+                        percentWatched: 10 // Mandamos un progreso inicial simulado, CAMBIAR A VARIABLE DINAMICA CUANDO SE IMPLEMENTE SEGUIR VIENDO
+                    });
+                } catch (error) {
+                    console.error("Error silencioso al registrar visualización:", error);
+                }
+            };
+
+            // Le damos 5 segundos de gracia para no contar clics accidentales
+            const timer = setTimeout(() => {
+                registerView();
+            }, 5000);
+
+            return () => clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
+        }
+    }, [user, item, activeVideo, id]);
+
     const toggleWatchlist = async () => {
         try {
             await api.post('/users/watchlist', { itemId: id, itemType: type });
@@ -132,9 +157,9 @@ const MovieDetails = () => {
                 <div className="detail-header">
                     <div className="detail-poster">
                         {/* Renderizado condicional del póster */}
-                        <img 
-                            src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=P%C3%B3ster+no+disponible'} 
-                            alt={item.title || item.name} 
+                        <img
+                            src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=P%C3%B3ster+no+disponible'}
+                            alt={item.title || item.name}
                         />
                     </div>
 
@@ -157,7 +182,7 @@ const MovieDetails = () => {
 
                             <div className="meta-info">
                                 <p><strong>Géneros:</strong> {item.genres?.length > 0 ? item.genres.join(', ') : 'No clasificado'}</p>
-                                
+
                                 {/* Solo muestra la duración si existe */}
                                 {item.runtime ? (
                                     <p><strong>Duración:</strong> {item.runtime} min</p>
@@ -201,8 +226,8 @@ const MovieDetails = () => {
                         <iframe
                             src={
                                 activeVideo === 'trailer' ? trailerEmbedUrl :
-                                activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
-                                movieEmbedUrl
+                                    activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
+                                        movieEmbedUrl
                             }
                             title="Reproductor"
                             frameBorder="0"
@@ -234,7 +259,7 @@ const MovieDetails = () => {
                                     className="modern-textarea"
                                     placeholder="¿Qué te pareció?"
                                     value={newReview.text}
-                                    onChange={(e) => setReview({...newReview, text: e.target.value})}
+                                    onChange={(e) => setReview({ ...newReview, text: e.target.value })}
                                     required
                                 />
                                 <div className="form-actions">

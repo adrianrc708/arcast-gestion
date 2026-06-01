@@ -2,6 +2,7 @@
 const Review = require('./review.model');
 const catalogApi = require('../catalog/catalog.api');
 const { catchAsync, AppError } = require('../../common/error.utils');
+const audit = require('../../common/audit.service'); // <-- 1. Importamos la auditoría
 
 /**
  * @typedef {Object} ReviewDoc
@@ -82,14 +83,22 @@ exports.createReview = catchAsync(async (req, res, next) => {
         movieTitle: catalogItem.title || catalogItem.name
     });
 
-    res.status(201).json(await review.save());
+    const savedReview = await review.save();
+    if (req.user) {
+        await audit.recordMutation(req.user.id, 'REVIEW_CREATED', { movieId }, req.ip);
+    }
+    res.status(201).json(savedReview);
 });
 
 exports.updateReview = catchAsync(async (req, res, _next) => {
     const reviewDoc = await validateOwnership(req.params.id, req.user);
     reviewDoc.text = req.body.text || reviewDoc.text;
     reviewDoc.rating = req.body.rating || reviewDoc.rating;
-    res.json(await reviewDoc.save());
+    const savedReview = await reviewDoc.save();
+    if (req.user) {
+        await audit.recordMutation(req.user.id, 'REVIEW_UPDATED', { movieId: reviewDoc.movieId }, req.ip);
+    }
+    res.json(savedReview);
 });
 
 exports.deleteReview = catchAsync(async (req, res, _next) => {

@@ -8,6 +8,7 @@ const axios = require('axios');
 const audit = require('../../common/audit.service');
 const catalogApi = require('../catalog/catalog.api');
 const { catchAsync, AppError } = require('../../common/error.utils');
+const AuditLog = require('../../common/audit.model');
 
 /**
  * @typedef {Object} UserDoc
@@ -36,7 +37,6 @@ exports.getBossStats = catchAsync(async (req, res, _next) => {
 });
 
 exports.getRecommendations = catchAsync(async (req, res, _next) => {
-    // 1. Obtener géneros reales del usuario a partir de su watchlist
     /** @type {UserDoc|null} */
     const user = await (/** @type {any} */ (require('./user.model'))).findById(req.user.id);
 
@@ -55,7 +55,6 @@ exports.getRecommendations = catchAsync(async (req, res, _next) => {
                 }
             }
 
-            // Ordenar géneros por frecuencia descendente
             const sorted = Object.entries(genreCount)
                 .sort((a, b) => b[1] - a[1])
                 .map(([genre]) => genre);
@@ -64,7 +63,6 @@ exports.getRecommendations = catchAsync(async (req, res, _next) => {
         }
     }
 
-    // 2. Llamar al motor de IA con los géneros reales
     const AI_URL = process.env.AI_ENGINE_URL || 'http://localhost:5000';
     try {
         const response = await axios.post(`${AI_URL}/recommend`, {
@@ -73,17 +71,14 @@ exports.getRecommendations = catchAsync(async (req, res, _next) => {
             limit: 6
         }, { timeout: 4000 });
 
-        // noinspection JSUnresolvedVariable
         const tmdbIds = response.data.recommendations || [];
         res.json(await catalogApi.getRecommendedContent(tmdbIds));
     } catch (_aiErr) {
-        // Fallback silencioso: devolvemos las mejor calificadas del catálogo
         res.json(await catalogApi.getRecommendedContent([]));
     }
 });
 
 exports.getMe = catchAsync(async (req, res, _next) => {
-    // noinspection JSUnresolvedFunction
     const user = await User.findById(req.user.id).select('-password');
     if (!user) throw new AppError('Usuario no encontrado', 404);
     res.json(user);
@@ -91,13 +86,11 @@ exports.getMe = catchAsync(async (req, res, _next) => {
 
 exports.updateMe = catchAsync(async (req, res, _next) => {
     const { username } = req.body;
-    // noinspection JSUnresolvedFunction
     const user = await User.findById(req.user.id);
     if (!user) throw new AppError('Usuario no encontrado', 404);
 
     const oldName = user.username;
     if (username && username !== user.username) {
-        // noinspection JSUnresolvedFunction
         if (await User.findOne({ username })) throw new AppError('Usuario ya existe.', 400);
         user.username = username;
     }
@@ -109,7 +102,6 @@ exports.updateMe = catchAsync(async (req, res, _next) => {
 
 exports.updateProgress = catchAsync(async (req, res, _next) => {
     const { contentId, percentWatched } = req.body;
-    // noinspection JSUnresolvedFunction
     const user = await User.findById(req.user.id);
     if (!user) throw new AppError('Usuario no encontrado', 404);
 
@@ -120,11 +112,11 @@ exports.updateProgress = catchAsync(async (req, res, _next) => {
     else userDoc.watchHistory.push({ contentId, percentWatched });
 
     await userDoc.save();
+    await audit.recordMutation(req.user.id, 'CONTENT_WATCHED', { contentId: req.body.itemId || req.body.contentId }, req.ip);
     res.json({ message: "Progreso guardado." });
 });
 
 exports.getWatchlist = catchAsync(async (req, res, _next) => {
-    // noinspection JSUnresolvedFunction
     const user = await User.findById(req.user.id);
     if (!user) throw new AppError('Usuario no encontrado', 404);
 
@@ -147,7 +139,6 @@ exports.getWatchlist = catchAsync(async (req, res, _next) => {
 });
 
 exports.getAllUsers = catchAsync(async (req, res, _next) => {
-    // noinspection JSUnresolvedFunction
     const users = await User.find().select('-password');
     res.json(users);
 });
@@ -159,7 +150,6 @@ exports.updateUserRole = catchAsync(async (req, res, _next) => {
         throw new AppError('Rol no válido', 400);
     }
 
-    // noinspection JSUnresolvedFunction
     const user = await User.findById(req.params.id);
     if (!user) throw new AppError('Usuario no encontrado', 404);
 
@@ -185,23 +175,16 @@ exports.toggleWatchlist = catchAsync(async (req, res) => {
     }
 
     await user.save();
-    res.json(user.watchlist);
-});
 
-exports.updateMe = catchAsync(async (req, res) => {
-    const user = await User.findByIdAndUpdate(
-        req.user.id,
-        { username: req.body.username },
-        { new: true, runValidators: true }
-    );
-    res.json(user);
+    await audit.recordMutation(req.user.id, 'WATCHLIST_TOGGLE', { itemId, kind }, req.ip);
+
+    res.json(user.watchlist);
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user.id).select('+password');
-    // noinspection JSUnresolvedFunction
     if (!(await user.correctPassword(currentPassword, user.password))) {
         return next(new AppError('La contraseña actual es incorrecta.', 401));
     }
@@ -210,4 +193,53 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     await user.save();
 
     res.json({ message: 'Contraseña actualizada con éxito.' });
+});
+
+exports.getActivityMetrics = catchAsync(async (req, res, next) => {
+    const days = parseInt(req.query.days) || 7;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const dailyData = await AuditLog.aggregate([
+        { $match: { timestamp: { $gte: startDate } } },
+        {
+            $group: {
+                _id: {
+                    $dateToString: { format: "%Y-%m-%d", date: "$timestamp", timezone: "America/Lima" }
+                },
+                activeUsers: { $addToSet: "$userId" }
+            }
+        },
+        {
+            $project: {
+                date: "$_id",
+                activeUsers: { $size: "$activeUsers" },
+                _id: 0
+            }
+        },
+        { $sort: { date: 1 } }
+    ]);
+
+    const actionSummary = await AuditLog.aggregate([
+        { $match: { timestamp: { $gte: startDate } } },
+        {
+            $group: {
+                _id: "$action",
+                uniqueUsers: { $addToSet: "$userId" },
+                totalOccurrences: { $sum: 1 }
+            }
+        },
+        {
+            $project: {
+                action: "$_id",
+                userCount: { $size: "$uniqueUsers" },
+                total: "$totalOccurrences",
+                _id: 0
+            }
+        },
+        { $sort: { userCount: -1 } }
+    ]);
+
+    res.json({ daily: dailyData, summary: actionSummary });
 });
