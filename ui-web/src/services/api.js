@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+/**
+ * En desarrollo: Vite proxea /api → http://localhost:5001  (vite.config.js)
+ * En producción: nginx proxea /api → http://api-core:5001  (nginx.conf)
+ *
+ * VITE_API_URL puede sobreescribirse con un .env local para apuntar
+ * a un backend remoto (ej: VITE_API_URL=https://api.mi-dominio.com/api).
+ */
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-    baseURL: 'http://localhost:5001/api',
+    baseURL: BASE_URL,
     headers: { 'Content-Type': 'application/json' }
 });
 

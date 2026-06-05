@@ -9,8 +9,7 @@ const MovieDetails = () => {
     const [item, setItem] = useState(null);
     const [reviews, setReviews] = useState([]);
 
-    // Sincronizado con ReviewSchema: usamos 'text' en lugar de 'comment'
-    const [newReview, setNewReview] = useState({ rating: 5, text: '' });
+    const [newReview, setReview] = useState({ rating: 5, text: '' });
     const [hoverRating, setHoverRating] = useState(0);
     const [editingReviewId, setEditingReviewId] = useState(null);
 
@@ -21,8 +20,6 @@ const MovieDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Traemos el contenido y las reseñas reales
-                // CORRECCIÓN: La ruta correcta es /api/reviews/movie/:id
                 const [itemRes, reviewsRes] = await Promise.all([
                     api.get(`/catalog/${type === 'movie' ? 'movies' : 'tvshows'}/${id}`),
                     api.get(`/reviews/movie/${id}`).catch(() => ({ data: [] }))
@@ -30,7 +27,6 @@ const MovieDetails = () => {
                 setItem(itemRes.data);
                 setReviews(reviewsRes.data);
 
-                // 2. Verificar si está en watchlist
                 if (user) {
                     const me = await api.get('/users/me').catch(() => null);
                     if (me?.data?.watchlist) {
@@ -60,6 +56,31 @@ const MovieDetails = () => {
         if (item && !trailerEmbedUrl) setActiveVideo('movie');
     }, [item, trailerEmbedUrl]);
 
+
+    useEffect(() => {
+        // Solo enviamos el registro si el usuario está autenticado y la pestaña activa es la película o fuente alternativa.
+        if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
+            const registerView = async () => {
+                try {
+                    // Aviso a la ruta updateProgress
+                    await api.post('/users/progress', {
+                        contentId: id,
+                        percentWatched: 10 // Mandamos un progreso inicial simulado, CAMBIAR A VARIABLE DINAMICA CUANDO SE IMPLEMENTE SEGUIR VIENDO
+                    });
+                } catch (error) {
+                    console.error("Error silencioso al registrar visualización:", error);
+                }
+            };
+
+            // Le damos 5 segundos de gracia para no contar clics accidentales
+            const timer = setTimeout(() => {
+                registerView();
+            }, 5000);
+
+            return () => clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
+        }
+    }, [user, item, activeVideo, id]);
+
     const toggleWatchlist = async () => {
         try {
             await api.post('/users/watchlist', { itemId: id, itemType: type });
@@ -82,7 +103,6 @@ const MovieDetails = () => {
                 });
                 setEditingReviewId(null);
             } else {
-                // CAMPOS EXACTOS DEL BACKEND: movieId, contentType, text, rating
                 await api.post('/reviews', {
                     movieId: id,
                     contentType: type,
@@ -91,10 +111,9 @@ const MovieDetails = () => {
                 });
             }
 
-            // CORRECCIÓN: Recargamos usando la ruta /movie/:id
             const res = await api.get(`/reviews/movie/${id}`);
             setReviews(res.data);
-            setNewReview({ rating: 5, text: '' });
+            setReview({ rating: 5, text: '' });
         } catch (error) {
             console.error("Error Reseña:", error.response?.data);
             alert("Error al procesar la reseña: " + (error.response?.data?.message || "Verifica los campos"));
@@ -113,7 +132,7 @@ const MovieDetails = () => {
 
     const handleEditReview = (rev) => {
         setEditingReviewId(rev._id);
-        setNewReview({ rating: rev.rating, text: rev.text });
+        setReview({ rating: rev.rating, text: rev.text });
         window.scrollTo({ top: document.querySelector('.add-review-card').offsetTop - 100, behavior: 'smooth' });
     };
 
@@ -125,39 +144,56 @@ const MovieDetails = () => {
         ? `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`
         : `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=1&episode=1`;
 
+    // Lógica para fondo por defecto si no hay imágenes
+    const bgImage = item.backdropUrl || item.posterUrl || 'https://via.placeholder.com/1920x1080/111111/111111';
+
     return (
         <div className="detail-page">
-            <div className="detail-backdrop" style={{ backgroundImage: `url(${item.backdropUrl || item.posterUrl})` }}>
+            <div className="detail-backdrop" style={{ backgroundImage: `url(${bgImage})` }}>
                 <div className="detail-mask"></div>
             </div>
 
             <div className="detail-container">
                 <div className="detail-header">
                     <div className="detail-poster">
-                        <img src={item.posterUrl} alt={item.title || item.name} />
+                        {/* Renderizado condicional del póster */}
+                        <img
+                            src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=P%C3%B3ster+no+disponible'}
+                            alt={item.title || item.name}
+                        />
                     </div>
 
                     <div className="detail-main-info">
                         <div className="badge-row">
                             <span className="type-badge">{type === 'movie' ? 'Película' : 'Serie'}</span>
-                            <span className="year-badge">{item.releaseDate?.split('-')[0]}</span>
+                            {/* Renderizado seguro del año */}
+                            <span className="year-badge">{item.releaseDate ? item.releaseDate.split('-')[0] : 'Año desconocido'}</span>
                         </div>
                         <h1 className="detail-title">{item.title || item.name}</h1>
 
                         <div className="stats-row">
-                            <div className="score-circle">
-                                <span className="score-val">{item.voteAverage?.toFixed(1) || '0'}</span>
-                                <span className="score-label">Rating</span>
-                            </div>
+                            {/* Solo muestra el círculo de Rating si existe un puntaje mayor a 0 */}
+                            {item.voteAverage ? (
+                                <div className="score-circle">
+                                    <span className="score-val">{item.voteAverage.toFixed(1)}</span>
+                                    <span className="score-label">Rating</span>
+                                </div>
+                            ) : null}
+
                             <div className="meta-info">
-                                <p><strong>Géneros:</strong> {item.genres?.join(', ') || 'General'}</p>
-                                <p><strong>Duración:</strong> {item.runtime ? `${item.runtime} min` : 'N/A'}</p>
+                                <p><strong>Géneros:</strong> {item.genres?.length > 0 ? item.genres.join(', ') : 'No clasificado'}</p>
+
+                                {/* Solo muestra la duración si existe */}
+                                {item.runtime ? (
+                                    <p><strong>Duración:</strong> {item.runtime} min</p>
+                                ) : null}
                             </div>
                         </div>
 
                         <div className="synopsis">
                             <h3>Sinopsis</h3>
-                            <p>{item.overview || "No hay una descripción disponible para este título."}</p>
+                            {/* Mensaje por defecto si no hay descripción */}
+                            <p>{item.overview || "La sinopsis de esta obra aún no está disponible en nuestro archivo."}</p>
                         </div>
 
                         <div className="action-buttons">
@@ -173,6 +209,7 @@ const MovieDetails = () => {
                         <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>
                             Ver {type === 'movie' ? 'Película' : 'Contenido'}
                         </button>
+                        {/* RESCATADO DE TU COMPAÑERO */}
                         {item.watchLink && (
                             <button className={activeVideo === 'alt' ? 'active' : ''} onClick={() => setActiveVideo('alt')}>
                                 Fuente Alternativa
@@ -189,8 +226,8 @@ const MovieDetails = () => {
                         <iframe
                             src={
                                 activeVideo === 'trailer' ? trailerEmbedUrl :
-                                activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
-                                movieEmbedUrl
+                                    activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
+                                        movieEmbedUrl
                             }
                             title="Reproductor"
                             frameBorder="0"
@@ -198,6 +235,7 @@ const MovieDetails = () => {
                         ></iframe>
                     </div>
                 </div>
+
                 <div className="reviews-section">
                     <h2 className="section-title">Comunidad <span>({reviews.length})</span></h2>
 
@@ -212,7 +250,7 @@ const MovieDetails = () => {
                                             className={`star ${star <= (hoverRating || newReview.rating) ? 'active' : ''}`}
                                             onMouseEnter={() => setHoverRating(star)}
                                             onMouseLeave={() => setHoverRating(0)}
-                                            onClick={() => setNewReview({ ...newReview, rating: star })}
+                                            onClick={() => setReview({ ...newReview, rating: star })}
                                         >★</span>
                                     ))}
                                 </div>
@@ -221,7 +259,7 @@ const MovieDetails = () => {
                                     className="modern-textarea"
                                     placeholder="¿Qué te pareció?"
                                     value={newReview.text}
-                                    onChange={(e) => setNewReview({...newReview, text: e.target.value})}
+                                    onChange={(e) => setReview({ ...newReview, text: e.target.value })}
                                     required
                                 />
                                 <div className="form-actions">
@@ -232,7 +270,7 @@ const MovieDetails = () => {
                                         <button
                                             type="button"
                                             className="cancel-edit-btn"
-                                            onClick={() => { setEditingReviewId(null); setNewReview({ rating: 5, text: '' }); }}
+                                            onClick={() => { setEditingReviewId(null); setReview({ rating: 5, text: '' }); }}
                                         >
                                             Cancelar
                                         </button>
