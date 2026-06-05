@@ -1,25 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
+const ACTION_DICTIONARY = {
+    'USER_ROLE_MUTATION': 'Cambio de Roles de Usuario',
+    'CONTENT_WATCHED': 'Visualización de Películas/Series',
+    'PROFILE_UPDATE': 'Actualización de Perfil',
+    'REVIEW_CREATED': 'Publicación de Reseñas',
+    'REVIEW_UPDATED': 'Edición de Reseñas',
+    'WATCHLIST_TOGGLE': 'Modificación de Mi Lista',
+    'CATALOG_IMPORT': 'Importación Individual al Catálogo',
+    'CATALOG_BULK_IMPORT': 'Importación Masiva de Catálogo',
+    'USER_LOGIN': 'Inicios de Sesión'
+};
+
 const BossDashboard = () => {
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
+    const [dailyData, setDailyData] = useState([]);
+    const [actionSummary, setActionSummary] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [metricType, setMetricType] = useState('activeUsers');
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Obtiene métricas y ranking
                 const statsRes = await api.get('/users/stats');
                 setStats(statsRes.data);
 
-                // Obtiene lista completa de usuarios
                 const usersRes = await api.get('/users');
                 setUsers(usersRes.data);
+
+                const activityRes = await api.get('/users/activity');
+                const rawDaily = activityRes.data.daily;
+                const rawSummary = activityRes.data.summary;
+
+                const filledData = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const dateStr = `${year}-${month}-${day}`;
+
+                    const foundDay = rawDaily.find(item => item.date === dateStr);
+                    filledData.push(foundDay || { date: dateStr, activeUsers: 0 });
+                }
+
+                setDailyData(filledData);
+                setActionSummary(rawSummary);
             } catch (err) {
                 console.error("Error cargando datos del Boss:", err);
-                setError(err.response?.data?.message || "Error al conectar con la API de estadísticas. Revisa la consola.");
+                setError(err.response?.data?.message || "Error al conectar con la API.");
             } finally {
                 setLoading(false);
             }
@@ -27,15 +61,14 @@ const BossDashboard = () => {
         fetchData();
     }, []);
 
-    if (loading) return <div className="py-20 text-center text-[#58a6ff] font-bold animate-pulse">Analizando datos del sistema...</div>;
+    if (loading) return <div className="py-20 text-center text-purple-400 font-bold animate-pulse">Sincronizando con el núcleo...</div>;
 
     return (
         <div className="max-w-7xl mx-auto py-8 px-4 space-y-10 animate-in fade-in">
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter border-b border-[#30363d] pb-4">
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter border-b border-[#30363d]/50 pb-4">
                 Centro de Mando (Boss)
             </h2>
 
-            {/* AVISO DE ERROR SI EL BACKEND FALLA */}
             {error && (
                 <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-400 text-sm font-bold flex items-center gap-3">
                     <span>⚠️</span>
@@ -46,77 +79,161 @@ const BossDashboard = () => {
             {/* 1. MÉTRICAS CLAVE */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                    { label: 'Usuarios Registrados', val: stats?.metrics?.totalUsers, color: 'text-white' },
-                    { label: 'Películas en Catálogo', val: stats?.metrics?.totalMovies, color: 'text-purple-400' },
-                    { label: 'Reseñas de la Comunidad', val: stats?.metrics?.totalReviews, color: 'text-green-400' }
+                    { label: 'Usuarios Registrados', val: stats?.metrics?.totalUsers, color: 'text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]' },
+                    { label: 'Películas en Catálogo', val: stats?.metrics?.totalMovies, color: 'text-purple-400 drop-shadow-[0_0_15px_rgba(192,132,252,0.5)]' },
+                    { label: 'Reseñas de la Comunidad', val: stats?.metrics?.totalReviews, color: 'text-indigo-400 drop-shadow-[0_0_15px_rgba(129,140,248,0.5)]' }
                 ].map((s, i) => (
-                    <div key={i} className="bg-[#161b22] p-8 rounded-2xl border border-[#30363d] flex flex-col items-center shadow-xl transition-all hover:border-[#58a6ff]/30">
+                    <div key={i} className="bg-transparent backdrop-blur-sm p-8 rounded-2xl border border-white/5 flex flex-col items-center shadow-2xl transition-all hover:border-purple-500/30 hover:bg-purple-900/5">
                         <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">{s.label}</span>
                         <span className={`text-6xl font-black mt-4 ${s.color}`}>{s.val || 0}</span>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 2. TOP RATED MOVIES */}
-                <div className="bg-[#161b22] p-6 rounded-2xl border border-[#30363d] flex flex-col h-full">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <span className="text-yellow-500">★</span> Top 5 Contenido Mejor Valorado
+            <div className="bg-transparent backdrop-blur-sm p-6 rounded-2xl border border-white/5 flex flex-col shadow-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-4 mb-6 gap-4">
+                    <div className="border-l-[4px] border-purple-500 pl-4 rounded-l-sm">
+                        <h3 className="text-xl font-black text-white uppercase tracking-tight">Análisis de Comportamiento y Retención</h3>
+                        <p className="text-xs text-purple-400/60 mt-1">Datos de los últimos 7 días</p>
+                    </div>
+
+                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 self-start sm:self-auto">
+                        <button
+                            onClick={() => setMetricType('activeUsers')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${metricType === 'activeUsers' ? 'bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.2)]' : 'text-gray-500 hover:text-purple-400'}`}
+                        >
+                            Audiencia Activa
+                        </button>
+                        <button
+                            onClick={() => setMetricType('actions')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${metricType === 'actions' ? 'bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.2)]' : 'text-gray-500 hover:text-purple-400'}`}
+                        >
+                            Tipos de Interacción
+                        </button>
+                    </div>
+                </div>
+
+                <div className="h-64 w-full text-xs pt-4">
+                    {/*BARRAS DE AUDIENCIA */}
+                    {metricType === 'activeUsers' && (
+                        <div className="flex items-end justify-between h-full w-full gap-2 sm:gap-4 relative px-2">
+                            {dailyData.map((data, index) => {
+                                const maxVal = Math.max(...dailyData.map(d => d.activeUsers)) || 1;
+                                const heightPercentage = data.activeUsers === 0 ? 0 : (data.activeUsers / maxVal) * 100;
+                                const dateParts = data.date.split('-');
+                                const shortDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : data.date;
+
+                                return (
+                                    <div key={index} className="flex flex-col items-center flex-1 h-full justify-end group relative cursor-pointer">
+                                        <div className="absolute -top-10 opacity-0 group-hover:opacity-100 bg-[#1a1a2e] text-purple-300 text-[10px] sm:text-xs font-bold py-1 px-2 rounded-md shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-opacity whitespace-nowrap z-10 pointer-events-none border border-purple-500/30">
+                                            {data.activeUsers} Usuarios
+                                        </div>
+                                        <div
+                                            className={`w-full max-w-[40px] rounded-t-md transition-all duration-500 ${data.activeUsers === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-purple-900/40 to-purple-500/80 group-hover:to-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                                                }`}
+                                            style={{ height: `${heightPercentage}%`, minHeight: '6px' }}
+                                        ></div>
+                                        <span className={`text-[10px] mt-3 truncate w-full text-center font-bold ${data.activeUsers === 0 ? 'text-gray-600' : 'text-purple-400/70 group-hover:text-purple-300'}`}>
+                                            {shortDate}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/*LISTA DE ACCIONES*/}
+                    {metricType === 'actions' && (
+                        <div className="h-full overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                            {actionSummary.length === 0 ? (
+                                <div className="h-full flex items-center justify-center border-2 border-dashed border-white/5 rounded-xl p-8">
+                                    <p className="text-purple-400/50 text-sm font-medium text-center">Aún no hay interacciones registradas en los últimos 7 días.</p>
+                                </div>
+                            ) : (
+                                actionSummary.map((item, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 bg-transparent rounded-xl border border-white/5 hover:border-purple-500/40 hover:bg-purple-900/10 transition-all shadow-sm group">
+                                        <div>
+                                            <h4 className="font-bold text-sm text-gray-200 group-hover:text-white transition-colors">
+                                                {ACTION_DICTIONARY[item.action] || item.action}
+                                            </h4>
+                                            <div className="mt-1">
+                                                <span className="text-[10px] text-purple-400/60 font-medium">
+                                                    {item.userCount} {item.userCount === 1 ? 'Usuario único' : 'Usuarios únicos'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="block text-xl font-black text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)] group-hover:text-purple-300 transition-colors">{item.total}</span>
+                                            <span className="text-purple-500/40 text-[9px] uppercase tracking-widest font-bold">Total</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 3 Y 4. RAKINGS Y AUDITORÍA */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <div className="bg-transparent backdrop-blur-sm p-6 rounded-2xl border border-white/5 flex flex-col h-full shadow-2xl">
+                    <h3 className="text-lg font-black text-white uppercase tracking-tight mb-6 flex items-center gap-2 border-l-[4px] border-purple-500 pl-4 rounded-l-sm">
+                        <span className="text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]">★</span> Top 5 Contenido Mejor Valorado
                     </h3>
 
                     <div className="space-y-3 flex-1">
                         {!stats?.rankings || stats.rankings.length === 0 ? (
-                            <div className="h-full flex items-center justify-center border-2 border-dashed border-[#30363d] rounded-xl p-8">
-                                <p className="text-gray-500 text-sm font-medium text-center">No hay suficientes datos calificados para mostrar un ranking aún.</p>
+                            <div className="h-full flex items-center justify-center border-2 border-dashed border-white/5 rounded-xl p-8">
+                                <p className="text-purple-400/50 text-sm font-medium text-center">No hay suficientes datos calificados.</p>
                             </div>
                         ) : (
                             stats.rankings.map((movie, i) => (
-                                <div key={movie._id} className="flex items-center justify-between p-4 bg-[#0d1117] rounded-xl border border-[#30363d] hover:border-[#58a6ff]/50 transition-all">
+                                <div key={movie._id} className="flex items-center justify-between p-4 bg-transparent rounded-xl border border-white/5 hover:border-purple-500/40 hover:bg-purple-900/10 transition-all">
                                     <div className="flex items-center space-x-4">
-                                        <span className="text-xl font-black text-gray-700">#{i+1}</span>
+                                        <span className="text-xl font-black text-purple-500/40">#{i + 1}</span>
                                         <span className="font-bold text-sm text-gray-200">{movie.title || movie.name}</span>
                                     </div>
-                                    <span className="text-yellow-500 font-bold text-sm">★ {movie.voteAverage?.toFixed(1)}</span>
+                                    <span className="text-yellow-500 font-bold text-sm drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">★ {movie.voteAverage?.toFixed(1)}</span>
                                 </div>
                             ))
                         )}
                     </div>
                 </div>
 
-                {/* 3. AUDITORÍA RÁPIDA DE USUARIOS */}
-                <div className="bg-[#161b22] p-6 rounded-2xl border border-[#30363d] flex flex-col h-full">
-                    <h3 className="text-lg font-bold text-white mb-6">Últimos Usuarios Registrados</h3>
+                <div className="bg-transparent backdrop-blur-sm p-6 rounded-2xl border border-white/5 flex flex-col h-full shadow-2xl">
+                    <h3 className="text-lg font-black text-white uppercase tracking-tight mb-6 border-l-[4px] border-purple-500 pl-4 rounded-l-sm">
+                        Últimos Usuarios Registrados
+                    </h3>
 
-                    <div className="overflow-hidden rounded-xl border border-[#30363d] flex-1">
+                    <div className="overflow-hidden rounded-xl border border-white/5 flex-1">
                         {users.length === 0 ? (
-                            <div className="h-full flex items-center justify-center bg-[#0d1117] p-8">
-                                <p className="text-gray-500 text-sm font-medium text-center">No se encontraron usuarios en la base de datos.</p>
+                            <div className="h-full flex items-center justify-center bg-black/20 p-8">
+                                <p className="text-purple-400/50 text-sm font-medium text-center">No se encontraron usuarios.</p>
                             </div>
                         ) : (
                             <table className="w-full text-left text-sm h-full">
-                                <thead className="bg-[#0d1117] text-gray-400 uppercase text-[10px] font-bold border-b border-[#30363d]">
-                                <tr>
-                                    <th className="px-4 py-3">Username</th>
-                                    <th className="px-4 py-3">Email</th>
-                                    <th className="px-4 py-3">Rol</th>
-                                </tr>
+                                <thead className="bg-black/40 text-purple-400/60 uppercase text-[10px] font-bold border-b border-white/5">
+                                    <tr>
+                                        <th className="px-4 py-3">Username</th>
+                                        <th className="px-4 py-3">Email</th>
+                                        <th className="px-4 py-3">Rol</th>
+                                    </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#30363d]">
-                                {users.slice(-6).reverse().map(u => (
-                                    <tr key={u._id} className="hover:bg-[#1f242c] transition-colors">
-                                        <td className="px-4 py-3 text-white font-medium">{u.username}</td>
-                                        <td className="px-4 py-3 text-gray-400 text-xs">{u.email}</td>
-                                        <td className="px-4 py-3">
-                                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${
-                                                    u.role === 'admin' ? 'bg-red-500/10 text-red-400' :
-                                                        u.role === 'boss' ? 'bg-purple-500/10 text-purple-400' :
-                                                            'bg-blue-500/10 text-blue-400'
-                                                }`}>
+                                <tbody className="divide-y divide-white/5 bg-transparent">
+                                    {users.slice(-6).reverse().map(u => (
+                                        <tr key={u._id} className="hover:bg-purple-900/10 transition-colors">
+                                            <td className="px-4 py-3 text-white font-medium">{u.username}</td>
+                                            <td className="px-4 py-3 text-gray-400 text-xs">{u.email}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase shadow-sm ${u.role === 'admin' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                                    u.role === 'boss' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                                        'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                                    }`}>
                                                     {u.role}
                                                 </span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         )}

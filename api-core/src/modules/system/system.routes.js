@@ -3,8 +3,11 @@ const router = express.Router();
 const systemController = require('./system.controller');
 const { requiredAuth, authorize } = require('../../common/auth.middleware');
 
-// El Admin puede ver y editar la configuración global (CSS/JS)
-router.get('/config', requiredAuth, authorize(['admin']), systemController.getConfig);
+// Cualquiera puede ver la config (para que el front aplique el CSS), pero solo admin edita
+router.get('/config', systemController.getConfig);
 router.put('/config', requiredAuth, authorize(['admin']), systemController.updateConfig);
+
+// Registro de auditoría: solo admin y boss
+router.get('/audit', requiredAuth, authorize(['admin', 'boss']), systemController.getAuditLogs);
 
 module.exports = router;

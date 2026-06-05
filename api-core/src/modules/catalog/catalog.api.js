@@ -1,22 +1,38 @@
-const moviesService = require('./movies.service');
-const tvshowsService = require('./tvshows.service');
+/**
+ * @type {any}
+ */
 const Movie = require('./movie.model');
+/** @type {any} */
 const TVShow = require('./tvshow.model');
 
+
 module.exports = {
+    // noinspection JSUnresolvedFunction
     getMovieById: async (id) => {
-        return await moviesService.findById(id);
+        return await Movie.findById(id);
     },
+
+    // noinspection JSUnresolvedFunction
     getTVShowById: async (id) => {
-        return await tvshowsService.findById(id);
+        return await TVShow.findById(id);
     },
-    // ✅ OPTIMIZACIÓN: Método para obtener muchos elementos de golpe
-    // Esto evita que el módulo de usuarios tenga que llamar a la DB 50 veces en un bucle.
-    getBulkItems: async (movieIds, tvshowIds) => {
+
+    getBulkItems: async (movieIds, tvIds) => {
         const [movies, tvshows] = await Promise.all([
+            // noinspection JSUnresolvedFunction
             Movie.find({ _id: { $in: movieIds } }),
-            TVShow.find({ _id: { $in: tvshowIds } })
+            // noinspection JSUnresolvedFunction
+            TVShow.find({ _id: { $in: tvIds } })
         ]);
         return { movies, tvshows };
+    },
+
+    getRecommendedContent: async (tmdbIds) => {
+        if (!tmdbIds || tmdbIds.length === 0) {
+            // noinspection JSUnresolvedFunction
+            return await Movie.find().sort({ voteAverage: -1 }).limit(10);
+        }
+        // noinspection JSUnresolvedFunction
+        return await Movie.find({ tmdbId: { $in: tmdbIds } }).limit(10);
     }
 };

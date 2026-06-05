@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import api from './services/api';
 
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
@@ -9,11 +10,30 @@ import AdminPanel from './views/AdminPanel';
 import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
 import Profile from './views/Profile';
-
-import './index.css'; //Por si a caso, no funcionaba en el main.jsx, lo dejo aquí para asegurarme de que se cargue.
+import './index.css';
 
 const App = () => {
     const { isAuthenticated, user } = useAuth();
+
+    // Efecto que inyecta el CSS global sin importar si está logueado
+    useEffect(() => {
+        api.get('/system/config')
+            .then(res => {
+                const config = Array.isArray(res.data) ? res.data[0] : res.data;
+                const customCSS = config?.customCSS;
+
+                if (customCSS) {
+                    let styleTag = document.getElementById('arcast-custom-css');
+                    if (!styleTag) {
+                        styleTag = document.createElement('style');
+                        styleTag.id = 'arcast-custom-css';
+                        document.head.appendChild(styleTag);
+                    }
+                    styleTag.innerHTML = customCSS;
+                }
+            })
+            .catch(err => console.error('No se pudo cargar la configuración del sistema:', err));
+    }, []);
 
     if (!isAuthenticated) return <Auth />;
 
@@ -22,13 +42,17 @@ const App = () => {
             <Navbar />
             <main className="flex-1 pt-16">
                 <Routes>
-                    <Route path="/" element={<Home />} />
+                    <Route path="/" element={
+                        user?.role === 'admin' ? <Navigate to="/admin" replace /> :
+                            user?.role === 'boss'  ? <Navigate to="/boss" replace />  :
+                                <Home />
+                    } />
+
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/item/:type/:id" element={<MovieDetails />} />
                     <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
                     <Route path="/boss" element={user?.role === 'boss' ? <BossDashboard /> : <Navigate to="/" replace />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
-                    <Route path="/admin" element={user?.role === 'admin' || user?.role === 'boss' ? <AdminPanel /> : <Navigate to="/" replace />} />
                 </Routes>
             </main>
         </div>

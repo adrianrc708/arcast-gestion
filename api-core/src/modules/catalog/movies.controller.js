@@ -1,134 +1,69 @@
-const Movie = require('./movie.model');
-
-// POST /api/movies (manual)
-exports.createMovie = async (req, res) => {
-    try {
-        const newMovie = new Movie({ title: req.body.title });
-        const savedMovie = await newMovie.save();
-        res.status(201).json(savedMovie);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-};
-
-// GET /api/movies -> listar con filtros, búsqueda y aleatoriedad
-exports.getAllMovies = async (req, res) => {
-    try {
-        const { genre, platform, sort, search } = req.query;
-        let query = {};
-
-        // Filtro Buscador (por título)
-        if (search) {
-            query.title = { $regex: search, $options: 'i' };
-        }
-
-        // Filtro Género
-        if (genre && genre !== 'Todas') {
-            query.genres = genre;
-        }
-
-        // Filtro Plataforma (Busca dentro del array de objetos platforms)
-        if (platform && platform !== 'Todas') {
-            query['platforms.name'] = { $regex: platform, $options: 'i' };
-        }
-
-        let movies;
-
-        // Si NO hay criterios de ordenamiento explícitos, devolvemos aleatorio para el Home
-        if (!sort && !search) {
-            movies = await Movie.find(query);
-            // Mezcla aleatoria en Javascript
-            movies = movies.sort(() => Math.random() - 0.5);
-        } else {
-            let sortOption = { _id: -1 }; // Default recientes
-            if (sort === 'rating') sortOption = { voteAverage: -1 };
-            if (sort === 'newest') sortOption = { releaseDate: -1 };
-
-            movies = await Movie.find(query).sort(sortOption);
-        }
-
-        res.json(movies);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-exports.getMovieById = async (req, res) => {
-    try {
-        // Intenta buscar por _id de MongoDB primero
-        let movie = null;
-        if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-            movie = await Movie.findById(req.params.id);
-        }
-        // Si no encontró, busca por tmdbId en MongoDB
-        if (!movie) {
-            movie = await Movie.findOne({ tmdbId: req.params.id });
-        }
-        // Si tampoco está en MongoDB, lo trae directo de TMDB
-        if (!movie) {
-            movie = await tmdbProvider.getMovieDetails(req.params.id);
-        }
-        if (!movie) return res.status(404).json({ message: 'Película no encontrada' });
-        res.json(movie);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-exports.updateMovie = async (req, res) => {
-    try {
-        const updated = await Movie.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
-        if (!updated) return res.status(404).json({ message: 'Película no encontrada' });
-        res.json(updated);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-};
-
-exports.deleteMovie = async (req, res) => {
-    try {
-        const deleted = await Movie.findByIdAndDelete(req.params.id);
-        if (!deleted) return res.status(404).json({ message: 'Película no encontrada' });
-        res.status(200).json({ message: 'Película eliminada correctamente' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
+const moviesService = require('./movies.service');
 const tmdbProvider = require('./providers/tmdb.provider');
+const { catchAsync, AppError } = require('../../common/error.utils');
 
-exports.exploreMovies = async (req, res) => {
-    try {
-        const { genre, sort, search, page = 1 } = req.query;
-        const { results, totalPages } = await tmdbProvider.explorePeruvianMovies(
-            Number(page),
-            { genre, sort, search }
-        );
+exports.getAllMovies = catchAsync(async (req, res, _next) => {
+    const { genre, platform, sort, search } = req.query;
+    let query = {};
 
-        const detailedResults = await Promise.all(
-            results.map(m => tmdbProvider.getMovieDetails(m.id))
-        );
+    if (search) query.title = { $regex: search, $options: 'i' };
+    if (genre && genre !== 'Todas') query.genres = genre;
+    if (platform && platform !== 'Todas') query['platforms.name'] = { $regex: platform, $options: 'i' };
 
-        // LOG TEMPORAL
-        /*console.log(JSON.stringify(detailedResults.map(m => ({ 
-            title: m.title, 
-            originCountry: m.originCountry, 
-            productionCountries: m.productionCountries 
-        })), null, 2));*/
+    const movies = await moviesService.findAll(query, String(sort || ''), String(search || ''));
+    res.json(movies);
+});
 
-        const movies = detailedResults
-            .filter(m => m.productionCountries && m.productionCountries.includes('PE'))
-            .filter(m => m.posterUrl) // que tengan poster
-            /*.filter(m => {
-                if (!m.releaseDate) return false;
-                return new Date(m.releaseDate) <= new Date(); // solo películas ya estrenadas
-        });*/
+exports.getMovieById = catchAsync(async (req, res, _next) => {
+    let movie = null;
 
-        res.json({ results: movies, totalPages, page: Number(page) });
-    } catch (err) {
-        res.status(502).json({ message: err.message });
+    // 1. Intenta buscar por ID de MongoDB si el formato es correcto
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+        movie = await moviesService.findById(req.params.id);
     }
-};
+
+    // 2. Si no encontró en tu BD, hace el fallback y busca en la API de TMDB
+    if (!movie) {
+        movie = await tmdbProvider.getMovieDetails(req.params.id);
+    }
+
+    if (!movie) throw new AppError('Película no encontrada', 404);
+    res.json(movie);
+});
+
+exports.createMovie = catchAsync(async (req, res, _next) => {
+    if (!req.body.tmdbId) {
+        req.body.tmdbId = 'manual-' + Date.now();
+    }
+    const savedMovie = await moviesService.create(req.body);
+    res.status(201).json(savedMovie);
+});
+
+exports.updateMovie = catchAsync(async (req, res, _next) => {
+    const movie = await moviesService.update(req.params.id, req.body);
+    if (!movie) throw new AppError('Película no encontrada', 404);
+    res.json(movie);
+});
+
+exports.deleteMovie = catchAsync(async (req, res, _next) => {
+    await moviesService.delete(req.params.id);
+    res.json({ message: 'Película eliminada' });
+});
+
+exports.exploreMovies = catchAsync(async (req, res, _next) => {
+    const { genre, sort, search, page = 1 } = req.query;
+    const { results, totalPages } = await tmdbProvider.explorePeruvianMovies(
+        Number(page),
+        { genre, sort, search }
+    );
+
+    const detailedResults = await Promise.all(
+        results.map(m => tmdbProvider.getMovieDetails(m.id))
+    );
+
+    const movies = detailedResults
+        .filter(m => m.productionCountries && m.productionCountries.includes('PE'))
+        .filter(m => m.posterUrl);
+
+    res.json({ results: movies, totalPages, page: Number(page) });
+});

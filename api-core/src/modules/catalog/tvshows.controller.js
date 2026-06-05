@@ -1,34 +1,25 @@
-const TVShow = require('./tvshow.model');
+const tvshowsService = require('./tvshows.service');
 
-// GET /api/tvshows -> listar con filtros y aleatoriedad
 exports.getAllTVShows = async (req, res) => {
     try {
         const { genre, platform, sort, search } = req.query;
         let query = {};
 
-        if (search) {
-            query.name = { $regex: search, $options: 'i' };
-        }
-
-        if (genre && genre !== 'Todas') {
-            query.genres = genre;
-        }
-
-        if (platform && platform !== 'Todas') {
-            query['platforms.name'] = { $regex: platform, $options: 'i' };
-        }
+        if (search) query.name = { $regex: search, $options: 'i' };
+        if (genre && genre !== 'Todas') query.genres = genre;
+        if (platform && platform !== 'Todas') query['platforms.name'] = { $regex: platform, $options: 'i' };
 
         let shows;
 
         if (!sort && !search) {
-            shows = await TVShow.find(query);
+            shows = await tvshowsService.findAll(query, { _id: -1 });
             shows = shows.sort(() => Math.random() - 0.5);
         } else {
             let sortOption = { _id: -1 };
             if (sort === 'rating') sortOption = { voteAverage: -1 };
             if (sort === 'newest') sortOption = { firstAirDate: -1 };
 
-            shows = await TVShow.find(query).sort(sortOption);
+            shows = await tvshowsService.findAll(query, sortOption);
         }
 
         res.json(shows);
@@ -37,46 +28,39 @@ exports.getAllTVShows = async (req, res) => {
     }
 };
 
-// GET /api/tvshows/:id -> detalle de serie
 exports.getTVShowById = async (req, res) => {
     try {
-        const show = await TVShow.findById(req.params.id);
+        const show = await tvshowsService.findById(req.params.id);
         if (!show) return res.status(404).json({ message: 'Serie no encontrada' });
         res.json(show);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
+
 exports.createTVShow = async (req, res) => {
     try {
-        const newShow = new TVShow(req.body);
-        const saved = await newShow.save();
-        res.status(201).json(saved);
+        if (!req.body.tmdbId) {
+            req.body.tmdbId = 'manual-' + Date.now();
+        }
+        const show = await tvshowsService.create(req.body);
+        res.status(201).json(show);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
 
 exports.updateTVShow = async (req, res) => {
     try {
-        const updated = await TVShow.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
-        if (!updated) return res.status(404).json({ message: 'Serie no encontrada' });
-        res.json(updated);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
+        const show = await tvshowsService.update(req.params.id, req.body);
+        if (!show) return res.status(404).json({ message: 'Serie no encontrada' });
+        res.json(show);
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 exports.deleteTVShow = async (req, res) => {
     try {
-        const deleted = await TVShow.findByIdAndDelete(req.params.id);
-        if (!deleted) return res.status(404).json({ message: 'Serie no encontrada' });
-        res.status(200).json({ message: 'Serie eliminada correctamente' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+        await tvshowsService.delete(req.params.id);
+        res.json({ message: 'Serie eliminada' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
 };
