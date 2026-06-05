@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,9 @@ const MovieDetails = () => {
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [activeVideo, setActiveVideo] = useState('movie');
+
+    // Ref para medir el tiempo de visualización
+    const viewStartTime = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -58,28 +61,51 @@ const MovieDetails = () => {
 
 
     useEffect(() => {
-        // Solo enviamos el registro si el usuario está autenticado y la pestaña activa es la película o fuente alternativa.
+        // Inicia el contador de tiempo cuando el usuario empieza a ver el contenido
         if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
+            viewStartTime.current = Date.now();
+
+            // 1. Restauramos tu lógica original con el timer de 5 segundos de gracia
             const registerView = async () => {
                 try {
-                    // Aviso a la ruta updateProgress
                     await api.post('/users/progress', {
                         contentId: id,
-                        percentWatched: 10 // Mandamos un progreso inicial simulado, CAMBIAR A VARIABLE DINAMICA CUANDO SE IMPLEMENTE SEGUIR VIENDO
+                        percentWatched: 10 // Simulación de progreso inicial
                     });
                 } catch (error) {
-                    console.error("Error silencioso al registrar visualización:", error);
+                    console.error("Error silencioso al registrar progreso:", error);
                 }
             };
 
-            // Le damos 5 segundos de gracia para no contar clics accidentales
             const timer = setTimeout(() => {
                 registerView();
             }, 5000);
 
-            return () => clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
+            // La función de limpieza se ejecutará cuando el usuario navegue fuera de la página
+            return () => {
+                clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
+                if (viewStartTime.current) {
+                    const endTime = Date.now();
+                    const durationSeconds = (endTime - viewStartTime.current) / 1000;
+                    
+                    // Solo registramos si el usuario vio más de 60 segundos para no contar clics accidentales
+                    if (durationSeconds > 60) {
+                        const durationMinutes = Math.round(durationSeconds / 60);
+                        
+                        api.post('/statistics/playback', {
+                            contentId: id,
+                            contentType: type === 'movie' ? 'Movie' : 'TVShow',
+                            durationMinutes: durationMinutes
+                        }).then(() => {
+                            console.log(`Métrica registrada: ${durationMinutes} minutos en ${item.title || item.name}`);
+                        }).catch(err => {
+                            console.error("Error silencioso al registrar métrica de tiempo:", err);
+                        });
+                    }
+                }
+            };
         }
-    }, [user, item, activeVideo, id]);
+    }, [user, item, activeVideo, id, type]);
 
     const toggleWatchlist = async () => {
         try {
@@ -141,8 +167,8 @@ const MovieDetails = () => {
 
     const tmdbId = item.tmdbId || item.id || id;
     const movieEmbedUrl = type === 'movie'
-        ? `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`
-        : `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=1&episode=1`;
+        ? `https://vidsrc.net/embed/movie?tmdb=${tmdbId}`
+        : `https://vidsrc.net/embed/tv?tmdb=${tmdbId}&season=1&episode=1`;
 
     // Lógica para fondo por defecto si no hay imágenes
     const bgImage = item.backdropUrl || item.posterUrl || 'https://via.placeholder.com/1920x1080/111111/111111';

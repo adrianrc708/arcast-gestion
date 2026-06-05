@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import api from './services/api';
@@ -7,10 +7,12 @@ import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
 import AdminPanel from './views/AdminPanel';
-import BossDashboard from './views/BossDashboard';
 import MovieDetails from './views/MovieDetails';
 import Profile from './views/Profile';
 import './index.css';
+
+// 1. Aislamos el Dashboard y las librerías de gráficas para que no bloqueen la app principal
+const BossDashboard = lazy(() => import('./views/BossDashboard'));
 
 const App = () => {
     const { isAuthenticated, user } = useAuth();
@@ -51,7 +53,15 @@ const App = () => {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/item/:type/:id" element={<MovieDetails />} />
                     <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
-                    <Route path="/boss" element={user?.role === 'boss' ? <BossDashboard /> : <Navigate to="/" replace />} />
+                    
+                    {/* 2. Envolvemos la ruta con Suspense para manejar su carga por separado */}
+                    <Route path="/boss" element={
+                        user?.role === 'boss' ? (
+                            <Suspense fallback={<div className="py-20 text-center text-purple-400 font-bold animate-pulse">Iniciando módulos gráficos...</div>}>
+                                <BossDashboard />
+                            </Suspense>
+                        ) : <Navigate to="/" replace />
+                    } />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>
