@@ -3,11 +3,12 @@ const User = require("./user.model");
 /** @type {any} */
 const Movie = require("../catalog/movie.model");
 /** @type {any} */
-const Review = require("../reviews/review.model");
-const axios = require("axios");
-const audit = require("../../common/audit.service");
-const catalogApi = require("../catalog/catalog.api");
-const { catchAsync, AppError } = require("../../common/error.utils");
+const Review = require('../reviews/review.model');
+const axios = require('axios');
+const audit = require('../../common/audit.service');
+const catalogApi = require('../catalog/catalog.api');
+const { catchAsync, AppError } = require('../../common/error.utils');
+const AuditLog = require('../../common/audit.model');
 
 /**
  * @typedef {Object} UserDoc
@@ -36,39 +37,44 @@ exports.getBossStats = catchAsync(async (req, res, _next) => {
 });
 
 exports.getRecommendations = catchAsync(async (req, res, _next) => {
-  // 1. Obtener géneros reales del usuario a partir de su watchlist
-  /** @type {UserDoc|null} */
-  const user = await /** @type {any} */ (require("./user.model")).findById(
-    req.user.id,
-  );
+    /** @type {UserDoc|null} */
+    const user = await (/** @type {any} */ (require('./user.model'))).findById(req.user.id);
 
-  let preferredGenres = ["Acción"]; // fallback por defecto
+    let preferredGenres = ['Acción']; // fallback por defecto
 
-  if (user && user.watchlist && user.watchlist.length > 0) {
-    const movieIds = user.watchlist
-      .filter((i) => i.kind === "Movie")
-      .map((i) => i.item);
-    if (movieIds.length > 0) {
-      const watchedMovies = await /** @type {any} */ (
-        require("../catalog/movie.model")
-      )
-        .find({ _id: { $in: movieIds } })
-        .select("genres")
-        .limit(20);
+    if (user && user.watchlist && user.watchlist.length > 0) {
+        const movieIds = user.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
+        if (movieIds.length > 0) {
+            const watchedMovies = await (/** @type {any} */ (require('../catalog/movie.model')))
+                .find({ _id: { $in: movieIds } }).select('genres').limit(20);
 
-      const genreCount = {};
-      for (const movie of watchedMovies) {
-        for (const genre of movie.genres || []) {
-          genreCount[genre] = (genreCount[genre] || 0) + 1;
+            const genreCount = {};
+            for (const movie of watchedMovies) {
+                for (const genre of (movie.genres || [])) {
+                    genreCount[genre] = (genreCount[genre] || 0) + 1;
+                }
+            }
+
+            const sorted = Object.entries(genreCount)
+                .sort((a, b) => b[1] - a[1])
+                .map(([genre]) => genre);
+
+            if (sorted.length > 0) preferredGenres = sorted.slice(0, 4);
         }
       }
 
-      // Ordenar géneros por frecuencia descendente
-      const sorted = Object.entries(genreCount)
-        .sort((a, b) => b[1] - a[1])
-        .map(([genre]) => genre);
+    const AI_URL = process.env.AI_ENGINE_URL || 'http://localhost:5000';
+    try {
+        const response = await axios.post(`${AI_URL}/recommend`, {
+            userId: req.user.id,
+            preferredGenres,
+            limit: 6
+        }, { timeout: 4000 });
 
-      if (sorted.length > 0) preferredGenres = sorted.slice(0, 4);
+        const tmdbIds = response.data.recommendations || [];
+        res.json(await catalogApi.getRecommendedContent(tmdbIds));
+    } catch (_aiErr) {
+        res.json(await catalogApi.getRecommendedContent([]));
     }
   }
 
@@ -95,17 +101,21 @@ exports.getRecommendations = catchAsync(async (req, res, _next) => {
 });
 
 exports.getMe = catchAsync(async (req, res, _next) => {
-  // noinspection JSUnresolvedFunction
-  const user = await User.findById(req.user.id).select("-password");
-  if (!user) throw new AppError("Usuario no encontrado", 404);
-  res.json(user);
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+    res.json(user);
 });
 
 exports.updateMe = catchAsync(async (req, res, _next) => {
-  const { username } = req.body;
-  // noinspection JSUnresolvedFunction
-  const user = await User.findById(req.user.id);
-  if (!user) throw new AppError("Usuario no encontrado", 404);
+    const { username } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    const oldName = user.username;
+    if (username && username !== user.username) {
+        if (await User.findOne({ username })) throw new AppError('Usuario ya existe.', 400);
+        user.username = username;
+    }
 
   const oldName = user.username;
   if (username && username !== user.username) {
@@ -126,122 +136,44 @@ exports.updateMe = catchAsync(async (req, res, _next) => {
 });
 
 exports.updateProgress = catchAsync(async (req, res, _next) => {
-  // Agregamos contentType y currentTime a lo que recibimos del frontend
-  const { contentId, contentType, percentWatched, currentTime } = req.body;
-
-  // noinspection JSUnresolvedFunction
-  const user = await User.findById(req.user.id);
-  if (!user) throw new AppError("Usuario no encontrado", 404);
-
-  /** @type {UserDoc} */
-  const userDoc = user;
-  const idx = userDoc.watchHistory.findIndex((h) => h.contentId === contentId);
-
-  if (idx > -1) {
-    // Si ya existe en el historial, actualizamos los datos
-    userDoc.watchHistory[idx].percentWatched = percentWatched;
-    userDoc.watchHistory[idx].currentTime = currentTime;
-    userDoc.watchHistory[idx].lastTimeWatched = Date.now();
-  } else {
-    // Si es la primera vez que ve la película, lo agregamos
-    userDoc.watchHistory.push({
-      contentId,
-      contentType,
-      percentWatched,
-      currentTime,
-    });
-  }
+    const { contentId, percentWatched } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
 
   await userDoc.save();
   res.json({ message: "Progreso guardado exitosamente." });
 });
 
-exports.getContinueWatching = catchAsync(async (req, res, _next) => {
-  const user = await User.findById(req.user.id);
-  if (!user) throw new AppError("Usuario no encontrado", 404);
-
-  /** @type {UserDoc} */
-  const userDoc = user;
-
-  // 1. Filtramos: Solo queremos películas empezadas (más del 1%) pero no terminadas (menos del 95%)
-  const inProgress = userDoc.watchHistory.filter(
-    (h) => h.percentWatched > 1 && h.percentWatched < 95,
-  );
-
-  // 2. Ordenamos: Las vistas más recientemente salen primero
-  inProgress.sort(
-    (a, b) => new Date(b.lastTimeWatched) - new Date(a.lastTimeWatched),
-  );
-
-  // 3. Extraemos los IDs para buscar la información completa en el catálogo
-  const movieIds = inProgress
-    .filter((i) => i.contentType === "Movie" || !i.contentType)
-    .map((i) => i.contentId);
-  const tvIds = inProgress
-    .filter((i) => i.contentType === "TVShow")
-    .map((i) => i.contentId);
-
-  // Reutilizamos el catalogApi que ya importaste arriba
-  const { movies, tvshows } = await catalogApi.getBulkItems(movieIds, tvIds);
-
-  // 4. Armamos la respuesta final mezclando el progreso con la información de la película
-  const continueWatchingList = inProgress
-    .map((entry) => {
-      const data =
-        entry.contentType === "TVShow"
-          ? tvshows.find((t) => t._id.toString() === entry.contentId.toString())
-          : movies.find((m) => m._id.toString() === entry.contentId.toString());
-
-      return data
-        ? {
-            _id: entry._id,
-            contentId: entry.contentId,
-            contentType: entry.contentType || "Movie",
-            percentWatched: entry.percentWatched,
-            currentTime: entry.currentTime,
-            item: data, // Aquí va el título, póster, etc.
-          }
-        : null;
-    })
-    .filter((item) => item !== null);
-
-  res.json({ continueWatching: continueWatchingList });
+    await userDoc.save();
+    await audit.recordMutation(req.user.id, 'CONTENT_WATCHED', { contentId: req.body.itemId || req.body.contentId }, req.ip);
+    res.json({ message: "Progreso guardado." });
 });
 
 exports.getWatchlist = catchAsync(async (req, res, _next) => {
-  // noinspection JSUnresolvedFunction
-  const user = await User.findById(req.user.id);
-  if (!user) throw new AppError("Usuario no encontrado", 404);
+    const user = await User.findById(req.user.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
 
-  /** @type {UserDoc} */
-  const userDoc = user;
+    /** @type {UserDoc} */
+    const userDoc = user;
 
-  const movieIds = userDoc.watchlist
-    .filter((i) => i.kind === "Movie")
-    .map((i) => i.item);
-  const tvIds = userDoc.watchlist
-    .filter((i) => i.kind === "TVShow")
-    .map((i) => i.item);
+    const movieIds = userDoc.watchlist.filter(i => i.kind === 'Movie').map(i => i.item);
+    const tvIds = userDoc.watchlist.filter(i => i.kind === 'TVShow').map(i => i.item);
 
-  const { movies, tvshows } = await catalogApi.getBulkItems(movieIds, tvIds);
+    const { movies, tvshows } = await catalogApi.getBulkItems(movieIds, tvIds);
 
-  const finalWatchlist = userDoc.watchlist
-    .map((entry) => {
-      const data =
-        entry.kind === "Movie"
-          ? movies.find((m) => m._id.toString() === entry.item.toString())
-          : tvshows.find((t) => t._id.toString() === entry.item.toString());
-      return data ? { _id: entry._id, kind: entry.kind, item: data } : null;
-    })
-    .filter((item) => item !== null);
+    const finalWatchlist = userDoc.watchlist.map(entry => {
+        const data = entry.kind === 'Movie'
+            ? movies.find(m => m._id.toString() === entry.item.toString())
+            : tvshows.find(t => t._id.toString() === entry.item.toString());
+        return data ? { _id: entry._id, kind: entry.kind, item: data } : null;
+    }).filter(item => item !== null);
 
-  res.json({ watchlist: finalWatchlist });
+    res.json({ watchlist: finalWatchlist });
 });
 
 exports.getAllUsers = catchAsync(async (req, res, _next) => {
-  // noinspection JSUnresolvedFunction
-  const users = await User.find().select("-password");
-  res.json(users);
+    const users = await User.find().select('-password');
+    res.json(users);
 });
 
 exports.updateUserRole = catchAsync(async (req, res, _next) => {
@@ -251,9 +183,8 @@ exports.updateUserRole = catchAsync(async (req, res, _next) => {
     throw new AppError("Rol no válido", 400);
   }
 
-  // noinspection JSUnresolvedFunction
-  const user = await User.findById(req.params.id);
-  if (!user) throw new AppError("Usuario no encontrado", 404);
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
 
   const oldRole = user.role;
   user.role = role;
@@ -270,41 +201,83 @@ exports.updateUserRole = catchAsync(async (req, res, _next) => {
 });
 
 exports.toggleWatchlist = catchAsync(async (req, res) => {
-  const { itemId, itemType } = req.body;
-  const user = await User.findById(req.user.id);
-  const kind = itemType === "movie" ? "Movie" : "TVShow";
+    const { itemId, itemType } = req.body;
+    const user = await User.findById(req.user.id);
+    const kind = itemType === 'movie' ? 'Movie' : 'TVShow';
 
-  const index = user.watchlist.findIndex((w) => w.item.toString() === itemId);
-  if (index > -1) {
-    user.watchlist.splice(index, 1);
-  } else {
-    user.watchlist.push({ item: itemId, kind });
-  }
+    const index = user.watchlist.findIndex(w => w.item.toString() === itemId);
+    if (index > -1) {
+        user.watchlist.splice(index, 1);
+    } else {
+        user.watchlist.push({ item: itemId, kind });
+    }
 
-  await user.save();
-  res.json(user.watchlist);
-});
+    await user.save();
 
-exports.updateMe = catchAsync(async (req, res) => {
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    { username: req.body.username },
-    { new: true, runValidators: true },
-  );
-  res.json(user);
+    await audit.recordMutation(req.user.id, 'WATCHLIST_TOGGLE', { itemId, kind }, req.ip);
+
+    res.json(user.watchlist);
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
 
-  const user = await User.findById(req.user.id).select("+password");
-  // noinspection JSUnresolvedFunction
-  if (!(await user.correctPassword(currentPassword, user.password))) {
-    return next(new AppError("La contraseña actual es incorrecta.", 401));
-  }
+    const user = await User.findById(req.user.id).select('+password');
+    if (!(await user.correctPassword(currentPassword, user.password))) {
+        return next(new AppError('La contraseña actual es incorrecta.', 401));
+    }
 
   user.password = newPassword;
   await user.save();
 
   res.json({ message: "Contraseña actualizada con éxito." });
+});
+
+exports.getActivityMetrics = catchAsync(async (req, res, next) => {
+    const days = parseInt(req.query.days) || 7;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const dailyData = await AuditLog.aggregate([
+        { $match: { timestamp: { $gte: startDate } } },
+        {
+            $group: {
+                _id: {
+                    $dateToString: { format: "%Y-%m-%d", date: "$timestamp", timezone: "America/Lima" }
+                },
+                activeUsers: { $addToSet: "$userId" }
+            }
+        },
+        {
+            $project: {
+                date: "$_id",
+                activeUsers: { $size: "$activeUsers" },
+                _id: 0
+            }
+        },
+        { $sort: { date: 1 } }
+    ]);
+
+    const actionSummary = await AuditLog.aggregate([
+        { $match: { timestamp: { $gte: startDate } } },
+        {
+            $group: {
+                _id: "$action",
+                uniqueUsers: { $addToSet: "$userId" },
+                totalOccurrences: { $sum: 1 }
+            }
+        },
+        {
+            $project: {
+                action: "$_id",
+                userCount: { $size: "$uniqueUsers" },
+                total: "$totalOccurrences",
+                _id: 0
+            }
+        },
+        { $sort: { userCount: -1 } }
+    ]);
+
+    res.json({ daily: dailyData, summary: actionSummary });
 });

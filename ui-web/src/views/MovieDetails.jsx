@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,9 @@ const MovieDetails = () => {
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [activeVideo, setActiveVideo] = useState('movie');
+
+    // Ref para medir el tiempo de visualización
+    const viewStartTime = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -55,6 +58,54 @@ const MovieDetails = () => {
     useEffect(() => {
         if (item && !trailerEmbedUrl) setActiveVideo('movie');
     }, [item, trailerEmbedUrl]);
+
+
+    useEffect(() => {
+        // Inicia el contador de tiempo cuando el usuario empieza a ver el contenido
+        if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
+            viewStartTime.current = Date.now();
+
+            // 1. Restauramos tu lógica original con el timer de 5 segundos de gracia
+            const registerView = async () => {
+                try {
+                    await api.post('/users/progress', {
+                        contentId: id,
+                        percentWatched: 10 // Simulación de progreso inicial
+                    });
+                } catch (error) {
+                    console.error("Error silencioso al registrar progreso:", error);
+                }
+            };
+
+            const timer = setTimeout(() => {
+                registerView();
+            }, 5000);
+
+            // La función de limpieza se ejecutará cuando el usuario navegue fuera de la página
+            return () => {
+                clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
+                if (viewStartTime.current) {
+                    const endTime = Date.now();
+                    const durationSeconds = (endTime - viewStartTime.current) / 1000;
+                    
+                    // Solo registramos si el usuario vio más de 60 segundos para no contar clics accidentales
+                    if (durationSeconds > 60) {
+                        const durationMinutes = Math.round(durationSeconds / 60);
+                        
+                        api.post('/statistics/playback', {
+                            contentId: id,
+                            contentType: type === 'movie' ? 'Movie' : 'TVShow',
+                            durationMinutes: durationMinutes
+                        }).then(() => {
+                            console.log(`Métrica registrada: ${durationMinutes} minutos en ${item.title || item.name}`);
+                        }).catch(err => {
+                            console.error("Error silencioso al registrar métrica de tiempo:", err);
+                        });
+                    }
+                }
+            };
+        }
+    }, [user, item, activeVideo, id, type]);
 
     const toggleWatchlist = async () => {
         try {
@@ -116,8 +167,8 @@ const MovieDetails = () => {
 
     const tmdbId = item.tmdbId || item.id || id;
     const movieEmbedUrl = type === 'movie'
-        ? `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`
-        : `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=1&episode=1`;
+        ? `https://vidsrc.net/embed/movie?tmdb=${tmdbId}`
+        : `https://vidsrc.net/embed/tv?tmdb=${tmdbId}&season=1&episode=1`;
 
     // Lógica para fondo por defecto si no hay imágenes
     const bgImage = item.backdropUrl || item.posterUrl || 'https://via.placeholder.com/1920x1080/111111/111111';
@@ -132,9 +183,9 @@ const MovieDetails = () => {
                 <div className="detail-header">
                     <div className="detail-poster">
                         {/* Renderizado condicional del póster */}
-                        <img 
-                            src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=P%C3%B3ster+no+disponible'} 
-                            alt={item.title || item.name} 
+                        <img
+                            src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=P%C3%B3ster+no+disponible'}
+                            alt={item.title || item.name}
                         />
                     </div>
 
@@ -157,7 +208,7 @@ const MovieDetails = () => {
 
                             <div className="meta-info">
                                 <p><strong>Géneros:</strong> {item.genres?.length > 0 ? item.genres.join(', ') : 'No clasificado'}</p>
-                                
+
                                 {/* Solo muestra la duración si existe */}
                                 {item.runtime ? (
                                     <p><strong>Duración:</strong> {item.runtime} min</p>
@@ -201,8 +252,8 @@ const MovieDetails = () => {
                         <iframe
                             src={
                                 activeVideo === 'trailer' ? trailerEmbedUrl :
-                                activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
-                                movieEmbedUrl
+                                    activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
+                                        movieEmbedUrl
                             }
                             title="Reproductor"
                             frameBorder="0"
@@ -234,7 +285,7 @@ const MovieDetails = () => {
                                     className="modern-textarea"
                                     placeholder="¿Qué te pareció?"
                                     value={newReview.text}
-                                    onChange={(e) => setReview({...newReview, text: e.target.value})}
+                                    onChange={(e) => setReview({ ...newReview, text: e.target.value })}
                                     required
                                 />
                                 <div className="form-actions">
