@@ -2,6 +2,7 @@ const usersApi = require('../users/users.api');
 const bcrypt = require('bcryptjs'); // sólo se usa en loginUser para compare
 const jwt = require('jsonwebtoken');
 const { catchAsync, AppError } = require('../../common/error.utils');
+const ALLOWED_DOMAINS = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'unmsm.edu.pe'];
 
 /**
  * @typedef {Object} User
@@ -17,6 +18,11 @@ exports.registerUser = catchAsync(async (req, res, next) => {
 
     if (!username || !email || !password) {
         return next(new AppError('username, email y password son obligatorios.', 400));
+    }
+
+    const emailParts = email.split('@');
+    if (emailParts.length !== 2 || !ALLOWED_DOMAINS.includes(emailParts[1].toLowerCase())) {
+        return next(new AppError('Registro denegado. Utiliza un dominio de correo válido o institucional.', 403));
     }
 
     const existing = await usersApi.findByEmailOrUsername(email, username);
