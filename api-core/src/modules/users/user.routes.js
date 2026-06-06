@@ -1,10 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const userController = require('./user.controller');
-const { requiredAuth, authorize } = require('../../common/auth.middleware');
+const userController = require("./user.controller");
+const { requiredAuth, authorize } = require("../../common/auth.middleware");
 
-router.get('/me', requiredAuth, userController.getMe);
-router.get('/recommendations', requiredAuth, userController.getRecommendations);
+router.get("/me", requiredAuth, userController.getMe);
+router.get("/recommendations", requiredAuth, userController.getRecommendations);
 
 router.get('/', requiredAuth, authorize(['admin', 'boss']), userController.getAllUsers);
 router.get('/me', requiredAuth, (req, res) => res.json(req.user));

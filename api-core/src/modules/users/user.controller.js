@@ -1,7 +1,7 @@
 /** @type {any} */
-const User = require('./user.model');
+const User = require("./user.model");
 /** @type {any} */
-const Movie = require('../catalog/movie.model');
+const Movie = require("../catalog/movie.model");
 /** @type {any} */
 const Review = require('../reviews/review.model');
 const axios = require('axios');
@@ -20,20 +20,20 @@ const AuditLog = require('../../common/audit.model');
  */
 
 exports.getBossStats = catchAsync(async (req, res, _next) => {
-    // noinspection JSUnresolvedFunction
-    const [totalUsers, totalMovies, totalReviews] = await Promise.all([
-        User.countDocuments(),
-        Movie.countDocuments(),
-        Review.countDocuments()
-    ]);
+  // noinspection JSUnresolvedFunction
+  const [totalUsers, totalMovies, totalReviews] = await Promise.all([
+    User.countDocuments(),
+    Movie.countDocuments(),
+    Review.countDocuments(),
+  ]);
 
-    // noinspection JSUnresolvedFunction
-    const topRated = await Movie.find().sort({ voteAverage: -1 }).limit(5);
+  // noinspection JSUnresolvedFunction
+  const topRated = await Movie.find().sort({ voteAverage: -1 }).limit(5);
 
-    res.json({
-        metrics: { totalUsers, totalMovies, totalReviews },
-        rankings: topRated
-    });
+  res.json({
+    metrics: { totalUsers, totalMovies, totalReviews },
+    rankings: topRated,
+  });
 });
 
 exports.getRecommendations = catchAsync(async (req, res, _next) => {
@@ -61,7 +61,7 @@ exports.getRecommendations = catchAsync(async (req, res, _next) => {
 
             if (sorted.length > 0) preferredGenres = sorted.slice(0, 4);
         }
-    }
+      }
 
     const AI_URL = process.env.AI_ENGINE_URL || 'http://localhost:5000';
     try {
@@ -76,6 +76,28 @@ exports.getRecommendations = catchAsync(async (req, res, _next) => {
     } catch (_aiErr) {
         res.json(await catalogApi.getRecommendedContent([]));
     }
+  }
+
+  // 2. Llamar al motor de IA con los géneros reales
+  const AI_URL = process.env.AI_ENGINE_URL || "http://localhost:5000";
+  try {
+    const response = await axios.post(
+      `${AI_URL}/recommend`,
+      {
+        userId: req.user.id,
+        preferredGenres,
+        limit: 6,
+      },
+      { timeout: 4000 },
+    );
+
+    // noinspection JSUnresolvedVariable
+    const tmdbIds = response.data.recommendations || [];
+    res.json(await catalogApi.getRecommendedContent(tmdbIds));
+  } catch (_aiErr) {
+    // Fallback silencioso: devolvemos las mejor calificadas del catálogo
+    res.json(await catalogApi.getRecommendedContent([]));
+  }
 });
 
 exports.getMe = catchAsync(async (req, res, _next) => {
@@ -95,9 +117,22 @@ exports.updateMe = catchAsync(async (req, res, _next) => {
         user.username = username;
     }
 
-    await user.save();
-    await audit.recordMutation(req.user.id, 'USER_PROFILE_MUTATION', { from: oldName, to: user.username }, req.ip);
-    res.json(user);
+  const oldName = user.username;
+  if (username && username !== user.username) {
+    // noinspection JSUnresolvedFunction
+    if (await User.findOne({ username }))
+      throw new AppError("Usuario ya existe.", 400);
+    user.username = username;
+  }
+
+  await user.save();
+  await audit.recordMutation(
+    req.user.id,
+    "USER_PROFILE_MUTATION",
+    { from: oldName, to: user.username },
+    req.ip,
+  );
+  res.json(user);
 });
 
 exports.updateProgress = catchAsync(async (req, res, _next) => {
@@ -105,11 +140,9 @@ exports.updateProgress = catchAsync(async (req, res, _next) => {
     const user = await User.findById(req.user.id);
     if (!user) throw new AppError('Usuario no encontrado', 404);
 
-    /** @type {UserDoc} */
-    const userDoc = user;
-    const idx = userDoc.watchHistory.findIndex(h => h.contentId === contentId);
-    if (idx > -1) userDoc.watchHistory[idx].percentWatched = percentWatched;
-    else userDoc.watchHistory.push({ contentId, percentWatched });
+  await userDoc.save();
+  res.json({ message: "Progreso guardado exitosamente." });
+});
 
     await userDoc.save();
     await audit.recordMutation(req.user.id, 'CONTENT_WATCHED', { contentId: req.body.itemId || req.body.contentId }, req.ip);
@@ -144,22 +177,27 @@ exports.getAllUsers = catchAsync(async (req, res, _next) => {
 });
 
 exports.updateUserRole = catchAsync(async (req, res, _next) => {
-    const { role } = req.body;
+  const { role } = req.body;
 
-    if (!['user', 'admin', 'boss'].includes(role)) {
-        throw new AppError('Rol no válido', 400);
-    }
+  if (!["user", "admin", "boss"].includes(role)) {
+    throw new AppError("Rol no válido", 400);
+  }
 
     const user = await User.findById(req.params.id);
     if (!user) throw new AppError('Usuario no encontrado', 404);
 
-    const oldRole = user.role;
-    user.role = role;
-    await user.save();
+  const oldRole = user.role;
+  user.role = role;
+  await user.save();
 
-    await audit.recordMutation(req.user.id, 'USER_ROLE_MUTATION', { targetUser: user.username, from: oldRole, to: role }, req.ip);
+  await audit.recordMutation(
+    req.user.id,
+    "USER_ROLE_MUTATION",
+    { targetUser: user.username, from: oldRole, to: role },
+    req.ip,
+  );
 
-    res.json({ message: 'Rol actualizado exitosamente', user });
+  res.json({ message: "Rol actualizado exitosamente", user });
 });
 
 exports.toggleWatchlist = catchAsync(async (req, res) => {
@@ -182,17 +220,17 @@ exports.toggleWatchlist = catchAsync(async (req, res) => {
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
-    const { currentPassword, newPassword } = req.body;
+  const { currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user.id).select('+password');
     if (!(await user.correctPassword(currentPassword, user.password))) {
         return next(new AppError('La contraseña actual es incorrecta.', 401));
     }
 
-    user.password = newPassword;
-    await user.save();
+  user.password = newPassword;
+  await user.save();
 
-    res.json({ message: 'Contraseña actualizada con éxito.' });
+  res.json({ message: "Contraseña actualizada con éxito." });
 });
 
 exports.getActivityMetrics = catchAsync(async (req, res, next) => {
