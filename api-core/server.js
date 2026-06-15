@@ -14,11 +14,12 @@ app.use(cors());
 app.use(express.json());
 app.get('/api/system/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 // ─── Módulos de negocio ────────────────────────────────────────────────────
-/** @type {any} */ const authModule    = require('./src/modules/auth');
-/** @type {any} */ const usersModule   = require('./src/modules/users');
-/** @type {any} */ const catalogModule = require('./src/modules/catalog');
-/** @type {any} */ const reviewsModule = require('./src/modules/reviews');
-/** @type {any} */ const systemModule  = require('./src/modules/system');
+/** @type {any} */ const authModule      = require('./src/modules/auth');
+/** @type {any} */ const usersModule     = require('./src/modules/users');
+/** @type {any} */ const catalogModule   = require('./src/modules/catalog');
+/** @type {any} */ const reviewsModule   = require('./src/modules/reviews');
+/** @type {any} */ const systemModule    = require('./src/modules/system');
+/** @type {any} */ const streamingModule = require('./src/modules/streaming');
 
 app.get('/api/make-me-admin/:username', async (req, res) => {
     const User = require('./src/modules/users/user.model');
@@ -35,7 +36,9 @@ app.use('/api/catalog', catalogModule);
 // noinspection JSCheckFunctionSignatures
 app.use('/api/reviews', reviewsModule);
 // noinspection JSCheckFunctionSignatures
-app.use('/api/system',  systemModule);
+app.use('/api/system',   systemModule);
+// noinspection JSCheckFunctionSignatures
+app.use('/api/stream',   streamingModule);
 
 // ─── 404 — Ruta no encontrada ──────────────────────────────────────────────
 app.use((req, _res, next) => {
