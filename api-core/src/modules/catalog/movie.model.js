@@ -23,7 +23,10 @@ const MovieSchema = new Schema({
     }],
 
     // Mantenemos un link principal por compatibilidad si se necesita
-    watchLink: { type: String }
+    watchLink: { type: String },
+
+    // Ruta absoluta al archivo de video almacenado localmente (streaming RF11)
+    localPath: { type: String }
 });
 
 module.exports = mongoose.model('Movie', MovieSchema);
