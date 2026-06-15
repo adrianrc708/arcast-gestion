@@ -234,8 +234,9 @@ const MovieDetails = () => {
 
                 {/* Calcula la URL de streaming local basada en el tmdbId o _id */}
                 {(() => {
+                    const streamToken = localStorage.getItem('arcast_token') || '';
                     const localMovieUrl = type === 'movie'
-                        ? `/api/stream/movie/${item.tmdbId || id}`
+                        ? `/api/stream/movie/${item.tmdbId || id}?token=${streamToken}`
                         : null; // Para series lo maneja Gabriel en RF12
 
                     const handleVideoProgress = async (currentTime, duration) => {
