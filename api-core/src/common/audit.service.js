@@ -9,8 +9,9 @@ const auditSchema = new mongoose.Schema({
 });
 
 /** @type {any} */
-const AuditLog = mongoose.model('AuditLog', auditSchema);
-
+const AuditLog =
+  mongoose.models.AuditLog ||
+  mongoose.model('AuditLog', auditSchema);
 /**
  * @param {string} userId - ID del usuario que realiza la acción
  * @param {string} action - Nombre de la acción (Ejem: CATALOG_IMPORT)

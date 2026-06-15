@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import VideoPlayer from '../components/VideoPlayer';
+
 
 const MovieDetails = () => {
     const { type, id } = useParams();
@@ -230,37 +232,89 @@ const MovieDetails = () => {
                     </div>
                 </div>
 
-                <div className="player-section">
-                    <div className="player-tabs">
-                        <button className={activeVideo === 'movie' ? 'active' : ''} onClick={() => setActiveVideo('movie')}>
-                            Ver {type === 'movie' ? 'Película' : 'Contenido'}
-                        </button>
-                        {/* RESCATADO DE TU COMPAÑERO */}
-                        {item.watchLink && (
-                            <button className={activeVideo === 'alt' ? 'active' : ''} onClick={() => setActiveVideo('alt')}>
-                                Fuente Alternativa
-                            </button>
-                        )}
-                        {trailerEmbedUrl && (
-                            <button className={activeVideo === 'trailer' ? 'active' : ''} onClick={() => setActiveVideo('trailer')}>
-                                Ver Trailer
-                            </button>
-                        )}
-                    </div>
+                {/* Calcula la URL de streaming local basada en el tmdbId o _id */}
+                {(() => {
+                    const localMovieUrl = type === 'movie'
+                        ? `/api/stream/movie/${item.tmdbId || id}`
+                        : null; // Para series lo maneja Gabriel en RF12
 
-                    <div className="player-glass-container">
-                        <iframe
-                            src={
-                                activeVideo === 'trailer' ? trailerEmbedUrl :
-                                    activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
-                                        movieEmbedUrl
+                    const handleVideoProgress = async (currentTime, duration) => {
+                        if (!user) return;
+                        const percent = Math.round((currentTime / duration) * 100);
+                        // Guardamos progreso cada 10% para no saturar el backend
+                        if (percent % 10 === 0) {
+                            try {
+                                await api.post('/users/progress', {
+                                    contentId: id,
+                                    percentWatched: percent,
+                                    currentTime: Math.floor(currentTime)
+                                });
+                            } catch (e) {
+                                // Error silencioso — el progreso no es crítico
                             }
-                            title="Reproductor"
-                            frameBorder="0"
-                            allowFullScreen
-                        ></iframe>
-                    </div>
-                </div>
+                        }
+                    };
+
+                    return (
+                        <div className="player-section">
+                            <div className="player-tabs">
+                                {/* Pestaña Local (RF11) — solo si hay streaming local disponible */}
+                                {localMovieUrl && (
+                                    <button
+                                        className={activeVideo === 'local' ? 'active' : ''}
+                                        onClick={() => setActiveVideo('local')}
+                                    >
+                                        ▶ Ver en Arcast
+                                    </button>
+                                )}
+                                <button
+                                    className={activeVideo === 'movie' ? 'active' : ''}
+                                    onClick={() => setActiveVideo('movie')}
+                                >
+                                    Ver {type === 'movie' ? 'Película' : 'Contenido'}
+                                </button>
+                                {item.watchLink && (
+                                    <button
+                                        className={activeVideo === 'alt' ? 'active' : ''}
+                                        onClick={() => setActiveVideo('alt')}
+                                    >
+                                        Fuente Alternativa
+                                    </button>
+                                )}
+                                {trailerEmbedUrl && (
+                                    <button
+                                        className={activeVideo === 'trailer' ? 'active' : ''}
+                                        onClick={() => setActiveVideo('trailer')}
+                                    >
+                                        Ver Trailer
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Reproductor Local (RF11) */}
+                            {activeVideo === 'local' && localMovieUrl ? (
+                                <VideoPlayer
+                                    src={localMovieUrl}
+                                    title={item.title || item.name}
+                                    onProgress={handleVideoProgress}
+                                />
+                            ) : (
+                                <div className="player-glass-container">
+                                    <iframe
+                                        src={
+                                            activeVideo === 'trailer' ? trailerEmbedUrl :
+                                            activeVideo === 'alt' ? getEmbedUrl(item.watchLink) :
+                                            movieEmbedUrl
+                                        }
+                                        title="Reproductor"
+                                        frameBorder="0"
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 <div className="reviews-section">
                     <h2 className="section-title">Comunidad <span>({reviews.length})</span></h2>
