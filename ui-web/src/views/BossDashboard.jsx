@@ -34,7 +34,7 @@ const BossDashboard = () => {
                     api.get('/statistics/traffic?days=7').catch(() => ({ data: [] })),
                     api.get('/statistics/playback?days=7').catch(() => ({ data: [] }))
                 ]);
-                
+
                 setStats(statsRes.data || null);
                 setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
                 setTrafficData(Array.isArray(trafficRes.data) ? trafficRes.data : []);
@@ -71,6 +71,16 @@ const BossDashboard = () => {
     }, []);
 
     if (loading) return <div className="py-20 text-center text-purple-400 font-bold animate-pulse">Sincronizando con el núcleo...</div>;
+
+    // PRE-PROCESAMIENTO DE SCM: Combinamos el diccionario estático con la actividad del backend
+    const fullActionSummary = Object.keys(ACTION_DICTIONARY).map(actionKey => {
+        const serverData = actionSummary.find(item => item.action === actionKey);
+        return {
+            action: actionKey,
+            total: serverData ? serverData.total : 0,
+            userCount: serverData ? serverData.userCount : 0
+        };
+    }).sort((a, b) => b.total - a.total); // Ordenamos de mayor a menor interacción
 
     return (
         <div className="max-w-7xl mx-auto py-8 px-4 space-y-10 animate-in fade-in">
@@ -129,44 +139,39 @@ const BossDashboard = () => {
                             {dailyData.length === 0 ? (
                                 <div className="w-full text-center text-gray-500 text-sm h-full flex items-center justify-center">Cargando audiencia...</div>
                             ) : dailyData.map((data, index) => {
-                                 const validDaily = dailyData.map(d => d.activeUsers || 0);
-                                 const maxVal = Math.max(...validDaily) || 1;
-                                 const currentActive = data.activeUsers || 0;
-                                 const heightPercentage = currentActive === 0 ? 0 : (currentActive / maxVal) * 100;
-                                 const dateParts = (data.date || '').split('-');
-                                 const shortDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : (data.date || '');
- 
-                                 return (
-                                     <div key={index} className="flex flex-col items-center flex-1 h-full justify-end group relative cursor-pointer">
-                                         <div className="absolute -top-10 opacity-0 group-hover:opacity-100 bg-[#1a1a2e] text-purple-300 text-[10px] sm:text-xs font-bold py-1 px-2 rounded-md shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-opacity whitespace-nowrap z-10 pointer-events-none border border-purple-500/30">
-                                             {currentActive} Usuarios
-                                         </div>
-                                         <div
-                                             className={`w-full max-w-[40px] rounded-t-md transition-all duration-500 ${currentActive === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-purple-900/40 to-purple-500/80 group-hover:to-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
-                                                 }`}
-                                             style={{ height: `${heightPercentage}%`, minHeight: '6px' }}
-                                         ></div>
-                                         <span className={`text-[10px] mt-3 truncate w-full text-center font-bold ${currentActive === 0 ? 'text-gray-600' : 'text-purple-400/70 group-hover:text-purple-300'}`}>
-                                             {shortDate}
-                                         </span>
-                                     </div>
-                                 );
-                             })}
+                                const validDaily = dailyData.map(d => d.activeUsers || 0);
+                                const maxVal = Math.max(...validDaily) || 1;
+                                const currentActive = data.activeUsers || 0;
+                                const heightPercentage = currentActive === 0 ? 0 : (currentActive / maxVal) * 100;
+                                const dateParts = (data.date || '').split('-');
+                                const shortDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : (data.date || '');
+
+                                return (
+                                    <div key={index} className="flex flex-col items-center flex-1 h-full justify-end group relative cursor-pointer">
+                                        <div className="absolute -top-10 opacity-0 group-hover:opacity-100 bg-[#1a1a2e] text-purple-300 text-[10px] sm:text-xs font-bold py-1 px-2 rounded-md shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-opacity whitespace-nowrap z-10 pointer-events-none border border-purple-500/30">
+                                            {currentActive} Usuarios
+                                        </div>
+                                        <div
+                                            className={`w-full max-w-[40px] rounded-t-md transition-all duration-500 ${currentActive === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-purple-900/40 to-purple-500/80 group-hover:to-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                                                }`}
+                                            style={{ height: `${heightPercentage}%`, minHeight: '6px' }}
+                                        ></div>
+                                        <span className={`text-[10px] mt-3 truncate w-full text-center font-bold ${currentActive === 0 ? 'text-gray-600' : 'text-purple-400/70 group-hover:text-purple-300'}`}>
+                                            {shortDate}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
-                    {/*LISTA DE ACCIONES*/}
+                    {/*LISTA DE ACCIONES PERMANENTE (CORREGIDO) */}
                     {metricType === 'actions' && (
                         <div className="h-full overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                            {actionSummary.length === 0 ? (
-                                <div className="h-full flex items-center justify-center border-2 border-dashed border-white/5 rounded-xl p-8">
-                                    <p className="text-purple-400/50 text-sm font-medium text-center">Aún no hay interacciones registradas en los últimos 7 días.</p>
-                                </div>
-                            ) : (
-                                actionSummary.map((item, i) => {
-                                    const actionName = item.action || 'Desconocido';
-                                    const displayAction = ACTION_DICTIONARY[actionName] || actionName;
-                                    return (
+                            {fullActionSummary.map((item, i) => {
+                                const actionName = item.action;
+                                const displayAction = ACTION_DICTIONARY[actionName] || actionName;
+                                return (
                                     <div key={i} className="flex items-center justify-between p-4 bg-transparent rounded-xl border border-white/5 hover:border-purple-500/40 hover:bg-purple-900/10 transition-all shadow-sm group">
                                         <div>
                                             <h4 className="font-bold text-sm text-gray-200 group-hover:text-white transition-colors">
@@ -179,12 +184,17 @@ const BossDashboard = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <span className="block text-xl font-black text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)] group-hover:text-purple-300 transition-colors">{item.total}</span>
+                                            <span className={`block text-xl font-black transition-colors ${item.total === 0
+                                                    ? 'text-gray-600 group-hover:text-gray-400'
+                                                    : 'text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)] group-hover:text-purple-300'
+                                                }`}>
+                                                {item.total}
+                                            </span>
                                             <span className="text-purple-500/40 text-[9px] uppercase tracking-widest font-bold">Total</span>
                                         </div>
                                     </div>
-                                )})
-                            )}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -198,27 +208,27 @@ const BossDashboard = () => {
                     </h3>
                     <div className="h-64 w-full pt-4">
                         <div className="flex items-end justify-between h-full w-full gap-1 relative px-1 border-b border-white/10 pb-4">
-                        {trafficData.length === 0 && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0d1117]/80 backdrop-blur-sm rounded-xl border border-white/5 mb-4">
-                                <span className="text-3xl mb-2 opacity-80">📡</span>
-                                <span className="text-[#38bdf8] font-bold text-sm">No hay tráfico reciente</span>
-                                <span className="text-gray-500 text-xs mt-1">Explora la plataforma para generar actividad</span>
-                            </div>
-                        )}
-                        {(trafficData.length > 0 ? trafficData : Array.from({length: 12}).map((_, i) => ({ fecha: `00-00 ${String(i+8).padStart(2,'0')}:00`, valor: 0 }))).map((data, index) => {
-                            const maxVal = Math.max(...(trafficData.length > 0 ? trafficData : [{valor:1}]).map(d => d.valor || 0)) || 1;
-                            const heightPct = trafficData.length > 0 ? ((data.valor || 0) / maxVal) * 100 : 0;
-                            const label = data.fecha ? String(data.fecha).substring(5, 13) : '';
+                            {trafficData.length === 0 && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0d1117]/80 backdrop-blur-sm rounded-xl border border-white/5 mb-4">
+                                    <span className="text-3xl mb-2 opacity-80">📡</span>
+                                    <span className="text-[#38bdf8] font-bold text-sm">No hay tráfico reciente</span>
+                                    <span className="text-gray-500 text-xs mt-1">Explora la plataforma para generar actividad</span>
+                                </div>
+                            )}
+                            {(trafficData.length > 0 ? trafficData : Array.from({ length: 12 }).map((_, i) => ({ fecha: `00-00 ${String(i + 8).padStart(2, '0')}:00`, valor: 0 }))).map((data, index) => {
+                                const maxVal = Math.max(...(trafficData.length > 0 ? trafficData : [{ valor: 1 }]).map(d => d.valor || 0)) || 1;
+                                const heightPct = trafficData.length > 0 ? ((data.valor || 0) / maxVal) * 100 : 0;
+                                const label = data.fecha ? String(data.fecha).substring(5, 13) : '';
                                 return (
                                     <div key={index} className="flex flex-col items-center flex-1 h-full justify-end group relative cursor-pointer">
                                         <div className="absolute -top-10 opacity-0 group-hover:opacity-100 bg-[#1a1a2e] text-[#38bdf8] text-[10px] font-bold py-1 px-2 rounded-md shadow-[0_0_15px_rgba(56,189,248,0.3)] transition-opacity whitespace-nowrap z-10 pointer-events-none border border-[#38bdf8]/30">
                                             {data.valor} req
                                         </div>
                                         <div
-                                        className={`w-full max-w-[20px] rounded-t-md transition-all duration-500 ${trafficData.length === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-[#0ea5e9]/20 to-[#38bdf8] group-hover:to-[#7dd3fc] shadow-[0_0_10px_rgba(56,189,248,0.2)]'}`}
+                                            className={`w-full max-w-[20px] rounded-t-md transition-all duration-500 ${trafficData.length === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-[#0ea5e9]/20 to-[#38bdf8] group-hover:to-[#7dd3fc] shadow-[0_0_10px_rgba(56,189,248,0.2)]'}`}
                                             style={{ height: `${heightPct}%`, minHeight: '4px' }}
                                         ></div>
-                                    <span className={`text-[9px] mt-3 truncate w-full text-center ${trafficData.length === 0 ? 'text-gray-700' : 'text-gray-500 group-hover:text-[#38bdf8]'}`}>
+                                        <span className={`text-[9px] mt-3 truncate w-full text-center ${trafficData.length === 0 ? 'text-gray-700' : 'text-gray-500 group-hover:text-[#38bdf8]'}`}>
                                             {label}
                                         </span>
                                     </div>
@@ -234,27 +244,27 @@ const BossDashboard = () => {
                     </h3>
                     <div className="h-64 w-full pt-4">
                         <div className="flex items-end justify-between h-full w-full gap-2 relative px-2 border-b border-white/10 pb-4">
-                        {playbackData.length === 0 && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0d1117]/80 backdrop-blur-sm rounded-xl border border-white/5 mb-4">
-                                <span className="text-3xl mb-2 opacity-80">▶️</span>
-                                <span className="text-[#a855f7] font-bold text-sm">No hay reproducciones recientes</span>
-                                <span className="text-gray-500 text-xs mt-1">Mira una película por más de 1 min para generar datos</span>
-                            </div>
-                        )}
-                        {(playbackData.length > 0 ? playbackData : Array.from({length: 7}).map((_, i) => { const d = new Date(); d.setDate(d.getDate() - (6-i)); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return { fecha: `${d.getFullYear()}-${m}-${day}`, valor: 0 }; })).map((data, index) => {
-                            const maxVal = Math.max(...(playbackData.length > 0 ? playbackData : [{valor:1}]).map(d => d.valor || 0)) || 1;
-                            const heightPct = playbackData.length > 0 ? ((data.valor || 0) / maxVal) * 100 : 0;
-                            const label = data.fecha ? String(data.fecha).substring(5) : '';
+                            {playbackData.length === 0 && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0d1117]/80 backdrop-blur-sm rounded-xl border border-white/5 mb-4">
+                                    <span className="text-3xl mb-2 opacity-80">▶️</span>
+                                    <span className="text-[#a855f7] font-bold text-sm">No hay reproducciones recientes</span>
+                                    <span className="text-gray-500 text-xs mt-1">Mira una película por más de 1 min para generar datos</span>
+                                </div>
+                            )}
+                            {(playbackData.length > 0 ? playbackData : Array.from({ length: 7 }).map((_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return { fecha: `${d.getFullYear()}-${m}-${day}`, valor: 0 }; })).map((data, index) => {
+                                const maxVal = Math.max(...(playbackData.length > 0 ? playbackData : [{ valor: 1 }]).map(d => d.valor || 0)) || 1;
+                                const heightPct = playbackData.length > 0 ? ((data.valor || 0) / maxVal) * 100 : 0;
+                                const label = data.fecha ? String(data.fecha).substring(5) : '';
                                 return (
                                     <div key={index} className="flex flex-col items-center flex-1 h-full justify-end group relative cursor-pointer">
                                         <div className="absolute -top-10 opacity-0 group-hover:opacity-100 bg-[#1a1a2e] text-[#a855f7] text-[10px] font-bold py-1 px-2 rounded-md shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-opacity whitespace-nowrap z-10 pointer-events-none border border-[#a855f7]/30">
                                             {data.valor} min
                                         </div>
                                         <div
-                                        className={`w-full max-w-[30px] rounded-t-md transition-all duration-500 ${playbackData.length === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-[#7e22ce]/20 to-[#a855f7] group-hover:to-[#c084fc] shadow-[0_0_10px_rgba(168,85,247,0.2)]'}`}
+                                            className={`w-full max-w-[30px] rounded-t-md transition-all duration-500 ${playbackData.length === 0 ? 'bg-white/5' : 'bg-gradient-to-t from-[#7e22ce]/20 to-[#a855f7] group-hover:to-[#c084fc] shadow-[0_0_10px_rgba(168,85,247,0.2)]'}`}
                                             style={{ height: `${heightPct}%`, minHeight: '4px' }}
                                         ></div>
-                                    <span className={`text-[10px] mt-3 truncate w-full text-center font-bold ${playbackData.length === 0 ? 'text-gray-700' : 'text-gray-500 group-hover:text-[#a855f7]'}`}>
+                                        <span className={`text-[10px] mt-3 truncate w-full text-center font-bold ${playbackData.length === 0 ? 'text-gray-700' : 'text-gray-500 group-hover:text-[#a855f7]'}`}>
                                             {label}
                                         </span>
                                     </div>
@@ -281,14 +291,15 @@ const BossDashboard = () => {
                             stats.rankings.map((movie, i) => {
                                 const rating = typeof movie.voteAverage === 'number' ? movie.voteAverage.toFixed(1) : (movie.voteAverage || 0);
                                 return (
-                                <div key={movie._id || i} className="flex items-center justify-between p-4 bg-transparent rounded-xl border border-white/5 hover:border-purple-500/40 hover:bg-purple-900/10 transition-all">
-                                    <div className="flex items-center space-x-4">
-                                        <span className="text-xl font-black text-purple-500/40">#{i + 1}</span>
-                                        <span className="font-bold text-sm text-gray-200">{movie.title || movie.name || 'Desconocido'}</span>
+                                    <div key={movie._id || i} className="flex items-center justify-between p-4 bg-transparent rounded-xl border border-white/5 hover:border-purple-500/40 hover:bg-purple-900/10 transition-all">
+                                        <div className="flex items-center space-x-4">
+                                            <span className="text-xl font-black text-purple-500/40">#{i + 1}</span>
+                                            <span className="font-bold text-sm text-gray-200">{movie.title || movie.name || 'Desconocido'}</span>
+                                        </div>
+                                        <span className="text-yellow-500 font-bold text-sm drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">★ {rating}</span>
                                     </div>
-                                    <span className="text-yellow-500 font-bold text-sm drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">★ {rating}</span>
-                                </div>
-                            )})
+                                )
+                            })
                         )}
                     </div>
                 </div>
