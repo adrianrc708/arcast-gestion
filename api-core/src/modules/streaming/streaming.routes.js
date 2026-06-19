@@ -1,13 +1,14 @@
 const express = require('express');
-const router  = express.Router();
-const jwt     = require('jsonwebtoken');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
 const controller = require('./streaming.controller');
+const { requiredAuth } = require('../../common/auth.middleware');
 
 // El tag <video> no puede enviar headers personalizados, por lo que
 // el token se acepta también como query param: ?token=<jwt>
 const streamAuth = (req, res, next) => {
     const header = req.header('x-auth-token') || req.header('Authorization');
-    const raw    = header
+    const raw = header
         ? (header.startsWith('Bearer ') ? header.slice(7) : header)
         : req.query.token;
 
@@ -21,7 +22,14 @@ const streamAuth = (req, res, next) => {
     }
 };
 
-router.get('/movie/:id',                              streamAuth, controller.streamMovie);
-router.get('/episode/:tvshowId/:season/:episode',     streamAuth, controller.streamEpisode);
+// Rutas de streaming de video
+router.get('/movie/:id', streamAuth, controller.streamMovie);
+router.get('/episode/:tvshowId/:season/:episode', streamAuth, controller.streamEpisode);
+
+// Rutas para el progreso de visualización
+router.post('/progress', requiredAuth, controller.saveProgress);
+router.get('/progress/:contentId', requiredAuth, controller.getProgress);
+router.get('/continue-watching', requiredAuth, controller.getContinueWatching);
+
 
 module.exports = router;
