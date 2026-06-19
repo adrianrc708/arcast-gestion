@@ -76,7 +76,7 @@ const TabMovies = ({ onSuccess, onError }) => {
 
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({ title: '', overview: '', releaseDate: '', watchLink: '', trailerKey: '', posterUrl: '' });
+    const [formData, setFormData] = useState({ title: '', overview: '', releaseDate: '', watchLink: '', trailerKey: '', posterUrl: '', localPath: '' });
 
     const fetchMovies = () => {
         setLoading(true);
@@ -106,7 +106,8 @@ const TabMovies = ({ onSuccess, onError }) => {
     const handleEditClick = (movie) => {
         setFormData({
             title: movie.title || '', overview: movie.overview || '', releaseDate: movie.releaseDate || '',
-            watchLink: movie.watchLink || '', trailerKey: movie.trailerKey || '', posterUrl: movie.posterUrl || ''
+            watchLink: movie.watchLink || '', trailerKey: movie.trailerKey || '', posterUrl: movie.posterUrl || '',
+            localPath: movie.localPath || ''
         });
         setEditingId(movie._id);
         setShowForm(true);
@@ -147,6 +148,7 @@ const TabMovies = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({...formData, trailerKey: e.target.value})} className="modern-input-admin" />
                     </div>
                     <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className="w-full modern-input-admin" rows="3"></textarea>
+                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/pelicula.mp4)" value={formData.localPath} onChange={e => setFormData({...formData, localPath: e.target.value})} className="w-full modern-input-admin" />
                     <div className="flex gap-4 justify-end">
                         <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 font-bold text-sm">Cancelar</button>
                         <button type="submit" className="bg-[#238636] text-white px-6 py-2 rounded-lg font-bold text-sm">Guardar</button>
@@ -202,7 +204,7 @@ const TabTVShows = ({ onSuccess, onError }) => {
 
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', overview: '', firstAirDate: '', seasons: 1, watchLink: '', trailerKey: '', posterUrl: '' });
+    const [formData, setFormData] = useState({ name: '', overview: '', firstAirDate: '', seasons: 1, watchLink: '', trailerKey: '', posterUrl: '', localPath: '' });
 
     const fetchShows = () => {
         setLoading(true);
@@ -232,7 +234,8 @@ const TabTVShows = ({ onSuccess, onError }) => {
     const handleEditClick = (show) => {
         setFormData({
             name: show.name || '', overview: show.overview || '', firstAirDate: show.firstAirDate || '',
-            seasons: show.seasons || 1, watchLink: show.watchLink || '', trailerKey: show.trailerKey || '', posterUrl: show.posterUrl || ''
+            seasons: show.seasons || 1, watchLink: show.watchLink || '', trailerKey: show.trailerKey || '', posterUrl: show.posterUrl || '',
+            localPath: show.localPath || ''
         });
         setEditingId(show._id);
         setShowForm(true);
@@ -273,6 +276,7 @@ const TabTVShows = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({...formData, trailerKey: e.target.value})} className="modern-input-admin" />
                     </div>
                     <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className="w-full modern-input-admin" rows="3"></textarea>
+                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/serie.mp4)" value={formData.localPath} onChange={e => setFormData({...formData, localPath: e.target.value})} className="w-full modern-input-admin" />
                     <div className="flex gap-4 justify-end">
                         <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 font-bold text-sm">Cancelar</button>
                         <button type="submit" className="bg-[#238636] text-white px-6 py-2 rounded-lg font-bold text-sm">Guardar</button>

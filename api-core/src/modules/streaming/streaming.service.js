@@ -4,19 +4,15 @@ const Playback = require('./playback.model');
 
 // Tipos MIME por extensión
 const MIME_TYPES = {
-    '.mp4': 'video/mp4',
-    '.mkv': 'video/x-matroska',
+    '.mp4':  'video/mp4',
+    '.mkv':  'video/x-matroska',
     '.webm': 'video/webm',
-    '.avi': 'video/x-msvideo',
-    '.mov': 'video/quicktime',
+    '.avi':  'video/x-msvideo',
+    '.mov':  'video/quicktime',
 };
 
 const CHUNK_SIZE = 1024 * 1024; // 1 MB por fragmento por defecto
 
-/**
- * Verifica que el archivo existe y es un video soportado.
- * Lanza un error con código si no cumple.
- */
 function validateVideoFile(filePath) {
     if (!fs.existsSync(filePath)) {
         const err = new Error('Archivo de video no encontrado en el servidor');
@@ -32,10 +28,6 @@ function validateVideoFile(filePath) {
     return { ext, mimeType: MIME_TYPES[ext] };
 }
 
-/**
- * Parsea el header Range: bytes=start-end y devuelve { start, end }.
- * Si no viene header Range devuelve null (se servirá el archivo completo).
- */
 function parseRange(rangeHeader, fileSize) {
     if (!rangeHeader) return null;
 
@@ -43,7 +35,7 @@ function parseRange(rangeHeader, fileSize) {
     if (!match) return null;
 
     const start = match[1] !== '' ? parseInt(match[1], 10) : 0;
-    const end = match[2] !== '' ? parseInt(match[2], 10) : fileSize - 1;
+    const end   = match[2] !== '' ? parseInt(match[2], 10) : fileSize - 1;
 
     if (start > end || end >= fileSize) {
         const err = new Error('Rango de bytes fuera de límites');
@@ -76,26 +68,24 @@ function streamVideo(filePath, req, res) {
     };
 
     if (range) {
-        // Servir fragmento con 206 Partial Content
         const { start, end } = range;
         const chunkSize = end - start + 1;
 
         res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
+            'Content-Range':  `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges':  'bytes',
             'Content-Length': chunkSize,
-            'Content-Type': mimeType,
+            'Content-Type':   mimeType,
         });
 
         fs.createReadStream(filePath, { start, end })
             .on('error', onStreamError)
             .pipe(res);
     } else {
-        // Sin header Range: enviar archivo completo con soporte declarado de rangos
         res.writeHead(200, {
             'Content-Length': fileSize,
-            'Content-Type': mimeType,
-            'Accept-Ranges': 'bytes',
+            'Content-Type':   mimeType,
+            'Accept-Ranges':  'bytes',
         });
 
         fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE })
@@ -104,55 +94,24 @@ function streamVideo(filePath, req, res) {
     }
 }
 
-/**
- * Guarda o actualiza el progreso de visualización de un contenido para un usuario.
- *
- * @param {string} userId - ID del usuario.
- * @param {string} contentId - ID del contenido.
- * @param {number} currentTime - Tiempo actual de reproducción en segundos.
- * @param {number} duration - Duración total del contenido en segundos.
- * @returns {Promise<Document>} El documento de progreso guardado.
- */
 async function saveOrUpdateProgress(userId, contentId, currentTime, duration) {
     const filter = { userId, contentId };
-    const update = {
-        currentTime,
-        duration,
-        lastWatched: new Date()
-    };
-    const options = {
-        new: true, // Devuelve el documento modificado
-        upsert: true, // Crea el documento si no existe
-        setDefaultsOnInsert: true
-    };
-
+    const update = { currentTime, duration, lastWatched: new Date() };
+    const options = { new: true, upsert: true, setDefaultsOnInsert: true };
     return Playback.findOneAndUpdate(filter, update, options).exec();
 }
 
-/**
- * Recupera el progreso de visualización para un contenido específico de un usuario.
- *
- * @param {string} userId - ID del usuario.
- * @param {string} contentId - ID del contenido.
- * @returns {Promise<Document|null>} El documento de progreso o null si no se encuentra.
- */
 async function getProgress(userId, contentId) {
     return Playback.findOne({ userId, contentId }).exec();
 }
 
-/**
- * Lista los contenidos que un usuario ha empezado a ver pero no ha terminado.
- *
- * @param {string} userId - ID del usuario.
- * @returns {Promise<Array<Document>>} Una lista de documentos de progreso.
- */
 async function getContinueWatchingList(userId) {
     return Playback.find({
         userId,
-        $expr: { $lt: ["$currentTime", "$duration"] } // currentTime < duration
+        $expr: { $lt: ['$currentTime', '$duration'] }
     })
-    .sort({ lastWatched: -1 }) // Los más recientes primero
-    .populate('contentId') // Opcional: para obtener detalles del contenido
+    .sort({ lastWatched: -1 })
+    .populate('contentId')
     .exec();
 }
 
@@ -161,5 +120,5 @@ module.exports = {
     validateVideoFile,
     saveOrUpdateProgress,
     getProgress,
-    getContinueWatchingList
+    getContinueWatchingList,
 };
