@@ -1,5 +1,6 @@
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
+const Playback = require('./playback.model');
 
 // Tipos MIME por extensión
 const MIME_TYPES = {
@@ -12,10 +13,6 @@ const MIME_TYPES = {
 
 const CHUNK_SIZE = 1024 * 1024; // 1 MB por fragmento por defecto
 
-/**
- * Verifica que el archivo existe y es un video soportado.
- * Lanza un error con código si no cumple.
- */
 function validateVideoFile(filePath) {
     if (!fs.existsSync(filePath)) {
         const err = new Error('Archivo de video no encontrado en el servidor');
@@ -31,10 +28,6 @@ function validateVideoFile(filePath) {
     return { ext, mimeType: MIME_TYPES[ext] };
 }
 
-/**
- * Parsea el header Range: bytes=start-end y devuelve { start, end }.
- * Si no viene header Range devuelve null (se servirá el archivo completo).
- */
 function parseRange(rangeHeader, fileSize) {
     if (!rangeHeader) return null;
 
@@ -58,8 +51,8 @@ function parseRange(rangeHeader, fileSize) {
  * Escribe la respuesta de streaming al objeto `res` de Express.
  * Soporta 206 Partial Content (Range Requests) y 200 completo.
  *
- * @param {string} filePath  - Ruta absoluta al archivo de video
- * @param {import('express').Request}  req
+ * @param {string} filePath - Ruta absoluta al archivo de video
+ * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
 function streamVideo(filePath, req, res) {
@@ -75,7 +68,6 @@ function streamVideo(filePath, req, res) {
     };
 
     if (range) {
-        // Servir fragmento con 206 Partial Content
         const { start, end } = range;
         const chunkSize = end - start + 1;
 
@@ -90,7 +82,6 @@ function streamVideo(filePath, req, res) {
             .on('error', onStreamError)
             .pipe(res);
     } else {
-        // Sin header Range: enviar archivo completo con soporte declarado de rangos
         res.writeHead(200, {
             'Content-Length': fileSize,
             'Content-Type':   mimeType,
@@ -103,4 +94,31 @@ function streamVideo(filePath, req, res) {
     }
 }
 
-module.exports = { streamVideo, validateVideoFile };
+async function saveOrUpdateProgress(userId, contentId, currentTime, duration) {
+    const filter = { userId, contentId };
+    const update = { currentTime, duration, lastWatched: new Date() };
+    const options = { new: true, upsert: true, setDefaultsOnInsert: true };
+    return Playback.findOneAndUpdate(filter, update, options).exec();
+}
+
+async function getProgress(userId, contentId) {
+    return Playback.findOne({ userId, contentId }).exec();
+}
+
+async function getContinueWatchingList(userId) {
+    return Playback.find({
+        userId,
+        $expr: { $lt: ['$currentTime', '$duration'] }
+    })
+    .sort({ lastWatched: -1 })
+    .populate('contentId')
+    .exec();
+}
+
+module.exports = {
+    streamVideo,
+    validateVideoFile,
+    saveOrUpdateProgress,
+    getProgress,
+    getContinueWatchingList,
+};
