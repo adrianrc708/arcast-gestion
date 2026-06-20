@@ -117,3 +117,15 @@ exports.getMyReviews = catchAsync(async (req, res) => {
     const reviews = await Review.find({ userId: req.user.id }).sort({ date: -1 });
     res.json(reviews);
 });
+// Endpoint para obtener estadísticas de reseñas por película, servirá más adelante
+exports.getReviewStats = catchAsync(async (req, res) => {
+    const { movieId } = req.params;
+    const reviews = await Review.find({ movieId });
+    const total = reviews.length;
+    const avgRating = total ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1) : 0;
+    const distribution = [1,2,3,4,5].map(star => ({
+        star,
+        count: reviews.filter(r => r.rating === star).length
+    }));
+    res.json({ movieId, total, avgRating, distribution });
+});
