@@ -299,7 +299,13 @@ const MovieDetails = () => {
                                     title={item.title || item.name}
                                     onProgress={handleVideoProgress}
                                 />
-                            ) : (
+                                ) : activeVideo === 'alt' && item.watchLink ? (
+                                    <VideoPlayer
+                                        src={item.watchLink}
+                                        title={item.title || item.name}
+                                        onProgress={handleVideoProgress}
+                                    />
+                                ) : (
                                 <div className="player-glass-container">
                                     <iframe
                                         src={
