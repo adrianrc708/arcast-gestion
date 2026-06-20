@@ -134,7 +134,7 @@ const TabMovies = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="Buscar película..." value={searchTerm} onChange={handleSearch} className="admin-search-input" />
                     </div>
                 </div>
-                <button onClick={() => { setFormData({title:'', overview:'', releaseDate:'', watchLink:'', trailerKey:'', posterUrl:''}); setEditingId(null); setShowForm(true); }} className="btn-new-item">
+                <button onClick={() => { setFormData({title:'', overview:'', releaseDate:'', watchLink:'', trailerKey:'', posterUrl:'', localPath:''}); setEditingId(null); setShowForm(true); }} className="btn-new-item">
                     + Nueva Película
                 </button>
             </div>
@@ -148,6 +148,7 @@ const TabMovies = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({...formData, trailerKey: e.target.value})} className="modern-input-admin" />
                     </div>
                     <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className="w-full modern-input-admin" rows="3"></textarea>
+                    <input type="text" placeholder="Enlace alternativo (URL externa ej: archive.org)" value={formData.watchLink} onChange={e => setFormData({...formData, watchLink: e.target.value})} className="w-full modern-input-admin" />
                     <input type="text" placeholder="Ruta local del video (ej: /media/videos/pelicula.mp4)" value={formData.localPath} onChange={e => setFormData({...formData, localPath: e.target.value})} className="w-full modern-input-admin" />
                     <div className="flex gap-4 justify-end">
                         <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 font-bold text-sm">Cancelar</button>
