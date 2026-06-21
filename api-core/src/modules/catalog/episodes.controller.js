@@ -2,8 +2,10 @@ const { catchAsync, AppError } = require("../../common/error.utils");
 const Episode = require("./episode.model");
 
 exports.getEpisodes = catchAsync(async (req, res) => {
-  const { tvshowId } = req.params;
-  const { season } = req.query;
+  // Ajuste: Permite leer los parámetros que envía MovieDetails.jsx
+  const { tvshowId, season: seasonParam } = req.params;
+  const { season: seasonQuery } = req.query;
+  const season = seasonParam || seasonQuery;
 
   const query = { tvshowId };
   if (season) query.season = Number(season);
@@ -12,19 +14,23 @@ exports.getEpisodes = catchAsync(async (req, res) => {
   res.json(episodes);
 });
 
+// UNA SOLA DECLARACIÓN DE createEpisode
 exports.createEpisode = catchAsync(async (req, res, next) => {
-  const { tvshowId } = req.params;
+  // 🌟 FIX: Busca el ID en la URL (params) primero, y si no, en el cuerpo (body)
+  const tvshowId = req.params.tvshowId || req.body.tvshowId;
 
-  // --- VALIDACIONES DE SEGURIDAD PARA EPISODIOS LOCALES ---
+  // 🌟 Puente para Internet Archive
+  if (req.body.watchLink && !req.body.localPath) {
+    req.body.localPath = req.body.watchLink;
+  }
+
+  // Validaciones intactas de tu equipo
   if (req.body.season === undefined || req.body.season < 1)
     return next(new AppError("La temporada debe ser mayor a 0.", 400));
   if (req.body.episode === undefined || req.body.episode < 1)
     return next(new AppError("El episodio debe ser mayor a 0.", 400));
   if (!req.body.localPath || req.body.localPath.trim() === "")
-    return next(
-      new AppError("La ruta del archivo (localPath) es obligatoria.", 400),
-    );
-  // --------------------------------------------------------
+    return next(new AppError("La ruta del archivo es obligatoria.", 400));
 
   const ep = await Episode.create({ ...req.body, tvshowId });
   res.status(201).json(ep);
