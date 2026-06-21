@@ -20,6 +20,7 @@ const AdminPanel = () => {
                     { id: 'import', label: '1. Importar (TMDB)' },
                     { id: 'movies', label: '2. Gestión de Películas' },
                     { id: 'tvshows', label: '3. Gestión de Series' },
+                    { id: 'episodes', label: '3.5 Gestión de Episodios' },
                     { id: 'reviews', label: '4. Moderar Reseñas' },
                     { id: 'users', label: '5. Usuarios y Roles' },
                     { id: 'system', label: '6. Sistema Global' },
@@ -28,11 +29,10 @@ const AdminPanel = () => {
                     <button
                         key={tab.id}
                         onClick={() => { setActiveTab(tab.id); clearMsg(); }}
-                        className={`w-full text-left px-5 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
-                            activeTab === tab.id
-                                ? 'bg-[#58a6ff] text-[#0d1117] shadow-lg shadow-[#58a6ff]/20 translate-x-2'
-                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                        }`}
+                        className={`w-full text-left px-5 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${activeTab === tab.id
+                            ? 'bg-[#58a6ff] text-[#0d1117] shadow-lg shadow-[#58a6ff]/20 translate-x-2'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            }`}
                     >
                         {tab.label}
                     </button>
@@ -42,9 +42,8 @@ const AdminPanel = () => {
             {/* Área Principal */}
             <main className="flex-1 space-y-6">
                 {msg.text && (
-                    <div className={`p-4 rounded-xl border text-sm font-bold flex justify-between items-center animate-in slide-in-from-top ${
-                        msg.type === 'success' ? 'bg-green-500/10 border-green-500/50 text-green-400' : 'bg-red-500/10 border-red-500/50 text-red-400'
-                    }`}>
+                    <div className={`p-4 rounded-xl border text-sm font-bold flex justify-between items-center animate-in slide-in-from-top ${msg.type === 'success' ? 'bg-green-500/10 border-green-500/50 text-green-400' : 'bg-red-500/10 border-red-500/50 text-red-400'
+                        }`}>
                         <span>{msg.type === 'success' ? '✅' : '❌'} {msg.text}</span>
                         <button onClick={clearMsg} className="opacity-50 hover:opacity-100">✕</button>
                     </div>
@@ -54,6 +53,7 @@ const AdminPanel = () => {
                     {activeTab === 'import' && <TabImport onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'movies' && <TabMovies onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'tvshows' && <TabTVShows onSuccess={showSuccess} onError={showError} />}
+                    {activeTab === 'episodes' && <TabEpisodes onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'reviews' && <TabReviews onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'users' && <TabUsers onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'system' && <TabSystem onSuccess={showSuccess} onError={showError} />}
@@ -95,7 +95,7 @@ const TabMovies = ({ onSuccess, onError }) => {
     const handleSearch = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
 
     const handleDelete = async (id, title) => {
-        if(!window.confirm(`¿Eliminar "${title}"?`)) return;
+        if (!window.confirm(`¿Eliminar "${title}"?`)) return;
         try {
             await api.delete(`/catalog/movies/${id}`);
             onSuccess('Película eliminada.');
@@ -134,7 +134,7 @@ const TabMovies = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="Buscar película..." value={searchTerm} onChange={handleSearch} className="admin-search-input" />
                     </div>
                 </div>
-                <button onClick={() => { setFormData({title:'', overview:'', releaseDate:'', watchLink:'', trailerKey:'', posterUrl:'', localPath:''}); setEditingId(null); setShowForm(true); }} className="btn-new-item">
+                <button onClick={() => { setFormData({ title: '', overview: '', releaseDate: '', watchLink: '', trailerKey: '', posterUrl: '', localPath: '' }); setEditingId(null); setShowForm(true); }} className="btn-new-item">
                     + Nueva Película
                 </button>
             </div>
@@ -142,14 +142,14 @@ const TabMovies = ({ onSuccess, onError }) => {
             {showForm && (
                 <form onSubmit={handleSubmit} className="bg-[#0d1117] p-6 rounded-2xl border border-[#58a6ff]/20 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <input required type="text" placeholder="Título" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="modern-input-admin" />
-                        <input type="text" placeholder="Fecha Estreno" value={formData.releaseDate} onChange={e => setFormData({...formData, releaseDate: e.target.value})} className="modern-input-admin" />
-                        <input type="text" placeholder="URL Póster" value={formData.posterUrl} onChange={e => setFormData({...formData, posterUrl: e.target.value})} className="modern-input-admin" />
-                        <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({...formData, trailerKey: e.target.value})} className="modern-input-admin" />
+                        <input required type="text" placeholder="Título" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="modern-input-admin" />
+                        <input type="text" placeholder="Fecha Estreno" value={formData.releaseDate} onChange={e => setFormData({ ...formData, releaseDate: e.target.value })} className="modern-input-admin" />
+                        <input type="text" placeholder="URL Póster" value={formData.posterUrl} onChange={e => setFormData({ ...formData, posterUrl: e.target.value })} className="modern-input-admin" />
+                        <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({ ...formData, trailerKey: e.target.value })} className="modern-input-admin" />
                     </div>
-                    <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className="w-full modern-input-admin" rows="3"></textarea>
-                    <input type="text" placeholder="Enlace alternativo (URL externa ej: archive.org)" value={formData.watchLink} onChange={e => setFormData({...formData, watchLink: e.target.value})} className="w-full modern-input-admin" />
-                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/pelicula.mp4)" value={formData.localPath} onChange={e => setFormData({...formData, localPath: e.target.value})} className="w-full modern-input-admin" />
+                    <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({ ...formData, overview: e.target.value })} className="w-full modern-input-admin" rows="3"></textarea>
+                    <input type="text" placeholder="Enlace alternativo (URL externa ej: archive.org)" value={formData.watchLink} onChange={e => setFormData({ ...formData, watchLink: e.target.value })} className="w-full modern-input-admin" />
+                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/pelicula.mp4)" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin" />
                     <div className="flex gap-4 justify-end">
                         <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 font-bold text-sm">Cancelar</button>
                         <button type="submit" className="bg-[#238636] text-white px-6 py-2 rounded-lg font-bold text-sm">Guardar</button>
@@ -161,19 +161,19 @@ const TabMovies = ({ onSuccess, onError }) => {
                 <table className="admin-table">
                     <thead><tr><th>Obra</th><th>Lanzamiento</th><th className="text-right">Gestión</th></tr></thead>
                     <tbody>
-                    {currentItems.map(m => (
-                        <tr key={m._id}>
-                            <td className="flex items-center gap-4">
-                                <img src={m.posterUrl} className="w-10 h-14 rounded object-cover" alt="" />
-                                <span className="font-bold text-white">{m.title}</span>
-                            </td>
-                            <td className="text-xs font-mono opacity-50">{m.releaseDate}</td>
-                            <td className="text-right space-x-4">
-                                <button onClick={() => handleEditClick(m)} className="text-[#58a6ff] text-xs font-black uppercase">Editar</button>
-                                <button onClick={() => handleDelete(m._id, m.title)} className="text-red-500 text-xs font-black uppercase">Eliminar</button>
-                            </td>
-                        </tr>
-                    ))}
+                        {currentItems.map(m => (
+                            <tr key={m._id}>
+                                <td className="flex items-center gap-4">
+                                    <img src={m.posterUrl} className="w-10 h-14 rounded object-cover" alt="" />
+                                    <span className="font-bold text-white">{m.title}</span>
+                                </td>
+                                <td className="text-xs font-mono opacity-50">{m.releaseDate}</td>
+                                <td className="text-right space-x-4">
+                                    <button onClick={() => handleEditClick(m)} className="text-[#58a6ff] text-xs font-black uppercase">Editar</button>
+                                    <button onClick={() => handleDelete(m._id, m.title)} className="text-red-500 text-xs font-black uppercase">Eliminar</button>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
@@ -183,7 +183,7 @@ const TabMovies = ({ onSuccess, onError }) => {
                     <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="pagination-btn">Anterior</button>
                     <div className="pagination-numbers">
                         {[...Array(totalPages)].map((_, i) => (
-                            <button key={i+1} onClick={() => setCurrentPage(i+1)} className={`num-btn ${currentPage === i+1 ? 'active' : ''}`}>{i+1}</button>
+                            <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`num-btn ${currentPage === i + 1 ? 'active' : ''}`}>{i + 1}</button>
                         ))}
                     </div>
                     <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="pagination-btn">Siguiente</button>
@@ -224,7 +224,7 @@ const TabTVShows = ({ onSuccess, onError }) => {
     const handleSearch = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
 
     const handleDelete = async (id, name) => {
-        if(!window.confirm(`¿Eliminar la serie "${name}"?`)) return;
+        if (!window.confirm(`¿Eliminar la serie "${name}"?`)) return;
         try {
             await api.delete(`/catalog/tvshows/${id}`);
             onSuccess('Serie eliminada.');
@@ -263,7 +263,7 @@ const TabTVShows = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="Buscar serie..." value={searchTerm} onChange={handleSearch} className="admin-search-input" />
                     </div>
                 </div>
-                <button onClick={() => { setFormData({name:'', overview:'', firstAirDate:'', seasons:1, watchLink:'', trailerKey:'', posterUrl:''}); setEditingId(null); setShowForm(true); }} className="btn-new-item">
+                <button onClick={() => { setFormData({ name: '', overview: '', firstAirDate: '', seasons: 1, watchLink: '', trailerKey: '', posterUrl: '' }); setEditingId(null); setShowForm(true); }} className="btn-new-item">
                     + Nueva Serie
                 </button>
             </div>
@@ -271,13 +271,13 @@ const TabTVShows = ({ onSuccess, onError }) => {
             {showForm && (
                 <form onSubmit={handleSubmit} className="bg-[#0d1117] p-6 rounded-2xl border border-[#58a6ff]/20 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <input required type="text" placeholder="Nombre de la Serie" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="modern-input-admin" />
-                        <input type="number" placeholder="Temporadas" value={formData.seasons} onChange={e => setFormData({...formData, seasons: e.target.value})} className="modern-input-admin" />
-                        <input type="text" placeholder="URL Póster" value={formData.posterUrl} onChange={e => setFormData({...formData, posterUrl: e.target.value})} className="modern-input-admin" />
-                        <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({...formData, trailerKey: e.target.value})} className="modern-input-admin" />
+                        <input required type="text" placeholder="Nombre de la Serie" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="modern-input-admin" />
+                        <input type="number" placeholder="Temporadas" value={formData.seasons} onChange={e => setFormData({ ...formData, seasons: e.target.value })} className="modern-input-admin" />
+                        <input type="text" placeholder="URL Póster" value={formData.posterUrl} onChange={e => setFormData({ ...formData, posterUrl: e.target.value })} className="modern-input-admin" />
+                        <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({ ...formData, trailerKey: e.target.value })} className="modern-input-admin" />
                     </div>
-                    <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className="w-full modern-input-admin" rows="3"></textarea>
-                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/serie.mp4)" value={formData.localPath} onChange={e => setFormData({...formData, localPath: e.target.value})} className="w-full modern-input-admin" />
+                    <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({ ...formData, overview: e.target.value })} className="w-full modern-input-admin" rows="3"></textarea>
+                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/serie.mp4)" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin" />
                     <div className="flex gap-4 justify-end">
                         <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 font-bold text-sm">Cancelar</button>
                         <button type="submit" className="bg-[#238636] text-white px-6 py-2 rounded-lg font-bold text-sm">Guardar</button>
@@ -289,19 +289,19 @@ const TabTVShows = ({ onSuccess, onError }) => {
                 <table className="admin-table">
                     <thead><tr><th>Obra</th><th>Temporadas</th><th className="text-right">Gestión</th></tr></thead>
                     <tbody>
-                    {currentItems.map(s => (
-                        <tr key={s._id}>
-                            <td className="flex items-center gap-4">
-                                <img src={s.posterUrl} className="w-10 h-14 rounded object-cover" alt="" />
-                                <span className="font-bold text-white">{s.name}</span>
-                            </td>
-                            <td className="text-xs font-mono opacity-50">{s.seasons}</td>
-                            <td className="text-right space-x-4">
-                                <button onClick={() => handleEditClick(s)} className="text-[#58a6ff] text-xs font-black uppercase">Editar</button>
-                                <button onClick={() => handleDelete(s._id, s.name)} className="text-red-500 text-xs font-black uppercase">Eliminar</button>
-                            </td>
-                        </tr>
-                    ))}
+                        {currentItems.map(s => (
+                            <tr key={s._id}>
+                                <td className="flex items-center gap-4">
+                                    <img src={s.posterUrl} className="w-10 h-14 rounded object-cover" alt="" />
+                                    <span className="font-bold text-white">{s.name}</span>
+                                </td>
+                                <td className="text-xs font-mono opacity-50">{s.seasons}</td>
+                                <td className="text-right space-x-4">
+                                    <button onClick={() => handleEditClick(s)} className="text-[#58a6ff] text-xs font-black uppercase">Editar</button>
+                                    <button onClick={() => handleDelete(s._id, s.name)} className="text-red-500 text-xs font-black uppercase">Eliminar</button>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
@@ -311,7 +311,7 @@ const TabTVShows = ({ onSuccess, onError }) => {
                     <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="pagination-btn">Anterior</button>
                     <div className="pagination-numbers">
                         {[...Array(totalPages)].map((_, i) => (
-                            <button key={i+1} onClick={() => setCurrentPage(i+1)} className={`num-btn ${currentPage === i+1 ? 'active' : ''}`}>{i+1}</button>
+                            <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`num-btn ${currentPage === i + 1 ? 'active' : ''}`}>{i + 1}</button>
                         ))}
                     </div>
                     <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="pagination-btn">Siguiente</button>
@@ -363,20 +363,20 @@ const TabUsers = ({ onSuccess, onError }) => {
                 <table className="admin-table">
                     <thead><tr><th>Usuario</th><th>Email</th><th>Rol Asignado</th></tr></thead>
                     <tbody>
-                    {filteredUsers.map(u => (
-                        <tr key={u._id}>
-                            <td className="font-bold text-white">{u.username}</td>
-                            <td className="text-sm opacity-60">{u.email}</td>
-                            <td>
-                                <select value={u.role} onChange={(e) => handleRoleChange(u._id, u.username, e.target.value)}
+                        {filteredUsers.map(u => (
+                            <tr key={u._id}>
+                                <td className="font-bold text-white">{u.username}</td>
+                                <td className="text-sm opacity-60">{u.email}</td>
+                                <td>
+                                    <select value={u.role} onChange={(e) => handleRoleChange(u._id, u.username, e.target.value)}
                                         className="bg-black/40 border border-white/10 text-[10px] font-black uppercase rounded-lg px-3 py-1 text-[#58a6ff]">
-                                    <option value="user">USER</option>
-                                    <option value="admin">ADMIN</option>
-                                    <option value="boss">BOSS</option>
-                                </select>
-                            </td>
-                        </tr>
-                    ))}
+                                        <option value="user">USER</option>
+                                        <option value="admin">ADMIN</option>
+                                        <option value="boss">BOSS</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
@@ -414,10 +414,10 @@ const TabImport = ({ onSuccess, onError }) => {
 
 const TabReviews = ({ onSuccess, onError }) => {
     const [reviews, setReviews] = useState([]);
-    useEffect(() => { api.get('/reviews').then(res => setReviews(res.data)).catch(() => {}); }, []);
+    useEffect(() => { api.get('/reviews').then(res => setReviews(res.data)).catch(() => { }); }, []);
     const handleDelete = async (id) => {
-        if(!window.confirm('¿Borrar reseña?')) return;
-        try { await api.delete(`/reviews/${id}`); onSuccess('Borrada.'); setReviews(reviews.filter(r => r._id !== id)); } catch(e) { onError('Error.'); }
+        if (!window.confirm('¿Borrar reseña?')) return;
+        try { await api.delete(`/reviews/${id}`); onSuccess('Borrada.'); setReviews(reviews.filter(r => r._id !== id)); } catch (e) { onError('Error.'); }
     };
     return (
         <div className="space-y-6">
@@ -439,7 +439,7 @@ const TabReviews = ({ onSuccess, onError }) => {
 
 const TabSystem = ({ onSuccess, onError }) => {
     const [config, setConfig] = useState({ customCSS: '', maintenanceMode: false });
-    useEffect(() => { api.get('/system/config').then(res => setConfig(res.data)).catch(() => {}); }, []);
+    useEffect(() => { api.get('/system/config').then(res => setConfig(res.data)).catch(() => { }); }, []);
     const handleSave = async () => {
         try { await api.put('/system/config', config); onSuccess('Guardado.'); } catch (e) { onError('Error.'); }
     };
@@ -448,10 +448,10 @@ const TabSystem = ({ onSuccess, onError }) => {
             <h3 className="text-xl font-bold text-white border-b border-white/5 pb-4">Sistema Global</h3>
             <div className="space-y-4">
                 <label className="flex items-center space-x-3 cursor-pointer bg-white/5 p-5 rounded-2xl border border-white/5">
-                    <input type="checkbox" checked={config.maintenanceMode} onChange={e => setConfig({...config, maintenanceMode: e.target.checked})} className="accent-[#58a6ff] w-5 h-5" />
+                    <input type="checkbox" checked={config.maintenanceMode} onChange={e => setConfig({ ...config, maintenanceMode: e.target.checked })} className="accent-[#58a6ff] w-5 h-5" />
                     <span className="font-bold text-white">Activar Modo Mantenimiento</span>
                 </label>
-                <textarea value={config.customCSS} onChange={e => setConfig({...config, customCSS: e.target.value})} className="w-full bg-black/40 border border-white/10 text-green-400 p-5 rounded-2xl font-mono text-xs" rows="6" placeholder="CSS Global..."></textarea>
+                <textarea value={config.customCSS} onChange={e => setConfig({ ...config, customCSS: e.target.value })} className="w-full bg-black/40 border border-white/10 text-green-400 p-5 rounded-2xl font-mono text-xs" rows="6" placeholder="CSS Global..."></textarea>
                 <button onClick={handleSave} className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-[#58a6ff] transition-colors uppercase tracking-widest">Aplicar Cambios</button>
             </div>
         </div>
@@ -462,16 +462,16 @@ const TabSystem = ({ onSuccess, onError }) => {
 // PESTAÑA 7: REGISTRO DE AUDITORÍA
 // ==========================================
 const ACTION_COLORS = {
-    USER_ROLE_MUTATION:    'text-yellow-400',
+    USER_ROLE_MUTATION: 'text-yellow-400',
     USER_PROFILE_MUTATION: 'text-blue-400',
-    SYSTEM_UI_MUTATION:    'text-purple-400',
-    CATALOG_IMPORT:        'text-green-400',
+    SYSTEM_UI_MUTATION: 'text-purple-400',
+    CATALOG_IMPORT: 'text-green-400',
 };
 
 const TabAudit = ({ onError }) => {
-    const [logs, setLogs]     = useState([]);
+    const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [limit, setLimit]   = useState(50);
+    const [limit, setLimit] = useState(50);
 
     const fetchLogs = () => {
         setLoading(true);
@@ -526,34 +526,170 @@ const TabAudit = ({ onError }) => {
                 <div className="admin-table-container">
                     <table className="admin-table">
                         <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Acción</th>
-                            <th>Usuario ID</th>
-                            <th>Detalles</th>
-                            <th>IP</th>
-                        </tr>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Acción</th>
+                                <th>Usuario ID</th>
+                                <th>Detalles</th>
+                                <th>IP</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        {logs.map(log => (
-                            <tr key={log._id}>
-                                <td className="text-xs font-mono opacity-60 whitespace-nowrap">{formatDate(log.timestamp)}</td>
-                                <td>
+                            {logs.map(log => (
+                                <tr key={log._id}>
+                                    <td className="text-xs font-mono opacity-60 whitespace-nowrap">{formatDate(log.timestamp)}</td>
+                                    <td>
                                         <span className={`text-xs font-black uppercase tracking-wider ${ACTION_COLORS[log.action] || 'text-gray-400'}`}>
                                             {log.action}
                                         </span>
-                                </td>
-                                <td className="text-xs font-mono opacity-50 truncate max-w-[120px]">{log.userId}</td>
-                                <td className="text-xs opacity-70 max-w-[200px] truncate">
-                                    {JSON.stringify(log.details)}
-                                </td>
-                                <td className="text-xs font-mono opacity-40">{log.ip}</td>
-                            </tr>
-                        ))}
+                                    </td>
+                                    <td className="text-xs font-mono opacity-50 truncate max-w-[120px]">{log.userId}</td>
+                                    <td className="text-xs opacity-70 max-w-[200px] truncate">
+                                        {JSON.stringify(log.details)}
+                                    </td>
+                                    <td className="text-xs font-mono opacity-40">{log.ip}</td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
             )}
+        </div>
+    );
+};
+// ==========================================
+// PESTAÑA 3.5: GESTIÓN DE EPISODIOS (INTERNET ARCHIVE)
+// ==========================================
+const TabEpisodes = ({ onSuccess, onError }) => {
+    const [showsList, setShowsList] = useState([]);
+    const [savedEpisodes, setSavedEpisodes] = useState([]); // 🌟 NUEVO: Estado para la tabla de comprobación
+    const [formData, setFormData] = useState({
+        tvshowId: '', season: 1, episode: 1, title: '', overview: '', runtime: 45, localPath: ''
+    });
+
+    // Carga las series existentes
+    useEffect(() => {
+        api.get('/catalog/tvshows')
+            .then(res => {
+                setShowsList(res.data);
+                if (res.data && res.data.length > 0) {
+                    setFormData(prev => ({ ...prev, tvshowId: res.data[0]._id }));
+                }
+            })
+            .catch(() => console.error("Error al cargar series en el administrador."));
+    }, []);
+
+    // 🌟 NUEVO: Carga la lista de episodios cada vez que cambias la serie en el selector
+    useEffect(() => {
+        if (formData.tvshowId) {
+            api.get(`/catalog/tvshows/${formData.tvshowId}/episodes`)
+                .then(res => setSavedEpisodes(res.data || []))
+                .catch(() => setSavedEpisodes([]));
+        }
+    }, [formData.tvshowId]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.tvshowId) return onError('Por favor, selecciona una serie primero.');
+
+        try {
+            await api.post(`/catalog/tvshows/${formData.tvshowId}/episodes`, formData);
+            onSuccess(`¡Episodio ${formData.episode} guardado con éxito!`);
+
+            // 🌟 Refresca la tabla automáticamente después de guardar
+            const res = await api.get(`/catalog/tvshows/${formData.tvshowId}/episodes`);
+            setSavedEpisodes(res.data || []);
+
+            // Prepara para el siguiente
+            setFormData(prev => ({
+                ...prev, episode: parseInt(prev.episode) + 1, title: '', overview: '', localPath: ''
+            }));
+        } catch (err) {
+            onError('Error al registrar el episodio.');
+        }
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="border-b border-white/5 pb-6">
+                <h3 className="text-2xl font-black text-white mb-2">Asignación de Capítulos por Serie</h3>
+                <p className="text-sm text-gray-400">Registra las URLs alternativas de Internet Archive para cada episodio.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="bg-[#0d1117] p-6 rounded-2xl border border-white/5 space-y-6">
+                <div className="flex flex-col space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-wider">Seleccionar Serie Principal</label>
+                    <select required value={formData.tvshowId} onChange={e => setFormData({ ...formData, tvshowId: e.target.value })} className="w-full modern-input-admin cursor-pointer bg-[#161b22] text-white border border-white/10 rounded-xl px-4 py-3">
+                        <option value="" disabled>-- Elige una serie --</option>
+                        {showsList.map(show => <option key={show._id} value={show._id}>{show.name}</option>)}
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex flex-col space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider">N° Temporada</label>
+                        <input required type="number" min="1" value={formData.season} onChange={e => setFormData({ ...formData, season: parseInt(e.target.value) })} className="modern-input-admin" />
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider">N° Capítulo / Episodio</label>
+                        <input required type="number" min="1" value={formData.episode} onChange={e => setFormData({ ...formData, episode: parseInt(e.target.value) })} className="modern-input-admin" />
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider">Duración (min)</label>
+                        <input type="number" min="1" value={formData.runtime} onChange={e => setFormData({ ...formData, runtime: parseInt(e.target.value) })} className="modern-input-admin" />
+                    </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-wider">Título del Episodio</label>
+                    <input required type="text" placeholder="Ej: Piloto..." value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full modern-input-admin" />
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-wider">Sinopsis del Episodio</label>
+                    <textarea placeholder="Breve resumen..." value={formData.overview} onChange={e => setFormData({ ...formData, overview: e.target.value })} className="w-full modern-input-admin" rows="3"></textarea>
+                </div>
+
+                <div className="bg-[#58a6ff]/5 p-4 rounded-xl border border-[#58a6ff]/20 space-y-2">
+                    <label className="text-xs font-black text-[#58a6ff] uppercase tracking-wider block">URL Directa (.mp4 Archive)</label>
+                    <input required type="url" placeholder="Ej: https://archive.org/.../cap1.mp4" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin border-[#58a6ff]/30 focus:border-[#58a6ff]" />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                    <button type="submit" className="bg-[#58a6ff] text-black px-8 py-3 rounded-xl font-black text-sm hover:scale-105 transition-transform shadow-lg shadow-[#58a6ff]/10">Guardar Capítulo</button>
+                </div>
+            </form>
+
+            {/* 🌟 TABLA DE COMPROBACIÓN VISUAL 🌟 */}
+            <div className="mt-8 border-t border-white/10 pt-6">
+                <h4 className="text-lg font-bold text-white mb-4">Capítulos en la Base de Datos ({savedEpisodes.length})</h4>
+                {savedEpisodes.length > 0 ? (
+                    <div className="bg-[#161b22] rounded-xl border border-white/10 overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-white/5 bg-white/5 text-xs text-gray-400 uppercase">
+                                    <th className="p-3">Temp</th>
+                                    <th className="p-3">Ep</th>
+                                    <th className="p-3">Título</th>
+                                    <th className="p-3">Enlace Archive</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {savedEpisodes.map(ep => (
+                                    <tr key={ep._id} className="border-b border-white/5 text-sm text-gray-300">
+                                        <td className="p-3 font-bold text-purple-400">{ep.season}</td>
+                                        <td className="p-3 font-bold text-[#58a6ff]">{ep.episode}</td>
+                                        <td className="p-3">{ep.title}</td>
+                                        <td className="p-3 text-xs font-mono opacity-50 truncate max-w-[200px]" title={ep.localPath}>{ep.localPath}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500 italic">No hay capítulos guardados para esta serie todavía. ¡Agrega el primero arriba!</p>
+                )}
+            </div>
         </div>
     );
 };
