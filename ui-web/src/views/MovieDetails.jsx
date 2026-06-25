@@ -141,6 +141,31 @@ const MovieDetails = () => {
         }
     }, [user, item, activeVideo, id, type]);
 
+
+    useEffect(() => {
+        // Solo enviamos el registro si el usuario está autenticado y la pestaña activa es la película o fuente alternativa.
+        if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
+            const registerView = async () => {
+                try {
+                    // Aviso a la ruta updateProgress
+                    await api.post('/users/progress', {
+                        contentId: id,
+                        percentWatched: 10 // Mandamos un progreso inicial simulado, CAMBIAR A VARIABLE DINAMICA CUANDO SE IMPLEMENTE SEGUIR VIENDO
+                    });
+                } catch (error) {
+                    console.error("Error silencioso al registrar visualización:", error);
+                }
+            };
+
+            // Le damos 5 segundos de gracia para no contar clics accidentales
+            const timer = setTimeout(() => {
+                registerView();
+            }, 5000);
+
+            return () => clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
+        }
+    }, [user, item, activeVideo, id]);
+
     const toggleWatchlist = async () => {
         try {
             await api.post('/users/watchlist', { itemId: id, itemType: type });
