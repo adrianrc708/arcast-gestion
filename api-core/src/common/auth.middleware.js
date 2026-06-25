@@ -38,4 +38,4 @@ const authorize = (roles = []) => {
     };
 };
 
-module.exports = { optionalAuth, requiredAuth };
+exports.authorize = authorize;
