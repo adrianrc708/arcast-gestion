@@ -11,4 +11,6 @@ router.put('/:id', requiredAuth, reviewsController.updateReview);
 router.delete('/:id', requiredAuth, reviewsController.deleteReview);
 router.get('/me', requiredAuth, reviewsController.getMyReviews);
 
+// Endpoint para obtener estadísticas de reseñas por película, servirá más adelante
+router.get('/stats/:movieId', reviewsController.getReviewStats);
 module.exports = router;
