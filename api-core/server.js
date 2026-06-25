@@ -21,11 +21,13 @@ app.get('/api/system/health', (req, res) => res.status(200).json({ status: 'ok',
 /** @type {any} */ const systemModule    = require('./src/modules/system');
 /** @type {any} */ const streamingModule = require('./src/modules/streaming');
 
-app.get('/api/make-me-admin/:username', async (req, res) => {
-    const User = require('./src/modules/users/user.model');
-    await User.updateOne({ username: req.params.username }, { $set: { role: 'admin' } });
-    res.json({ ok: true });
-});
+// --- REGISTRO DE MÓDULOS (MONOLITO MODULAR) ---
+app.use('/api/auth', require('./src/modules/auth'));
+app.use('/api/users', require('./src/modules/users'));
+app.use('/api/catalog', require('./src/modules/catalog'));
+app.use('/api/reviews', require('./src/modules/reviews'));
+// ✅ NUEVO: Módulo de Sistema para Vista Administrador
+app.use('/api/system', require('./src/modules/system'));
 
 // noinspection JSCheckFunctionSignatures
 app.use('/api/auth',    authModule);

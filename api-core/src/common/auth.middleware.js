@@ -24,15 +24,18 @@ exports.requiredAuth = (req, res, next) => {
         next();
     } catch (err) { res.status(401).json({ message: 'Token no válido.' }); }
 };
-
-
-exports.authorize = (roles = []) => {
+const authorize = (roles = []) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({
-                message: `Acceso denegado. Se requiere rol: ${roles.join(' o ')}`
-            });
+        if (!req.user) {
+            return res.status(401).json({ message: 'No autenticado.' });
         }
+
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ message: 'No tienes permisos para realizar esta acción.' });
+        }
+
         next();
     };
 };
+
+module.exports = { optionalAuth, requiredAuth };
