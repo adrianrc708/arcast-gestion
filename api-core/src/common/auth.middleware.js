@@ -9,7 +9,7 @@ exports.optionalAuth = (req, res, next) => {
         const tokenString = token.startsWith('Bearer ') ? token.slice(7) : token;
         req.user = jwt.verify(tokenString, process.env.JWT_SECRET);
         next();
-    } catch (err) { 
+    } catch (err) {
         next(); // Si el token falla, lo dejamos pasar como anónimo
     }
 };
@@ -38,4 +38,4 @@ const authorize = (roles = []) => {
     };
 };
 
-module.exports = { optionalAuth, requiredAuth };
+exports.authorize = authorize;

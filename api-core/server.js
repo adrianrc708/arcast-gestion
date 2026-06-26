@@ -20,6 +20,7 @@ app.get('/api/system/health', (req, res) => res.status(200).json({ status: 'ok',
 /** @type {any} */ const reviewsModule   = require('./src/modules/reviews');
 /** @type {any} */ const systemModule    = require('./src/modules/system');
 /** @type {any} */ const streamingModule = require('./src/modules/streaming');
+/** @type {any} */ const searchModule    = require('./src/modules/search');
 
 // --- REGISTRO DE MÓDULOS (MONOLITO MODULAR) ---
 app.use('/api/auth', require('./src/modules/auth'));
@@ -28,6 +29,7 @@ app.use('/api/catalog', require('./src/modules/catalog'));
 app.use('/api/reviews', require('./src/modules/reviews'));
 // ✅ NUEVO: Módulo de Sistema para Vista Administrador
 app.use('/api/system', require('./src/modules/system'));
+app.use('/api/search', require('./src/modules/search'));
 
 // noinspection JSCheckFunctionSignatures
 app.use('/api/auth',    authModule);
@@ -41,6 +43,8 @@ app.use('/api/reviews', reviewsModule);
 app.use('/api/system',   systemModule);
 // noinspection JSCheckFunctionSignatures
 app.use('/api/stream',   streamingModule);
+// noinspection JSCheckFunctionSignatures
+app.use('/api/search',   searchModule);
 
 // ─── 404 — Ruta no encontrada ──────────────────────────────────────────────
 app.use((req, _res, next) => {
