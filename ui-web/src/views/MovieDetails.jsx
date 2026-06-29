@@ -18,6 +18,7 @@ const MovieDetails = () => {
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [activeVideo, setActiveVideo] = useState('movie');
+    const [resumePrompt, setResumePrompt] = useState(null);
 
     // --- 🌟 ESTADOS AÑADIDOS PARA SERIES (RF12) ---
     const [seasons, setSeasons] = useState([]);
@@ -49,6 +50,11 @@ const MovieDetails = () => {
                     if (me?.data?.watchlist) {
                         const found = me.data.watchlist.some(w => (w.item?._id || w.item || w) === id);
                         setInWatchlist(found);
+                    }
+                    const history = me?.data?.watchHistory || [];
+                    const entry = history.find(h => h.contentId === id);
+                    if (entry && entry.currentTime > 10) {
+                        setResumePrompt({ currentTime: entry.currentTime || 0, percent: entry.percentWatched });
                     }
                 }
             } catch (error) {
@@ -320,7 +326,18 @@ const MovieDetails = () => {
 
                     return (
                         <div className="player-section">
-                            <div className="player-tabs">
+                            {resumePrompt && activeVideo === 'alt' &&  (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: '10px', padding: '12px 18px', marginBottom: '12px', gap: '12px' }}>
+                                <span style={{ color: '#e0e0e0', fontSize: '14px' }}>
+                                    ▶ Viste el <strong style={{ color: 'var(--accent)' }}>{resumePrompt.percent}%</strong> — ¿continuar desde ahí?
+                                </span>
+                                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                    <button className="hero-btn" style={{ padding: '6px 14px', fontSize: '13px' }} onClick={() => { setActiveVideo('alt'); setResumePrompt(null); }}>Continuar</button>
+                                    <button style={{ padding: '6px 14px', fontSize: '13px', background: 'transparent', border: '1px solid #444', borderRadius: '6px', color: '#888', cursor: 'pointer' }} onClick={() => { setActiveVideo('alt'); setResumePrompt(null); }}>Desde el inicio</button>
+                                </div>
+                            </div>
+                        )}
+                        <div className="player-tabs">
                                 {/* Pestaña Local (RF11) — solo si hay streaming local disponible */}
                                 {localMovieUrl && (
                                     <button
@@ -380,6 +397,7 @@ const MovieDetails = () => {
                                     src={item.watchLink}
                                     title={item.title || item.name}
                                     onProgress={handleVideoProgress}
+                                    initialTime={resumePrompt?.currentTime}
                                 />
                             ) : activeVideo === 'episode' && type === 'tvshow' && archiveEpisodeUrl ? (
                                 <VideoPlayer
