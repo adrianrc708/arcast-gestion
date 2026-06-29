@@ -56,10 +56,16 @@ const MovieDetails = () => {
                         const found = me.data.watchlist.some(w => (w.item?._id || w.item || w) === id);
                         setInWatchlist(found);
                     }
-                    const history = me?.data?.watchHistory || [];
-                    const entry = history.find(h => h.contentId === id);
-                    if (entry && entry.currentTime > 10) {
-                        setResumePrompt({ currentTime: entry.currentTime || 0, percent: entry.percentWatched });
+                    try {
+                        // Intentar obtener progreso guardado del nuevo sistema
+                        const progRes = await api.get(`/stream/progress/${id}`);
+                        const saved = progRes?.data?.data?.progress;
+                        if (saved && saved.currentTime > 10) {
+                            const percent = Math.round((saved.currentTime / saved.duration) * 100);
+                            setResumePrompt({ currentTime: saved.currentTime, percent });
+                        }
+                    } catch (e) {
+                        // Silencioso (404 si no hay progreso)
                     }
                 }
             } catch (error) {
@@ -113,11 +119,11 @@ const MovieDetails = () => {
     // 'movie' y 'alt' son la misma película (solo cambia la fuente), por lo
     // que comparten el mismo progreso. 'episode' usa el _id del episodio.
     const getProgressContentId = () => {
-        if ((activeVideo === 'local' || activeVideo === 'alt') && item) {
-            return item._id || id;
-        }
-        if (activeVideo === 'episode' && currentEpisode) {
+        if (type === 'tvshow' && currentEpisode && (activeVideo === 'episode' || activeVideo === 'movie')) {
             return currentEpisode._id;
+        }
+        if (item && (activeVideo === 'movie' || activeVideo === 'local' || activeVideo === 'alt')) {
+            return item._id || id;
         }
         return null;
     };
@@ -163,25 +169,8 @@ const MovieDetails = () => {
         if (user && item && (activeVideo === 'movie' || activeVideo === 'alt' || activeVideo === 'episode')) {
             viewStartTime.current = Date.now();
 
-            // 1. Restauramos tu lógica original con el timer de 5 segundos de gracia
-            const registerView = async () => {
-                try {
-                    await api.post('/users/progress', {
-                        contentId: id,
-                        percentWatched: 10 // Simulación de progreso inicial
-                    });
-                } catch (error) {
-                    console.error("Error silencioso al registrar progreso:", error);
-                }
-            };
-
-            const timer = setTimeout(() => {
-                registerView();
-            }, 5000);
-
             // La función de limpieza se ejecutará cuando el usuario navegue fuera de la página
             return () => {
-                clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
                 if (viewStartTime.current) {
                     const endTime = Date.now();
                     const durationSeconds = (endTime - viewStartTime.current) / 1000;
@@ -207,23 +196,26 @@ const MovieDetails = () => {
 
 
     useEffect(() => {
-        // Solo enviamos el registro si el usuario está autenticado y la pestaña activa es la película o fuente alternativa.
+        // Solo enviamos el registro simulado si es la pestaña de película o alt (iframes externos que no reportan progreso real)
         if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
-            const registerView = async () => {
+            const registerFakeProgress = async () => {
+                const progressContentId = getProgressContentId();
+                if (!progressContentId) return;
+
                 try {
-                    // Aviso a la ruta updateProgress
-                    await api.post('/users/progress', {
-                        contentId: id,
-                        percentWatched: 10 // Mandamos un progreso inicial simulado, CAMBIAR A VARIABLE DINAMICA CUANDO SE IMPLEMENTE SEGUIR VIENDO
+                    await api.post('/stream/progress', {
+                        contentId: progressContentId,
+                        currentTime: 10, // Simulación
+                        duration: 100    // Simulación (10% de progreso)
                     });
                 } catch (error) {
-                    console.error("Error silencioso al registrar visualización:", error);
+                    console.error("Error silencioso al registrar progreso simulado:", error);
                 }
             };
 
             // Le damos 5 segundos de gracia para no contar clics accidentales
             const timer = setTimeout(() => {
-                registerView();
+                registerFakeProgress();
             }, 5000);
 
             return () => clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
@@ -368,19 +360,6 @@ const MovieDetails = () => {
                     const handleVideoProgress = async (currentTime, duration) => {
                         if (!user) return;
                         const percent = Math.round((currentTime / duration) * 100);
-                        // Guardamos progreso cada 10% para no saturar el backend
-                        if (percent % 10 === 0) {
-                            try {
-                                await api.post('/users/progress', {
-                                    contentId: id,
-                                    percentWatched: percent,
-                                    currentTime: Math.floor(currentTime)
-                                });
-                            } catch (e) {
-                                // Error silencioso — el progreso no es crítico
-                            }
-                        }
-
                         // --- Sistema de progreso de visualización (para reanudar reproducción) ---
                         // Guardamos como máximo una vez cada 8 segundos reales para no saturar el backend.
                         const progressContentId = getProgressContentId();
