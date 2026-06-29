@@ -16,5 +16,5 @@ router.get('/activity', requiredAuth, authorize(['boss', 'admin']), userControll
 router.put('/:id/role', requiredAuth, authorize(['admin']), userController.updateUserRole);
 router.post('/watchlist', requiredAuth, userController.toggleWatchlist);
 router.get('/watchlist', requiredAuth, userController.getWatchlist);
-
+router.get('/continue-watching', requiredAuth, userController.getContinueWatching);
 module.exports = router;
