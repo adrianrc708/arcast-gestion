@@ -29,6 +29,11 @@ const MovieDetails = () => {
     // Ref para medir el tiempo de visualización
     const viewStartTime = useRef(null);
 
+    // --- Sistema de progreso de visualización (reanudar reproducción) ---
+    const [resumeTime, setResumeTime] = useState(0);
+    const [progressLoading, setProgressLoading] = useState(false);
+    const lastSavedAtRef = useRef(0);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -102,6 +107,55 @@ const MovieDetails = () => {
             setActiveVideo(type === 'tvshow' ? 'episode' : 'movie');
         }
     }, [item, trailerEmbedUrl, type]);
+
+    // Determina el contentId a usar contra el sistema de progreso de
+    // visualización (/api/stream/progress) según la pestaña/video activo.
+    // 'movie' y 'alt' son la misma película (solo cambia la fuente), por lo
+    // que comparten el mismo progreso. 'episode' usa el _id del episodio.
+    const getProgressContentId = () => {
+        if ((activeVideo === 'local' || activeVideo === 'alt') && item) {
+            return item._id || id;
+        }
+        if (activeVideo === 'episode' && currentEpisode) {
+            return currentEpisode._id;
+        }
+        return null;
+    };
+
+    // --- Integración con el sistema de progreso: recuperar la posición guardada ---
+    useEffect(() => {
+        const contentId = getProgressContentId();
+
+        if (!user || !contentId) {
+            setResumeTime(0);
+            setProgressLoading(false);
+            return;
+        }
+
+        let isActive = true;
+        setProgressLoading(true);
+
+        api.get(`/stream/progress/${contentId}`)
+            .then((res) => {
+                if (!isActive) return;
+                const saved = res?.data?.data?.progress;
+                // Solo ofrecemos reanudar si quedó contenido pendiente por ver (<95%)
+                if (saved && saved.duration > 0 && saved.currentTime < saved.duration * 0.95) {
+                    setResumeTime(saved.currentTime);
+                } else {
+                    setResumeTime(0);
+                }
+            })
+            .catch(() => {
+                // 404 = sin progreso guardado todavía, o error silencioso de red
+                if (isActive) setResumeTime(0);
+            })
+            .finally(() => {
+                if (isActive) setProgressLoading(false);
+            });
+
+        return () => { isActive = false; };
+    }, [user, activeVideo, item, currentEpisode, id]);
 
 
     useEffect(() => {
@@ -326,6 +380,23 @@ const MovieDetails = () => {
                                 // Error silencioso — el progreso no es crítico
                             }
                         }
+
+                        // --- Sistema de progreso de visualización (para reanudar reproducción) ---
+                        // Guardamos como máximo una vez cada 8 segundos reales para no saturar el backend.
+                        const progressContentId = getProgressContentId();
+                        const now = Date.now();
+                        if (progressContentId && duration && (now - lastSavedAtRef.current > 8000)) {
+                            lastSavedAtRef.current = now;
+                            try {
+                                await api.post('/stream/progress', {
+                                    contentId: progressContentId,
+                                    currentTime: Math.floor(currentTime),
+                                    duration: Math.floor(duration)
+                                });
+                            } catch (e) {
+                                // Error silencioso — el progreso no es crítico para la reproducción
+                            }
+                        }
                     };
 
                     return (
@@ -395,6 +466,8 @@ const MovieDetails = () => {
                                     src={localMovieUrl}
                                     title={item.title || item.name}
                                     onProgress={handleVideoProgress}
+                                    startTime={resumeTime}
+                                    progressLoading={progressLoading}
                                 />
                             ) : activeVideo === 'alt' && type === 'movie' && item.watchLink ? (
                                 <VideoPlayer
@@ -408,6 +481,8 @@ const MovieDetails = () => {
                                     src={archiveEpisodeUrl}
                                     title={`${item.name} - T${selectedSeason}E${currentEpisode?.episode || 1}`}
                                     onProgress={handleVideoProgress}
+                                    startTime={resumeTime}
+                                    progressLoading={progressLoading}
                                 />
                             ) : (
                                 <div className="player-glass-container">
