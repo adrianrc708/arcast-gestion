@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api-core:
     build: ./api-core
@@ -13,7 +11,7 @@ services:
     networks:
       - arcast_net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/system/health"]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:5001/api/system/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -25,7 +23,7 @@ services:
     networks:
       - arcast_net
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" ]
       interval: 30s
       timeout: 10s
       retries: 3
