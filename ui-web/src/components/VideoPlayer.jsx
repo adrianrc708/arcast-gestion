@@ -7,7 +7,7 @@ const formatTime = (seconds) => {
     return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const VideoPlayer = ({ src, title, onProgress , initialTime}) => {
+const VideoPlayer = ({ src, title, onProgress , initialTime, progressLoading, startTime }) => {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
     const hideControlsTimer = useRef(null);
@@ -126,6 +126,7 @@ const VideoPlayer = ({ src, title, onProgress , initialTime}) => {
             if (initialTime && initialTime > 0) {
                 video.currentTime = initialTime;
             }
+            setMetadataLoaded(true);
         };
         const onEnded = () => setPlaying(false);
         const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
