@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import api from './services/api';
 
+import ContinueWatching from './views/ContinueWatching';
+import History from './views/History';
+
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
@@ -63,6 +66,8 @@ const App = () => {
                         ) : <Navigate to="/" replace />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="/continue-watching" element={<ContinueWatching />} />
+                    <Route path="/history" element={<History />} />
                 </Routes>
             </main>
         </div>
