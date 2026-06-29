@@ -8,8 +8,8 @@ const ContinueWatching = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        api.get('/users/continue-watching')
-            .then(res => setItems(res.data.continueWatching || []))
+        api.get('/stream/continue-watching')
+            .then(res => setItems(res.data?.data?.list || []))
             .catch(err => console.error('Error al cargar continuar viendo:', err))
             .finally(() => setLoading(false));
     }, []);

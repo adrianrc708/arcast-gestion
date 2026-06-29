@@ -7,8 +7,7 @@ const playbackSchema = new mongoose.Schema({
         required: true
     },
     contentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Content',
+        type: String,
         required: true
     },
     currentTime: {
