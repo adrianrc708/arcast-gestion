@@ -66,6 +66,8 @@ const App = () => {
                         ) : <Navigate to="/" replace />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="/continue-watching" element={<ContinueWatching />} />
+                    <Route path="/history" element={<History />} />
                 </Routes>
             </main>
         </div>
