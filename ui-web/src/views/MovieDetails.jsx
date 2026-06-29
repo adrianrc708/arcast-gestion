@@ -93,8 +93,12 @@ const MovieDetails = () => {
     const trailerEmbedUrl = item ? getEmbedUrl(item.trailerUrl) : null;
 
     useEffect(() => {
-        if (item && !trailerEmbedUrl) {
-            // Si es serie y no hay trailer, que arranque en 'episode' si se puede, sino 'movie'
+        if (!item) return;
+        if (resumePrompt) {
+            setActiveVideo('alt');
+            return;
+        }
+        if (!trailerEmbedUrl) {
             setActiveVideo(type === 'tvshow' ? 'episode' : 'movie');
         }
     }, [item, trailerEmbedUrl, type]);
