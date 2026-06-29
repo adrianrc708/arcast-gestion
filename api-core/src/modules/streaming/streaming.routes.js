@@ -29,6 +29,8 @@ router.get('/episode/:tvshowId/:season/:episode', streamAuth, controller.streamE
 // Rutas para el progreso de visualización
 router.post('/progress',              requiredAuth, controller.saveProgress);
 router.get('/progress/:contentId',    requiredAuth, controller.getProgress);
-router.get('/continue-watching',      requiredAuth, controller.getContinueWatching);
+router.get('/continue-watching',             requiredAuth, controller.getContinueWatching);
+router.get('/continue-watching/:userId',     requiredAuth, controller.getContinueWatching);
+router.get('/history/:userId',               requiredAuth, controller.getHistory);
 
 module.exports = router;
