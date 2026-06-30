@@ -9,7 +9,8 @@ const Navbar = () => {
     const [searchParams] = useSearchParams();
     const { user, logout } = useAuth(); // Importamos logout del contexto
 
-    const isMainView = location.pathname === '/' || location.pathname.startsWith('/item');
+    // 🌟 AÑADIDO: Permitimos que el Navbar se renderice en la vista de búsqueda semántica
+    const isMainView = location.pathname === '/' || location.pathname.startsWith('/item') || location.pathname === '/semantic-search';
     const currentView = searchParams.get('view') || 'home';
     const currentType = searchParams.get('type') || 'movies';
 
@@ -75,8 +76,12 @@ const Navbar = () => {
             {isMainView && (
                 <div className="navbar-filters">
                     <div className="nav-links">
-                        <button className={currentView === 'catalog' && currentType === 'movies' ? 'active' : ''} onClick={() => goCatalog('movies')}>Películas</button>
-                        <button className={currentView === 'catalog' && currentType === 'tvshows' ? 'active' : ''} onClick={() => goCatalog('tvshows')}>Series</button>
+                        {/* 🌟 AÑADIDO: Desactivamos el resaltado si estamos en la vista de IA */}
+                        <button className={currentView === 'catalog' && currentType === 'movies' && location.pathname !== '/semantic-search' ? 'active' : ''} onClick={() => goCatalog('movies')}>Películas</button>
+                        <button className={currentView === 'catalog' && currentType === 'tvshows' && location.pathname !== '/semantic-search' ? 'active' : ''} onClick={() => goCatalog('tvshows')}>Series</button>
+
+                        {/* 🌟 NUEVO BOTÓN PARA RF17/RF19 */}
+                        <button className={location.pathname === '/semantic-search' ? 'active !text-purple-400' : 'text-purple-400 font-bold hover:text-purple-300'} onClick={() => navigate('/semantic-search')}>✨ Modo IA</button>
                     </div>
 
                     <div className="search-container-live" ref={searchDropdownRef}>
