@@ -4,9 +4,8 @@ const controller = require('./movies.controller');
 const { requiredAuth, authorize } = require('../../common/auth.middleware');
 
 // API Endpoints para Películas
-router.get('/explore', controller.exploreMovies); 
+router.get('/explore', controller.exploreMovies);
 router.get('/', controller.getAllMovies);
-router.get('/explore', controller.exploreMovies); 
 router.post('/', requiredAuth, authorize(['admin', 'boss']), controller.createMovie);
 router.get('/:id', controller.getMovieById);
 router.put('/:id', requiredAuth, authorize(['admin', 'boss']), controller.updateMovie);
