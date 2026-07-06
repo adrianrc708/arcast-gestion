@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
+import AIResultCard from '../components/AIResultCard'; // Componente de tarjeta IA
+
+// Genera una explicación corta y legible para la tarjeta de "Sugerencias
+// Inteligentes" a partir de los datos reales del contenido recomendado.
+const buildAiExplanation = (item) => {
+    const genres = (item.genres || []).slice(0, 2).join(' y ');
+    if (genres) return `Sugerida por tu interés en ${genres.toLowerCase()}.`;
+    if (item.voteAverage) return `Muy valorada por la comunidad (★ ${item.voteAverage.toFixed(1)}).`;
+    return 'Seleccionada para ti dentro del catálogo peruano.';
+};
 
 const CarouselRow = ({ title, items, type }) => {
     const trackRef = useRef(null);
@@ -18,13 +28,11 @@ const CarouselRow = ({ title, items, type }) => {
                     {items.map(item => (
                         <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
                             <div className="poster-wrapper">
-                                {/* Fallback si la película/serie no tiene imagen */}
                                 <img src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=Sin+Imagen'} alt={item.title || item.name} />
                             </div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
                                 <div className="card-meta">
-                                    {/* Compatible con Películas (releaseDate) y Series (firstAirDate) */}
                                     <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || 'Año desconocido'}</span>
                                     <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
                                 </div>
@@ -41,7 +49,6 @@ const CarouselRow = ({ title, items, type }) => {
 const Home = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [recommendations, setRecommendations] = useState([]);
 
     const [searchParams, setSearchParams] = useSearchParams();
@@ -53,7 +60,6 @@ const Home = () => {
     const sort = searchParams.get('sort') || 'newest';
 
     const [currentSlide, setCurrentSlide] = useState(0);
-
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 15;
 
@@ -63,11 +69,8 @@ const Home = () => {
             try {
                 const params = { sort };
                 if (genre && genre !== 'Todas') params.genre = genre;
-
-                // CORRECCIÓN: Siempre usar el endpoint nativo
                 const endpoint = `/catalog/${type}`;
                 const res = await api.get(endpoint, { params });
-                
                 setItems(res.data.results || res.data || []);
             } catch (err) {
                 console.error("Error al cargar el catálogo:", err);
@@ -75,7 +78,6 @@ const Home = () => {
                 setLoading(false);
             }
         };
-
         fetchCatalog();
     }, [type, genre, sort]);
 
@@ -104,7 +106,7 @@ const Home = () => {
         setSearchParams(params);
     };
 
-    if (loading) return <div style={{height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)'}}>Cargando Catálogo...</div>;
+    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>Cargando Catálogo...</div>;
 
     if (view === 'catalog') {
         const indexOfLastItem = currentPage * itemsPerPage;
@@ -113,10 +115,10 @@ const Home = () => {
         const totalPages = Math.ceil(items.length / itemsPerPage);
 
         return (
-            <div style={{padding: '40px 5%', minHeight: '100vh'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px'}}>
-                    <h2 style={{fontSize: '2rem', fontWeight: '800', margin: 0}}>
-                        Catálogo de <span style={{color: 'var(--accent)'}}>{type === 'movies' ? 'Películas' : 'Series'}</span>
+            <div style={{ padding: '40px 5%', minHeight: '100vh' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px' }}>
+                    <h2 style={{ fontSize: '2rem', fontWeight: '800', margin: 0 }}>
+                        Catálogo de <span style={{ color: 'var(--accent)' }}>{type === 'movies' ? 'Películas' : 'Series'}</span>
                     </h2>
                     <div className="filters-group">
                         <select className="filter-select" value={genre} onChange={(e) => updateFilter('genre', e.target.value)}>
@@ -164,7 +166,7 @@ const Home = () => {
     const recent = [...items].sort((a, b) => new Date(b.releaseDate || b.firstAirDate || 0) - new Date(a.releaseDate || a.firstAirDate || 0));
 
     return (
-        <div style={{paddingBottom: '60px'}}>
+        <div style={{ paddingBottom: '60px' }}>
             <div className="hero-container">
                 {heroItems.map((item, index) => (
                     <div
@@ -177,14 +179,8 @@ const Home = () => {
                             <div className="hero-content">
                                 <span className="hero-label">Destacado #{index + 1}</span>
                                 <h1 className="hero-title">{item.title || item.name}</h1>
-                                <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic en la imagen o en el botón para ver todos los detalles y calificaciones."}</p>
-                                <button
-                                    className="hero-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`);
-                                    }}
-                                >
+                                <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic en la imagen o en el botón para ver todos los detalles."}</p>
+                                <button className="hero-btn" onClick={(e) => { e.stopPropagation(); navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`); }}>
                                     Ver Detalles
                                 </button>
                             </div>
@@ -194,20 +190,34 @@ const Home = () => {
 
                 <div className="slider-dots">
                     {heroItems.map((_, index) => (
-                        <div
-                            key={index}
-                            className={`dot ${index === currentSlide ? 'active' : ''}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setCurrentSlide(index);
-                            }}
-                        ></div>
+                        <div key={index} className={`dot ${index === currentSlide ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setCurrentSlide(index); }}></div>
                     ))}
                 </div>
             </div>
 
+            {recommendations.length > 0 && <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />}
+
+            {/* SECCIÓN DE RECOMENDACIONES DE LA IA EN EL HOME (datos reales) */}
             {recommendations.length > 0 && (
-                <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />
+                <div className="px-[5%] py-8">
+                    <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                        <span className="inline-block w-1 h-6 bg-[#58a6ff] rounded-full"></span>
+                        <h2 className="text-2xl font-black text-white m-0">Sugerencias Inteligentes</h2>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#58a6ff] border border-[#58a6ff]/30 rounded-full px-2 py-0.5">IA</span>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {recommendations.slice(0, 4).map(item => (
+                            <AIResultCard
+                                key={item._id}
+                                item={{
+                                    ...item,
+                                    mediaType: item.mediaType || 'movie',
+                                    aiExplanation: item.aiExplanation || buildAiExplanation(item),
+                                }}
+                            />
+                        ))}
+                    </div>
+                </div>
             )}
 
             <CarouselRow title="Novedades Recientes" items={recent} type={type} />
