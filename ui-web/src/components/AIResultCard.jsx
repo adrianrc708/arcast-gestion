@@ -7,7 +7,7 @@ const AIResultCard = ({ item }) => {
     return (
         <div
             onClick={() => navigate(`/item/${item.mediaType || 'movie'}/${item._id}`)}
-            className="bg-[#161b22] border border-purple-500/30 rounded-2xl overflow-hidden hover:border-purple-500 transition-all cursor-pointer shadow-lg shadow-purple-500/5 group"
+            className="bg-[#161b22] border border-white/10 rounded-2xl overflow-hidden hover:border-[#58a6ff]/50 transition-all cursor-pointer shadow-lg group"
         >
             <div className="flex flex-col sm:flex-row h-full">
                 <img
@@ -19,7 +19,7 @@ const AIResultCard = ({ item }) => {
                     <div>
                         <div className="flex justify-between items-start mb-2 gap-4">
                             <h3 className="font-bold text-white text-lg leading-tight">{item.title || item.name}</h3>
-                            <span className="text-xs font-mono bg-purple-500/20 text-purple-300 px-2 py-1 rounded whitespace-nowrap">
+                            <span className="text-xs font-mono bg-[#58a6ff]/15 text-[#58a6ff] px-2 py-1 rounded whitespace-nowrap">
                                 ★ {item.voteAverage?.toFixed(1) || 'N/A'}
                             </span>
                         </div>
@@ -27,10 +27,10 @@ const AIResultCard = ({ item }) => {
                             {(item.releaseDate || item.firstAirDate)?.split('-')[0]} • {item.mediaType === 'movie' ? 'Película' : 'Serie'}
                         </p>
 
-                        <div className="bg-purple-900/20 p-3 rounded-xl border border-purple-500/20 relative">
-                            <span className="absolute -top-3 left-3 text-lg">✨</span>
-                            <p className="text-sm text-purple-200 italic pt-1 leading-relaxed line-clamp-3">
-                                "{item.aiExplanation}"
+                        <div className="bg-[#58a6ff]/10 p-3 rounded-xl border border-[#58a6ff]/20">
+                            <span className="block text-[10px] font-black uppercase tracking-wider text-[#58a6ff] mb-1">Sugerencia IA</span>
+                            <p className="text-sm text-gray-300 leading-relaxed line-clamp-3">
+                                {item.aiExplanation}
                             </p>
                         </div>
                     </div>

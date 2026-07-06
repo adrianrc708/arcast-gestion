@@ -38,7 +38,6 @@ const ContinueWatching = () => {
 
             {items.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '80px 0', color: '#555' }}>
-                    <span style={{ fontSize: '48px' }}>🎬</span>
                     <p style={{ fontSize: '15px', margin: 0 }}>Aún no tienes nada en progreso.</p>
                     <button className="hero-btn" onClick={() => navigate('/')}>
                         Explorar catálogo

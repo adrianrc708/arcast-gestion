@@ -129,10 +129,11 @@ const History = () => {
                                 {/* Ícono de tipo */}
                                 <div style={{
                                     width: '36px', height: '36px', borderRadius: '8px', flexShrink: 0,
-                                    background: type === 'movie' ? 'rgba(124,58,237,0.2)' : 'rgba(16,185,129,0.2)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+                                    background: type === 'movie' ? 'rgba(88,166,255,0.18)' : 'rgba(16,185,129,0.2)',
+                                    color: type === 'movie' ? '#58a6ff' : '#10b981',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em'
                                 }}>
-                                    {type === 'movie' ? '🎬' : '📺'}
+                                    {type === 'movie' ? 'PEL' : 'SER'}
                                 </div>
 
                                 {/* Info */}
