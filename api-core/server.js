@@ -8,46 +8,35 @@ const { AppError } = require('./src/common/error.utils');
 
 const app = express();
 
-connectDB();
+// Conectamos a Mongo y, una vez listo, ejecutamos el arranque automático
+// (crear cuentas base y, si corresponde, sembrar el catálogo).
+const { runBootstrap } = require('./src/common/bootstrap');
+connectDB().then(() => runBootstrap());
 
 app.use(cors());
 app.use(express.json());
 app.get('/api/system/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 // ─── Módulos de negocio ────────────────────────────────────────────────────
-/** @type {any} */ const authModule      = require('./src/modules/auth');
-/** @type {any} */ const usersModule     = require('./src/modules/users');
-/** @type {any} */ const catalogModule   = require('./src/modules/catalog');
-/** @type {any} */ const reviewsModule   = require('./src/modules/reviews');
-/** @type {any} */ const systemModule    = require('./src/modules/system');
-/** @type {any} */ const streamingModule         = require('./src/modules/streaming');
-/** @type {any} */ const searchModule            = require('./src/modules/search');
-/** @type {any} */ const recommendationsModule   = require('./src/modules/recommendations');
+/** @type {any} */ const authModule            = require('./src/modules/auth');
+/** @type {any} */ const usersModule           = require('./src/modules/users');
+/** @type {any} */ const catalogModule         = require('./src/modules/catalog');
+/** @type {any} */ const reviewsModule         = require('./src/modules/reviews');
+/** @type {any} */ const systemModule          = require('./src/modules/system');
+/** @type {any} */ const streamingModule       = require('./src/modules/streaming');
+/** @type {any} */ const searchModule          = require('./src/modules/search');
+/** @type {any} */ const recommendationsModule = require('./src/modules/recommendations');
+/** @type {any} */ const statisticsModule      = require('./src/modules/statistics');
 
 // --- REGISTRO DE MÓDULOS (MONOLITO MODULAR) ---
-app.use('/api/auth', require('./src/modules/auth'));
-app.use('/api/users', require('./src/modules/users'));
-app.use('/api/catalog', require('./src/modules/catalog'));
-app.use('/api/reviews', require('./src/modules/reviews'));
-// ✅ NUEVO: Módulo de Sistema para Vista Administrador
-app.use('/api/system', require('./src/modules/system'));
-app.use('/api/search', require('./src/modules/search'));
-
-// noinspection JSCheckFunctionSignatures
-app.use('/api/auth',    authModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/users',   usersModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/catalog', catalogModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/reviews', reviewsModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/system',   systemModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/stream',   streamingModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/search',           searchModule);
-// noinspection JSCheckFunctionSignatures
-app.use('/api/recommendations',  recommendationsModule);
+app.use('/api/auth',            authModule);
+app.use('/api/users',           usersModule);
+app.use('/api/catalog',         catalogModule);
+app.use('/api/reviews',         reviewsModule);
+app.use('/api/system',          systemModule);
+app.use('/api/stream',          streamingModule);
+app.use('/api/search',          searchModule);
+app.use('/api/recommendations', recommendationsModule);
+app.use('/api/statistics',      statisticsModule);
 
 // ─── 404 — Ruta no encontrada ──────────────────────────────────────────────
 app.use((req, _res, next) => {
