@@ -80,13 +80,17 @@ const Navbar = () => {
                         <button className={currentView === 'catalog' && currentType === 'movies' && location.pathname !== '/semantic-search' ? 'active' : ''} onClick={() => goCatalog('movies')}>Películas</button>
                         <button className={currentView === 'catalog' && currentType === 'tvshows' && location.pathname !== '/semantic-search' ? 'active' : ''} onClick={() => goCatalog('tvshows')}>Series</button>
 
-                        {/* 🌟 NUEVO BOTÓN PARA RF17/RF19 */}
-                        <button className={location.pathname === '/semantic-search' ? 'active !text-purple-400' : 'text-purple-400 font-bold hover:text-purple-300'} onClick={() => navigate('/semantic-search')}>✨ Modo IA</button>
+                        {/* Botón de búsqueda con IA (RF17/RF19) */}
+                        <button className={location.pathname === '/semantic-search' ? 'active !text-[#58a6ff]' : 'text-[#58a6ff] font-bold hover:text-[#7dc0ff]'} onClick={() => navigate('/semantic-search')}>Modo IA</button>
                     </div>
 
                     <div className="search-container-live" ref={searchDropdownRef}>
                         <div className="search-bar">
-                            <span className="search-icon">🔍</span>
+                            <span className="search-icon" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                            </span>
                             <input
                                 type="text"
                                 placeholder="Buscar título..."
@@ -137,16 +141,16 @@ const Navbar = () => {
 
                         {showUserMenu && (
                             <div className="profile-dropdown-menu">
-                                <Link to="/profile" onClick={() => setShowUserMenu(false)}>👤 Mi Perfil</Link>
+                                <Link to="/profile" onClick={() => setShowUserMenu(false)}>Mi Perfil</Link>
                                 {user.role === 'admin' && (
-                                    <Link to="/admin" onClick={() => setShowUserMenu(false)}>⚙️ Panel Admin</Link>
+                                    <Link to="/admin" onClick={() => setShowUserMenu(false)}>Panel Admin</Link>
                                 )}
                                 <hr style={{ opacity: 0.1, margin: '8px 0' }} />
                                 <button
                                     onClick={handleLogout}
                                     style={{ color: '#ff4d4d' }}
                                 >
-                                    🚪 Cerrar Sesión
+                                    Cerrar Sesión
                                 </button>
                             </div>
                         )}

@@ -1,5 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
+// Iconos SVG minimalistas para los controles del reproductor (sin emojis).
+const Icon = ({ children, size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">{children}</svg>
+);
+const IconPlay = () => <Icon><path d="M8 5v14l11-7z" /></Icon>;
+const IconPause = () => <Icon><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></Icon>;
+const IconVolume = () => <Icon><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z" /></Icon>;
+const IconVolumeLow = () => <Icon><path d="M3 10v4h4l5 5V5L7 10H3zm11 .5a3 3 0 0 1 0 3v-3z" /></Icon>;
+const IconVolumeMute = () => <Icon><path d="M3 10v4h4l5 5V5L7 10H3zm13.6 2 2.2-2.2-1.4-1.4L15.2 10.6 13 8.4 11.6 9.8 13.8 12l-2.2 2.2 1.4 1.4 2.2-2.2 2.2 2.2 1.4-1.4z" /></Icon>;
+const IconFullscreen = () => <Icon><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" /></Icon>;
+
 const formatTime = (seconds) => {
     if (isNaN(seconds)) return '0:00';
     const m = Math.floor(seconds / 60);
@@ -215,7 +226,6 @@ const VideoPlayer = ({ src, title, onProgress , initialTime, progressLoading, st
                     zIndex: 9, pointerEvents: 'none',
                     animation: 'arcast-player-fadein 0.3s ease-out'
                 }}>
-                    <span>⏪</span>
                     <span>Reanudando desde {formatTime(startTime)}</span>
                 </div>
             )}
@@ -295,13 +305,13 @@ const VideoPlayer = ({ src, title, onProgress , initialTime, progressLoading, st
                 {/* FILA DE BOTONES */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     {/* Play/Pause */}
-                    <button onClick={togglePlay} style={btnStyle}>
-                        {playing ? '⏸' : '▶'}
+                    <button onClick={togglePlay} style={btnStyle} aria-label={playing ? 'Pausar' : 'Reproducir'}>
+                        {playing ? <IconPause /> : <IconPlay />}
                     </button>
 
                     {/* Volumen */}
-                    <button onClick={toggleMute} style={btnStyle}>
-                        {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+                    <button onClick={toggleMute} style={btnStyle} aria-label="Volumen">
+                        {muted || volume === 0 ? <IconVolumeMute /> : volume < 0.5 ? <IconVolumeLow /> : <IconVolume />}
                     </button>
                     <input
                         type="range" min="0" max="1" step="0.05"
@@ -319,8 +329,8 @@ const VideoPlayer = ({ src, title, onProgress , initialTime, progressLoading, st
                     <div style={{ flex: 1 }} />
 
                     {/* Fullscreen */}
-                    <button onClick={toggleFullscreen} style={btnStyle}>
-                        {isFullscreen ? '⛶' : '⛶'}
+                    <button onClick={toggleFullscreen} style={btnStyle} aria-label="Pantalla completa">
+                        <IconFullscreen />
                     </button>
                 </div>
             </div>
