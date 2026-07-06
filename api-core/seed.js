@@ -88,10 +88,6 @@ async function importPeruvianMovies() {
                         });
                         /** @type {TMDBDetail} */
                         const d = detailRes.data;
-                        const releaseDate = d.release_date;
-                        const platforms = getWatchProviders(d['watch/providers'], releaseDate);
-
-                        // ✅ Añadimos noinspection para release_date
                         // noinspection JSUnresolvedVariable
                         const releaseDate = d.release_date;
                         const platforms = getWatchProviders(d['watch/providers'], releaseDate);
@@ -162,10 +158,6 @@ async function importPeruvianTVShows() {
                         });
                         /** @type {TMDBDetail} */
                         const d = detailRes.data;
-                        const firstAirDate = d.first_air_date;
-                        const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
-
-                        // ✅ Añadimos noinspection para first_air_date
                         // noinspection JSUnresolvedVariable
                         const firstAirDate = d.first_air_date;
                         const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
@@ -227,7 +219,15 @@ async function runSeed() {
     }
 }
 
-runSeed().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+// Exportamos las funciones de importación (NO destructivas: omiten lo ya existente)
+// para poder reutilizarlas desde el arranque automático del servidor (bootstrap).
+module.exports = { importPeruvianMovies, importPeruvianTVShows };
+
+// Solo ejecuta el seeding completo (con borrado previo) cuando se corre
+// directamente como script: `node seed.js`. Al hacer require(...) no se dispara.
+if (require.main === module) {
+    runSeed().catch(err => {
+        console.error(err);
+        process.exit(1);
+    });
+}
