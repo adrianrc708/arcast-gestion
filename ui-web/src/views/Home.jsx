@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
-import AIResultCard from '../components/AIResultCard'; // 🌟 1. IMPORTAMOS EL COMPONENTE IA
+import AIResultCard from '../components/AIResultCard'; // Componente de tarjeta IA
 
-// 🌟 2. DATOS MOCKEADOS PARA EL HOME
-const MOCK_AI_HOME_RECS = [
-    { _id: '3', title: 'The Matrix', mediaType: 'movie', posterUrl: 'https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg', releaseDate: '1999-03-30', voteAverage: 8.2, aiExplanation: 'Tu historial indica fascinación por mundos virtuales y filosofía cyberpunk.' },
-    { _id: '4', title: 'Dark', mediaType: 'tvshow', posterUrl: 'https://image.tmdb.org/t/p/w500/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg', releaseDate: '2017-12-01', voteAverage: 8.4, aiExplanation: 'Ideal para tu próximo maratón de suspenso y saltos en el tiempo.' }
-];
+// Genera una explicación corta y legible para la tarjeta de "Sugerencias
+// Inteligentes" a partir de los datos reales del contenido recomendado.
+const buildAiExplanation = (item) => {
+    const genres = (item.genres || []).slice(0, 2).join(' y ');
+    if (genres) return `Sugerida por tu interés en ${genres.toLowerCase()}.`;
+    if (item.voteAverage) return `Muy valorada por la comunidad (★ ${item.voteAverage.toFixed(1)}).`;
+    return 'Seleccionada para ti dentro del catálogo peruano.';
+};
 
 const CarouselRow = ({ title, items, type }) => {
     const trackRef = useRef(null);
@@ -194,16 +197,28 @@ const Home = () => {
 
             {recommendations.length > 0 && <CarouselRow title="Recomendaciones para ti" items={recommendations} type={type} />}
 
-            {/* 🌟 3. SECCIÓN DE RECOMENDACIONES DE LA IA EN EL HOME */}
-            <div className="px-[5%] py-8">
-                <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
-                    <span className="text-2xl">✨</span>
-                    <h2 className="text-2xl font-black text-white m-0">Sugerencias Inteligentes</h2>
+            {/* SECCIÓN DE RECOMENDACIONES DE LA IA EN EL HOME (datos reales) */}
+            {recommendations.length > 0 && (
+                <div className="px-[5%] py-8">
+                    <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                        <span className="inline-block w-1 h-6 bg-[#58a6ff] rounded-full"></span>
+                        <h2 className="text-2xl font-black text-white m-0">Sugerencias Inteligentes</h2>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#58a6ff] border border-[#58a6ff]/30 rounded-full px-2 py-0.5">IA</span>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {recommendations.slice(0, 4).map(item => (
+                            <AIResultCard
+                                key={item._id}
+                                item={{
+                                    ...item,
+                                    mediaType: item.mediaType || 'movie',
+                                    aiExplanation: item.aiExplanation || buildAiExplanation(item),
+                                }}
+                            />
+                        ))}
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {MOCK_AI_HOME_RECS.map(item => <AIResultCard key={item._id} item={item} />)}
-                </div>
-            </div>
+            )}
 
             <CarouselRow title="Novedades Recientes" items={recent} type={type} />
             <CarouselRow title="Aclamadas por la Crítica" items={topRated} type={type} />
