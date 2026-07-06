@@ -39,3 +39,8 @@ venv/
 # Ignorar caché de Python
 /frontend/__pycache__/
 *.pyc
+
+# --- Videos locales (streaming) ---
+# Ignorar los archivos de video pero conservar la documentación de la carpeta.
+/media/*
+!/media/README.md
