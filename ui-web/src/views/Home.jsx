@@ -28,13 +28,22 @@ const CarouselRow = ({ title, items, type }) => {
                     {items.map(item => (
                         <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
                             <div className="poster-wrapper">
-                                <img src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=Sin+Imagen'} alt={item.title || item.name} />
+                                <div className="poster-fallback">
+                                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+                                    <span>{(item.title || item.name)?.slice(0, 28)}</span>
+                                </div>
+                                <img src={item.posterUrl || ''} alt={item.title || item.name} loading="lazy" onError={(e) => e.currentTarget.classList.add('img-broken')} />
+                                <div className="poster-overlay">
+                                    <div className="play-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                                    </div>
+                                </div>
                             </div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
                                 <div className="card-meta">
-                                    <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || 'Año desconocido'}</span>
-                                    <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
+                                    <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || '—'}</span>
+                                    {item.voteAverage > 0 && <span className="score">★ {item.voteAverage?.toFixed(1)}</span>}
                                 </div>
                             </div>
                         </div>
@@ -60,7 +69,7 @@ const Home = () => {
     const sort = searchParams.get('sort') || 'newest';
 
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
+    const currentPage = parseInt(searchParams.get('page') || '1', 10);
     const itemsPerPage = 15;
 
     useEffect(() => {
@@ -81,7 +90,7 @@ const Home = () => {
         fetchCatalog();
     }, [type, genre, sort]);
 
-    useEffect(() => { setCurrentPage(1); }, [type, genre, sort]);
+
 
     const heroItems = items.slice(0, 5);
     useEffect(() => {
@@ -103,10 +112,23 @@ const Home = () => {
         const params = new URLSearchParams(searchParams);
         if (value && value !== 'Todas') params.set(key, value);
         else params.delete(key);
+        params.delete('page');
         setSearchParams(params);
     };
 
-    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>Cargando Catálogo...</div>;
+    const setPage = (page) => {
+        const params = new URLSearchParams(searchParams);
+        if (page <= 1) params.delete('page');
+        else params.set('page', String(page));
+        setSearchParams(params);
+    };
+
+    if (loading) return (
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+            <div className="spinner" />
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', letterSpacing: '0.05em' }}>Cargando catálogo...</span>
+        </div>
+    );
 
     if (view === 'catalog') {
         const indexOfLastItem = currentPage * itemsPerPage;
@@ -138,13 +160,22 @@ const Home = () => {
                     {currentItems.map(item => (
                         <div key={item._id} className="media-card" onClick={() => navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`)}>
                             <div className="poster-wrapper">
-                                <img src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=Sin+Imagen'} alt={item.title || item.name} />
+                                <div className="poster-fallback">
+                                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+                                    <span>{(item.title || item.name)?.slice(0, 28)}</span>
+                                </div>
+                                <img src={item.posterUrl || ''} alt={item.title || item.name} loading="lazy" onError={(e) => e.currentTarget.classList.add('img-broken')} />
+                                <div className="poster-overlay">
+                                    <div className="play-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                                    </div>
+                                </div>
                             </div>
                             <div className="card-info">
                                 <h3>{item.title || item.name}</h3>
                                 <div className="card-meta">
-                                    <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || 'Año desconocido'}</span>
-                                    <span className="score">★ {item.voteAverage?.toFixed(1) || 'N/A'}</span>
+                                    <span>{(item.releaseDate || item.firstAirDate)?.split('-')[0] || '—'}</span>
+                                    {item.voteAverage > 0 && <span className="score">★ {item.voteAverage?.toFixed(1)}</span>}
                                 </div>
                             </div>
                         </div>
@@ -153,9 +184,9 @@ const Home = () => {
 
                 {totalPages > 1 && (
                     <div className="pagination-container">
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>Anterior</button>
+                        <button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button>
                         <span>Página {currentPage} de {totalPages}</span>
-                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>Siguiente</button>
+                        <button disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>Siguiente</button>
                     </div>
                 )}
             </div>
@@ -177,10 +208,22 @@ const Home = () => {
                     >
                         <div className="hero-overlay">
                             <div className="hero-content">
-                                <span className="hero-label">Destacado #{index + 1}</span>
+                                        <span className="hero-label">
+                                    {type === 'movies' ? 'Película' : 'Serie'} Destacada
+                                </span>
                                 <h1 className="hero-title">{item.title || item.name}</h1>
-                                <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic en la imagen o en el botón para ver todos los detalles."}</p>
+                                {item.voteAverage > 0 && (
+                                    <div className="hero-meta">
+                                        <span className="rating-stars">★ {item.voteAverage?.toFixed(1)}</span>
+                                        {(item.releaseDate || item.firstAirDate) && (
+                                            <span>{(item.releaseDate || item.firstAirDate).split('-')[0]}</span>
+                                        )}
+                                        {item.genres?.[0] && <span>{item.genres[0]}</span>}
+                                    </div>
+                                )}
+                                <p className="hero-desc">{item.overview || "Descubre esta increíble historia. Haz clic para ver todos los detalles."}</p>
                                 <button className="hero-btn" onClick={(e) => { e.stopPropagation(); navigate(`/item/${type === 'movies' ? 'movie' : 'tvshow'}/${item._id}`); }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
                                     Ver Detalles
                                 </button>
                             </div>

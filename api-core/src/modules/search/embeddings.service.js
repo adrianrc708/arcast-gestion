@@ -12,7 +12,7 @@ const { GoogleGenAI } = require('@google/genai');
 const Movie = require('../catalog/movie.model');
 const TVShow = require('../catalog/tvshow.model');
 
-const EMBED_MODEL = process.env.GEMINI_EMBED_MODEL || 'text-embedding-004';
+const EMBED_MODEL = process.env.GEMINI_EMBED_MODEL || 'gemini-embedding-001';
 
 let _ai = null;
 function getAI() {

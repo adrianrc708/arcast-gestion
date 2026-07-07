@@ -84,21 +84,17 @@ const Navbar = () => {
                         <button className={location.pathname === '/semantic-search' ? 'active !text-[#58a6ff]' : 'text-[#58a6ff] font-bold hover:text-[#7dc0ff]'} onClick={() => navigate('/semantic-search')}>Modo IA</button>
                     </div>
 
-                    <div className="search-container-live" ref={searchDropdownRef}>
-                        <div className="search-bar">
-                            <span className="search-icon" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                                </svg>
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Buscar título..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                onFocus={() => searchTerm.length > 2 && setShowSearchDropdown(true)}
-                            />
-                        </div>
+                    <div className="search-bar" ref={searchDropdownRef}>
+                        <svg className="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Buscar película o serie..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onFocus={() => searchTerm.length > 2 && setShowSearchDropdown(true)}
+                        />
 
                         {showSearchDropdown && (
                             <div className="search-dropdown">

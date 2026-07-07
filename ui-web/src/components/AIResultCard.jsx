@@ -10,11 +10,19 @@ const AIResultCard = ({ item }) => {
             className="bg-[#161b22] border border-white/10 rounded-2xl overflow-hidden hover:border-[#58a6ff]/50 transition-all cursor-pointer shadow-lg group"
         >
             <div className="flex flex-col sm:flex-row h-full">
-                <img
-                    src={item.posterUrl || 'https://via.placeholder.com/500x750/1a1a1a/ffffff?text=Sin+Imagen'}
-                    alt={item.title || item.name}
-                    className="w-full sm:w-36 h-56 object-cover group-hover:brightness-110 transition-all"
-                />
+                <div className="relative w-full sm:w-36 h-56 flex-shrink-0 overflow-hidden" style={{background:'linear-gradient(160deg,#181e2e,#0d1117)'}}>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/20 text-xs text-center p-3 pointer-events-none">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{opacity:0.25}}><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+                        <span>{(item.title || item.name)?.slice(0, 24)}</span>
+                    </div>
+                    <img
+                        src={item.posterUrl || ''}
+                        alt={item.title || item.name}
+                        className="relative z-10 w-full h-full object-cover group-hover:brightness-110 transition-all"
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.opacity = '0'; e.currentTarget.style.pointerEvents = 'none'; }}
+                    />
+                </div>
                 <div className="p-5 flex flex-col justify-between flex-1">
                     <div>
                         <div className="flex justify-between items-start mb-2 gap-4">
