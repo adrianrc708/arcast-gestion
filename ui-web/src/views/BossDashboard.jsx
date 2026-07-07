@@ -210,7 +210,6 @@ const BossDashboard = () => {
                         <div className="flex items-end justify-between h-full w-full gap-1 relative px-1 border-b border-white/10 pb-4">
                             {trafficData.length === 0 && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0d1117]/80 backdrop-blur-sm rounded-xl border border-white/5 mb-4">
-                                    <span className="text-3xl mb-2 opacity-80">📡</span>
                                     <span className="text-[#38bdf8] font-bold text-sm">No hay tráfico reciente</span>
                                     <span className="text-gray-500 text-xs mt-1">Explora la plataforma para generar actividad</span>
                                 </div>
@@ -246,7 +245,6 @@ const BossDashboard = () => {
                         <div className="flex items-end justify-between h-full w-full gap-2 relative px-2 border-b border-white/10 pb-4">
                             {playbackData.length === 0 && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0d1117]/80 backdrop-blur-sm rounded-xl border border-white/5 mb-4">
-                                    <span className="text-3xl mb-2 opacity-80">▶️</span>
                                     <span className="text-[#a855f7] font-bold text-sm">No hay reproducciones recientes</span>
                                     <span className="text-gray-500 text-xs mt-1">Mira una película por más de 1 min para generar datos</span>
                                 </div>
