@@ -28,12 +28,6 @@ const MovieSchema = new Schema({
 
   // Ruta absoluta al archivo de video almacenado localmente (streaming RF11)
   localPath: { type: String },
-
-  // Búsqueda semántica: vector de embedding del título+sinopsis y el texto con
-  // el que se generó (para detectar cambios). `select: false` para no arrastrar
-  // el vector en las consultas normales del catálogo.
-  embedding: { type: [Number], default: undefined, select: false },
-  embeddingText: { type: String, select: false },
 });
 
 module.exports = mongoose.model("Movie", MovieSchema);

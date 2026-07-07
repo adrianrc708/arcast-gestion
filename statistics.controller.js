@@ -1,6 +1,6 @@
 const statisticsService = require('./statistics.service');
 const { catchAsync } = require('../../common/error.utils');
-const PlaybackLog = require('./playback.model');
+const PlaybackLog = require('./playback.model'); // Ajusta la ruta si mueves el archivo
 
 exports.getTrafficMetrics = catchAsync(async (req, res, _next) => {
     const days = parseInt(req.query.days) || 7;
