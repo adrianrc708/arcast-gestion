@@ -15,6 +15,9 @@ const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 // Solo definimos cuántas páginas queremos, quitamos los géneros hardcodeados
 const PAGES_TO_FETCH = 12;
 
+// Películas excluidas: videos incorrectos o contenido no representativo
+const MOVIE_BLACKLIST = new Set([1517472, 1578060, 65120, 1701724, 1156402]);
+
 // --- HELPERS (Se mantienen iguales) ---
 const findTrailer = (videos) => {
     if (!videos || !videos.results) return null;
@@ -76,6 +79,7 @@ async function importPeruvianMovies() {
             for (const basicData of response.data.results) {
                 // Ignorar entradas sin poster (evita importar películas sin imagen)
                 if (!basicData.poster_path) { process.stdout.write('_'); continue; }
+                if (MOVIE_BLACKLIST.has(basicData.id)) { process.stdout.write('⊘'); continue; }
                 // noinspection JSUnresolvedFunction
                 const existing = await Movie.findOne({ tmdbId: basicData.id });
                 if (!existing) {
