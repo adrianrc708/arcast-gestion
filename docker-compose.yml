@@ -39,6 +39,7 @@ services:
       - AUTO_SEED_CATALOG=true
       - AUTO_SEED_ARCHIVE=true
       - AUTO_MATCH_ARCHIVE=true
+      - AUTO_EMBED_CATALOG=true
     volumes:
       - ./api-core:/app
       - /app/node_modules
