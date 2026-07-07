@@ -13,7 +13,10 @@ const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 
 // Solo definimos cuántas páginas queremos, quitamos los géneros hardcodeados
-const PAGES_TO_FETCH = 5;
+const PAGES_TO_FETCH = 12;
+
+// Películas excluidas: videos incorrectos o contenido no representativo
+const MOVIE_BLACKLIST = new Set([1517472, 1578060, 65120, 1701724, 1156402]);
 
 // --- HELPERS (Se mantienen iguales) ---
 const findTrailer = (videos) => {
@@ -74,6 +77,9 @@ async function importPeruvianMovies() {
             });
 
             for (const basicData of response.data.results) {
+                // Ignorar entradas sin poster (evita importar películas sin imagen)
+                if (!basicData.poster_path) { process.stdout.write('_'); continue; }
+                if (MOVIE_BLACKLIST.has(basicData.id)) { process.stdout.write('⊘'); continue; }
                 // noinspection JSUnresolvedFunction
                 const existing = await Movie.findOne({ tmdbId: basicData.id });
                 if (!existing) {
@@ -88,10 +94,6 @@ async function importPeruvianMovies() {
                         });
                         /** @type {TMDBDetail} */
                         const d = detailRes.data;
-                        const releaseDate = d.release_date;
-                        const platforms = getWatchProviders(d['watch/providers'], releaseDate);
-
-                        // ✅ Añadimos noinspection para release_date
                         // noinspection JSUnresolvedVariable
                         const releaseDate = d.release_date;
                         const platforms = getWatchProviders(d['watch/providers'], releaseDate);
@@ -148,6 +150,8 @@ async function importPeruvianTVShows() {
             });
 
             for (const basicData of response.data.results) {
+                // Ignorar entradas sin poster
+                if (!basicData.poster_path) { process.stdout.write('_'); continue; }
                 // noinspection JSUnresolvedFunction
                 const existing = await TVShow.findOne({ tmdbId: basicData.id });
                 if (!existing) {
@@ -162,10 +166,6 @@ async function importPeruvianTVShows() {
                         });
                         /** @type {TMDBDetail} */
                         const d = detailRes.data;
-                        const firstAirDate = d.first_air_date;
-                        const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
-
-                        // ✅ Añadimos noinspection para first_air_date
                         // noinspection JSUnresolvedVariable
                         const firstAirDate = d.first_air_date;
                         const platforms = getWatchProviders(d['watch/providers'], firstAirDate);
@@ -227,7 +227,15 @@ async function runSeed() {
     }
 }
 
-runSeed().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+// Exportamos las funciones de importación (NO destructivas: omiten lo ya existente)
+// para poder reutilizarlas desde el arranque automático del servidor (bootstrap).
+module.exports = { importPeruvianMovies, importPeruvianTVShows };
+
+// Solo ejecuta el seeding completo (con borrado previo) cuando se corre
+// directamente como script: `node seed.js`. Al hacer require(...) no se dispara.
+if (require.main === module) {
+    runSeed().catch(err => {
+        console.error(err);
+        process.exit(1);
+    });
+}

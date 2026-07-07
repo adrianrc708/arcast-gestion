@@ -13,6 +13,7 @@ const TVShowSchema = new Schema({
   voteAverage: { type: Number },
   seasons: { type: Number },
   languages: [{ type: String }],
+  originCountry: [{ type: String }],
 
   // Array de plataformas
   platforms: [
@@ -24,6 +25,10 @@ const TVShowSchema = new Schema({
   ],
 
   watchLink: { type: String },
+
+  // Búsqueda semántica: vector de embedding y el texto con el que se generó.
+  embedding: { type: [Number], default: undefined, select: false },
+  embeddingText: { type: String, select: false },
 });
 
 module.exports = mongoose.model("TVShow", TVShowSchema);

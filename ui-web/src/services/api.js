@@ -19,26 +19,19 @@ api.interceptors.request.use((config) => {
     if (token) config.headers['Authorization'] = `Bearer ${token}`;
     return config;
 });
-/*api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('arcast_token');
-    if (token) config.headers['x-auth-token'] = token;
-    return config;
-});*/
 
 api.interceptors.response.use(
     (res) => res,
     (err) => {
+        // Token expirado o inválido: limpiamos la sesión para no dejar al
+        // usuario en un estado inconsistente (seguirá logueado en la UI pero
+        // todas las llamadas fallarían con 401).
+        if (err.response?.status === 401) {
+            localStorage.removeItem('arcast_token');
+        }
         const msg = err.response?.data?.message || err.message || 'Error de conexión';
         return Promise.reject({ message: String(msg) });
     }
 );
-/*api.interceptors.response.use(
-    (res) => res,
-    (err) => {
-        if (err.response?.status === 401) localStorage.clear();
-        const msg = err.response?.data?.message || err.message || 'Error de conexión';
-        return Promise.reject({ message: String(msg) });
-    }
-);*/
 
 export default api;

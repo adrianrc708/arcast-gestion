@@ -18,6 +18,7 @@ const MovieDetails = () => {
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [activeVideo, setActiveVideo] = useState('movie');
+    const [resumePrompt, setResumePrompt] = useState(null);
 
     // --- 🌟 ESTADOS AÑADIDOS PARA SERIES (RF12) ---
     const [seasons, setSeasons] = useState([]);
@@ -27,6 +28,11 @@ const MovieDetails = () => {
 
     // Ref para medir el tiempo de visualización
     const viewStartTime = useRef(null);
+
+    // --- Sistema de progreso de visualización (reanudar reproducción) ---
+    const [resumeTime, setResumeTime] = useState(0);
+    const [progressLoading, setProgressLoading] = useState(false);
+    const lastSavedAtRef = useRef(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -49,6 +55,17 @@ const MovieDetails = () => {
                     if (me?.data?.watchlist) {
                         const found = me.data.watchlist.some(w => (w.item?._id || w.item || w) === id);
                         setInWatchlist(found);
+                    }
+                    try {
+                        // Intentar obtener progreso guardado del nuevo sistema
+                        const progRes = await api.get(`/stream/progress/${id}`);
+                        const saved = progRes?.data?.data?.progress;
+                        if (saved && saved.currentTime > 10) {
+                            const percent = Math.round((saved.currentTime / saved.duration) * 100);
+                            setResumePrompt({ currentTime: saved.currentTime, percent });
+                        }
+                    } catch (e) {
+                        // Silencioso (404 si no hay progreso)
                     }
                 }
             } catch (error) {
@@ -84,40 +101,102 @@ const MovieDetails = () => {
         return url;
     };
 
-    const trailerEmbedUrl = item ? getEmbedUrl(item.trailerUrl) : null;
+    // Detecta una URL de YouTube
+    const isYouTubeUrl = (url) =>
+        typeof url === 'string' && /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)/i.test(url);
+
+    // Detecta URLs de video directo (archive.org, .mp4, .mkv, .webm, etc.)
+    const isDirectVideoUrl = (url) =>
+        typeof url === 'string' && (
+            url.includes('archive.org') ||
+            /\.(mp4|mkv|webm|avi|mov|m3u8)(\?|$)/i.test(url)
+        );
+
+    // El backend guarda el tráiler como `trailerKey` (ID de YouTube). Construimos
+    // la URL de embed a partir de ahí; si algún registro trae `trailerUrl` completo
+    // lo usamos como respaldo.
+    const trailerEmbedUrl = item
+        ? (item.trailerKey
+            ? `https://www.youtube.com/embed/${item.trailerKey}`
+            : (item.trailerUrl ? getEmbedUrl(item.trailerUrl) : null))
+        : null;
 
     useEffect(() => {
-        if (item && !trailerEmbedUrl) {
-            // Si es serie y no hay trailer, que arranque en 'episode' si se puede, sino 'movie'
-            setActiveVideo(type === 'tvshow' ? 'episode' : 'movie');
+        if (!item) return;
+        if (resumePrompt) {
+            setActiveVideo('alt');
+            return;
         }
-    }, [item, trailerEmbedUrl, type]);
+        // Priorizamos las fuentes del enfoque híbrido:
+        // archivo local (media/) → archive.org (watchLink) → tráiler → sin fuente.
+        if (type === 'movie') {
+            if (item.localPath) setActiveVideo('local');
+            else if (item.watchLink) setActiveVideo('alt');
+            else if (trailerEmbedUrl) setActiveVideo('trailer');
+            else setActiveVideo('none');
+        } else {
+            // Series: el contenido real vive en los episodios (Archive/local).
+            setActiveVideo('episode');
+        }
+    }, [item, trailerEmbedUrl, type, resumePrompt]);
+
+    // Determina el contentId a usar contra el sistema de progreso de
+    // visualización (/api/stream/progress) según la pestaña/video activo.
+    // 'movie' y 'alt' son la misma película (solo cambia la fuente), por lo
+    // que comparten el mismo progreso. 'episode' usa el _id del episodio.
+    const getProgressContentId = () => {
+        if (type === 'tvshow' && currentEpisode && activeVideo === 'episode') {
+            return currentEpisode._id;
+        }
+        if (item && (activeVideo === 'local' || activeVideo === 'alt')) {
+            return item._id || id;
+        }
+        return null;
+    };
+
+    // --- Integración con el sistema de progreso: recuperar la posición guardada ---
+    useEffect(() => {
+        const contentId = getProgressContentId();
+
+        if (!user || !contentId) {
+            setResumeTime(0);
+            setProgressLoading(false);
+            return;
+        }
+
+        let isActive = true;
+        setProgressLoading(true);
+
+        api.get(`/stream/progress/${contentId}`)
+            .then((res) => {
+                if (!isActive) return;
+                const saved = res?.data?.data?.progress;
+                // Solo ofrecemos reanudar si quedó contenido pendiente por ver (<95%)
+                if (saved && saved.duration > 0 && saved.currentTime < saved.duration * 0.95) {
+                    setResumeTime(saved.currentTime);
+                } else {
+                    setResumeTime(0);
+                }
+            })
+            .catch(() => {
+                // 404 = sin progreso guardado todavía, o error silencioso de red
+                if (isActive) setResumeTime(0);
+            })
+            .finally(() => {
+                if (isActive) setProgressLoading(false);
+            });
+
+        return () => { isActive = false; };
+    }, [user, activeVideo, item, currentEpisode, id]);
 
 
     useEffect(() => {
         // Inicia el contador de tiempo cuando el usuario empieza a ver el contenido
-        if (user && item && (activeVideo === 'movie' || activeVideo === 'alt' || activeVideo === 'episode')) {
+        if (user && item && (activeVideo === 'local' || activeVideo === 'alt' || activeVideo === 'episode')) {
             viewStartTime.current = Date.now();
-
-            // 1. Restauramos tu lógica original con el timer de 5 segundos de gracia
-            const registerView = async () => {
-                try {
-                    await api.post('/users/progress', {
-                        contentId: id,
-                        percentWatched: 10 // Simulación de progreso inicial
-                    });
-                } catch (error) {
-                    console.error("Error silencioso al registrar progreso:", error);
-                }
-            };
-
-            const timer = setTimeout(() => {
-                registerView();
-            }, 5000);
 
             // La función de limpieza se ejecutará cuando el usuario navegue fuera de la página
             return () => {
-                clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
                 if (viewStartTime.current) {
                     const endTime = Date.now();
                     const durationSeconds = (endTime - viewStartTime.current) / 1000;
@@ -141,30 +220,6 @@ const MovieDetails = () => {
         }
     }, [user, item, activeVideo, id, type]);
 
-
-    useEffect(() => {
-        // Solo enviamos el registro si el usuario está autenticado y la pestaña activa es la película o fuente alternativa.
-        if (user && item && (activeVideo === 'movie' || activeVideo === 'alt')) {
-            const registerView = async () => {
-                try {
-                    // Aviso a la ruta updateProgress
-                    await api.post('/users/progress', {
-                        contentId: id,
-                        percentWatched: 10 // Mandamos un progreso inicial simulado, CAMBIAR A VARIABLE DINAMICA CUANDO SE IMPLEMENTE SEGUIR VIENDO
-                    });
-                } catch (error) {
-                    console.error("Error silencioso al registrar visualización:", error);
-                }
-            };
-
-            // Le damos 5 segundos de gracia para no contar clics accidentales
-            const timer = setTimeout(() => {
-                registerView();
-            }, 5000);
-
-            return () => clearTimeout(timer); // Limpiamos el timer si cambia de página rápido
-        }
-    }, [user, item, activeVideo, id]);
 
     const toggleWatchlist = async () => {
         try {
@@ -224,13 +279,6 @@ const MovieDetails = () => {
     if (loading) return <div className="loading-screen">Sincronizando Arcast...</div>;
     if (!item) return <div className="loading-screen">Contenido no encontrado</div>;
 
-    const tmdbId = item.tmdbId || item.id || id;
-
-    // 🌟 ACTUALIZADO: Para que VidSrc reaccione al cambio de episodios (usando .episode)
-    const movieEmbedUrl = type === 'movie'
-        ? `https://vidsrc.net/embed/movie?tmdb=${tmdbId}`
-        : `https://vidsrc.net/embed/tv?tmdb=${tmdbId}&season=${selectedSeason}&episode=${currentEpisode?.episode || 1}`;
-
     // Lógica para fondo por defecto si no hay imágenes
     const bgImage = item.backdropUrl || item.posterUrl || 'https://via.placeholder.com/1920x1080/111111/111111';
 
@@ -253,8 +301,8 @@ const MovieDetails = () => {
                     <div className="detail-main-info">
                         <div className="badge-row">
                             <span className="type-badge">{type === 'movie' ? 'Película' : 'Serie'}</span>
-                            {/* Renderizado seguro del año */}
-                            <span className="year-badge">{item.releaseDate ? item.releaseDate.split('-')[0] : 'Año desconocido'}</span>
+                            {/* Renderizado seguro del año (película: releaseDate, serie: firstAirDate) */}
+                            <span className="year-badge">{(item.releaseDate || item.firstAirDate)?.split('-')[0] || 'Año desconocido'}</span>
                         </div>
                         <h1 className="detail-title">{item.title || item.name}</h1>
 
@@ -270,9 +318,13 @@ const MovieDetails = () => {
                             <div className="meta-info">
                                 <p><strong>Géneros:</strong> {item.genres?.length > 0 ? item.genres.join(', ') : 'No clasificado'}</p>
 
-                                {/* Solo muestra la duración si existe */}
-                                {item.runtime ? (
-                                    <p><strong>Duración:</strong> {item.runtime} min</p>
+                                {/* Solo muestra la duración si existe (el backend la guarda en `duration`) */}
+                                {item.duration ? (
+                                    <p><strong>Duración:</strong> {item.duration} min</p>
+                                ) : null}
+                                {/* En series mostramos la cantidad de temporadas */}
+                                {type === 'tvshow' && item.seasons ? (
+                                    <p><strong>Temporadas:</strong> {item.seasons}</p>
                                 ) : null}
                             </div>
                         </div>
@@ -285,7 +337,7 @@ const MovieDetails = () => {
 
                         <div className="action-buttons">
                             <button className={`btn-secondary-outline ${inWatchlist ? 'active' : ''}`} onClick={toggleWatchlist}>
-                                {inWatchlist ? '✓ EN MI LISTA' : '+ AÑADIR A MI LISTA'}
+                                {inWatchlist ? 'EN MI LISTA' : 'AÑADIR A MI LISTA'}
                             </button>
                         </div>
                     </div>
@@ -294,67 +346,85 @@ const MovieDetails = () => {
                 {/* Calcula la URL de streaming local basada en el tmdbId o _id */}
                 {(() => {
                     const streamToken = localStorage.getItem('arcast_token') || '';
-                    const localMovieUrl = type === 'movie'
+                    // Solo ofrecemos "Ver en Arcast" (streaming local) cuando la película
+                    // tiene realmente un archivo local; si no, el endpoint daría 404.
+                    const localMovieUrl = (type === 'movie' && item.localPath)
                         ? `/api/stream/movie/${item.tmdbId || id}?token=${streamToken}`
-                        : null; // Para series lo maneja Gabriel en RF12
+                        : null;
 
-                    // 🌟 CORRECCIÓN 3: Leemos el enlace desde localPath y quitamos el estricto .endsWith('.mp4')
-                    const archiveEpisodeUrl = type === 'tvshow' && currentEpisode ? currentEpisode.localPath : null;
+                    // Fuente del episodio (enfoque híbrido):
+                    //  - Si localPath es una URL http (archive.org), la usamos directa.
+                    //  - Si es una ruta local (/media/...), va por el endpoint de streaming
+                    //    con soporte de Range en /api/stream/episode/:tvshowId/:season/:episode.
+                    const archiveEpisodeUrl = (() => {
+                        if (type !== 'tvshow' || !currentEpisode || !currentEpisode.localPath) return null;
+                        const lp = currentEpisode.localPath;
+                        if (/^https?:\/\//i.test(lp)) return lp;
+                        return `/api/stream/episode/${id}/${currentEpisode.season}/${currentEpisode.episode}?token=${streamToken}`;
+                    })();
 
                     const handleVideoProgress = async (currentTime, duration) => {
                         if (!user) return;
                         const percent = Math.round((currentTime / duration) * 100);
-                        // Guardamos progreso cada 10% para no saturar el backend
-                        if (percent % 10 === 0) {
+                        // --- Sistema de progreso de visualización (para reanudar reproducción) ---
+                        // Guardamos como máximo una vez cada 8 segundos reales para no saturar el backend.
+                        const progressContentId = getProgressContentId();
+                        const now = Date.now();
+                        if (progressContentId && duration && (now - lastSavedAtRef.current > 8000)) {
+                            lastSavedAtRef.current = now;
                             try {
-                                await api.post('/users/progress', {
-                                    contentId: id,
-                                    percentWatched: percent,
-                                    currentTime: Math.floor(currentTime)
+                                await api.post('/stream/progress', {
+                                    contentId: progressContentId,
+                                    currentTime: Math.floor(currentTime),
+                                    duration: Math.floor(duration)
                                 });
                             } catch (e) {
-                                // Error silencioso — el progreso no es crítico
+                                // Error silencioso — el progreso no es crítico para la reproducción
                             }
                         }
                     };
 
                     return (
                         <div className="player-section">
-                            <div className="player-tabs">
-                                {/* Pestaña Local (RF11) — solo si hay streaming local disponible */}
+                            {resumePrompt && activeVideo === 'alt' &&  (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: '10px', padding: '12px 18px', marginBottom: '12px', gap: '12px' }}>
+                                <span style={{ color: '#e0e0e0', fontSize: '14px' }}>
+                                    Viste el <strong style={{ color: 'var(--accent)' }}>{resumePrompt.percent}%</strong> — ¿continuar desde ahí?
+                                </span>
+                                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                    <button className="hero-btn" style={{ padding: '6px 14px', fontSize: '13px' }} onClick={() => { setActiveVideo('alt'); setResumePrompt(null); }}>Continuar</button>
+                                    <button style={{ padding: '6px 14px', fontSize: '13px', background: 'transparent', border: '1px solid #444', borderRadius: '6px', color: '#888', cursor: 'pointer' }} onClick={() => { setActiveVideo('alt'); setResumePrompt(null); }}>Desde el inicio</button>
+                                </div>
+                            </div>
+                        )}
+                        <div className="player-tabs">
+                                {/* Streaming local (archivo en media/) */}
                                 {localMovieUrl && (
                                     <button
                                         className={activeVideo === 'local' ? 'active' : ''}
                                         onClick={() => setActiveVideo('local')}
                                     >
-                                        ▶ Ver en Arcast
+                                        Ver en Arcast
                                     </button>
                                 )}
 
-                                <button
-                                    className={activeVideo === 'movie' ? 'active' : ''}
-                                    onClick={() => setActiveVideo('movie')}
-                                >
-                                    Ver {type === 'movie' ? 'Película' : 'Contenido'}
-                                </button>
-
-                                {/* 🌟 REPARADO: Pestaña Alt (Exclusiva para Películas con Internet Archive) */}
+                                {/* Película desde archive.org (watchLink) */}
                                 {type === 'movie' && item.watchLink && (
                                     <button
                                         className={activeVideo === 'alt' ? 'active' : ''}
                                         onClick={() => setActiveVideo('alt')}
                                     >
-                                        Fuente Alternativa
+                                        Ver película
                                     </button>
                                 )}
 
-                                {/* 🌟 REPARADO: Pestaña Episode (Exclusiva para Series con Internet Archive) */}
+                                {/* Capítulo de serie (archive.org o local) */}
                                 {type === 'tvshow' && archiveEpisodeUrl && (
                                     <button
                                         className={activeVideo === 'episode' ? 'active' : ''}
                                         onClick={() => setActiveVideo('episode')}
                                     >
-                                        ▶ Reproducir Capítulo
+                                        Reproducir capítulo
                                     </button>
                                 )}
 
@@ -363,42 +433,77 @@ const MovieDetails = () => {
                                         className={activeVideo === 'trailer' ? 'active' : ''}
                                         onClick={() => setActiveVideo('trailer')}
                                     >
-                                        Ver Trailer
+                                        Ver tráiler
                                     </button>
                                 )}
                             </div>
 
-                            {/* Reproductor Local (RF11) */}
+                            {/* Reproductor híbrido: local (media/) o archive.org. Sin fuentes externas no oficiales. */}
                             {activeVideo === 'local' && localMovieUrl ? (
                                 <VideoPlayer
                                     src={localMovieUrl}
                                     title={item.title || item.name}
                                     onProgress={handleVideoProgress}
+                                    startTime={resumeTime}
+                                    progressLoading={progressLoading}
                                 />
                             ) : activeVideo === 'alt' && type === 'movie' && item.watchLink ? (
-                                <VideoPlayer
-                                    src={item.watchLink}
-                                    title={item.title || item.name}
-                                    onProgress={handleVideoProgress}
-                                />
+                                isYouTubeUrl(item.watchLink) ? (
+                                    <div className="player-glass-container">
+                                        <iframe
+                                            src={getEmbedUrl(item.watchLink)}
+                                            title={item.title || item.name}
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                ) : isDirectVideoUrl(item.watchLink) ? (
+                                    <VideoPlayer
+                                        src={item.watchLink}
+                                        title={item.title || item.name}
+                                        onProgress={handleVideoProgress}
+                                        initialTime={resumePrompt?.currentTime}
+                                    />
+                                ) : (
+                                    /* URL de página externa — embebida en iframe */
+                                    <div className="player-glass-container">
+                                        <iframe
+                                            src={item.watchLink}
+                                            title={item.title || item.name}
+                                            frameBorder="0"
+                                            allowFullScreen
+                                            style={{ width: '100%', height: '100%', border: 'none' }}
+                                        ></iframe>
+                                    </div>
+                                )
                             ) : activeVideo === 'episode' && type === 'tvshow' && archiveEpisodeUrl ? (
                                 <VideoPlayer
                                     src={archiveEpisodeUrl}
                                     title={`${item.name} - T${selectedSeason}E${currentEpisode?.episode || 1}`}
                                     onProgress={handleVideoProgress}
+                                    startTime={resumeTime}
+                                    progressLoading={progressLoading}
                                 />
-                            ) : (
+                            ) : activeVideo === 'trailer' && trailerEmbedUrl ? (
                                 <div className="player-glass-container">
                                     <iframe
-                                        src={
-                                            activeVideo === 'trailer' ? trailerEmbedUrl :
-                                                activeVideo === 'alt' ? getEmbedUrl(item.watchLink) : // Ojo, si es alt y no es .mp4, cae aquí
-                                                    movieEmbedUrl
-                                        }
-                                        title="Reproductor"
+                                        src={trailerEmbedUrl}
+                                        title="Tráiler"
                                         frameBorder="0"
                                         allowFullScreen
                                     ></iframe>
+                                </div>
+                            ) : (
+                                <div style={{
+                                    width: '100%', aspectRatio: '16/9', background: '#0a0a0a',
+                                    borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', textAlign: 'center', padding: '24px'
+                                }}>
+                                    <p style={{ color: '#e6edf3', fontWeight: 700, fontSize: '1.05rem' }}>Aún no disponible para reproducción</p>
+                                    <p style={{ color: '#64748b', fontWeight: 500, maxWidth: '420px' }}>
+                                        Este título todavía no tiene una fuente de video configurada (archive.org o archivo local).
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -427,8 +532,9 @@ const MovieDetails = () => {
                                     key={ep._id}
                                     onClick={() => {
                                         setCurrentEpisode(ep);
-                                        // 🌟 CORRECCIÓN 4: Verificamos localPath para activar el video
-                                        setActiveVideo(ep.localPath ? 'episode' : 'movie');
+                                        // Siempre a la pestaña de capítulo; si no hay fuente, el
+                                        // reproductor mostrará el estado "no disponible".
+                                        setActiveVideo('episode');
                                     }}
                                     className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${currentEpisode?._id === ep._id
                                         ? 'bg-blue-900/20 border-blue-500/50 shadow-md shadow-blue-500/5'
@@ -440,7 +546,7 @@ const MovieDetails = () => {
                                         <h4 className="font-bold text-gray-200 mt-1 text-sm">{ep.title || `Capítulo ${ep.episode || ep.episodeNumber}`}</h4>
                                         <p className="text-xs text-gray-400 mt-2 line-clamp-2">{ep.overview || "Sin descripción disponible para este episodio."}</p>
                                     </div>
-                                    {ep.runtime && <span className="text-[10px] text-gray-500 font-medium mt-3 self-end">⏱ {ep.runtime} min</span>}
+                                    {ep.runtime && <span className="text-[10px] text-gray-500 font-medium mt-3 self-end">{ep.runtime} min</span>}
                                 </div>
                             ))}
                         </div>
