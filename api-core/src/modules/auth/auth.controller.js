@@ -1,8 +1,10 @@
 const usersApi = require('../users/users.api');
-const bcrypt = require('bcryptjs'); // sólo se usa en loginUser para compare
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const { catchAsync, AppError } = require('../../common/error.utils');
 const ALLOWED_DOMAINS = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'unmsm.edu.pe'];
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
  * @typedef {Object} User
@@ -44,6 +46,10 @@ exports.loginUser = catchAsync(async (req, res, next) => {
 
     if (!user) return next(new AppError('Credenciales inválidas.', 401));
 
+    if (!user.password) {
+        return next(new AppError('Esta cuenta usa Google para iniciar sesión.', 401));
+    }
+
     // noinspection JSUnresolvedVariable
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return next(new AppError('Credenciales inválidas.', 401));
@@ -58,14 +64,44 @@ exports.loginUser = catchAsync(async (req, res, next) => {
     res.json({
         token,
         user: {
-            // noinspection JSUnresolvedVariable
             id: user._id,
-            // noinspection JSUnresolvedVariable
             username: user.username,
-            // noinspection JSUnresolvedVariable
             email: user.email,
-            // noinspection JSUnresolvedVariable
             role: user.role
         }
+    });
+});
+
+exports.googleLogin = catchAsync(async (req, res, next) => {
+    const { credential } = req.body;
+    if (!credential) return next(new AppError('Token de Google requerido.', 400));
+
+    const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const { sub: googleId, email, name } = ticket.getPayload();
+
+    let user = await usersApi.findByEmail(email);
+
+    if (!user) {
+        let username = (name || email.split('@')[0]).replace(/\s+/g, '_').toLowerCase();
+        const taken = await usersApi.findByEmailOrUsername('', username);
+        if (taken) username = username + '_' + Date.now().toString().slice(-4);
+        user = await usersApi.createUser({ username, email, googleId });
+    } else if (!user.googleId) {
+        user.googleId = googleId;
+        await user.save();
+    }
+
+    const token = jwt.sign(
+        { id: user._id, username: user.username, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
+    res.json({
+        token,
+        user: { id: user._id, username: user.username, email: user.email, role: user.role }
     });
 });

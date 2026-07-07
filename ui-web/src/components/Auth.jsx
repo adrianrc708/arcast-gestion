@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 const Auth = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [form, setForm] = useState({ username: '', email: '', password: '' });
     const [error, setError] = useState('');
-    const { login, register } = useAuth(); //
+    const { login, loginWithGoogle, register } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -65,6 +66,25 @@ const Auth = () => {
                         {isLogin ? "Iniciar sesión" : "Registrarse"}
                     </button>
                 </form>
+
+                <div className="auth-divider">
+                    <span>o continúa con</span>
+                </div>
+
+                <div className="auth-google-btn">
+                    <GoogleLogin
+                        onSuccess={async ({ credential }) => {
+                            const res = await loginWithGoogle(credential);
+                            if (!res.success) setError(res.message);
+                        }}
+                        onError={() => setError('No se pudo iniciar sesión con Google.')}
+                        width="100%"
+                        theme="filled_black"
+                        text={isLogin ? 'signin_with' : 'signup_with'}
+                        shape="rectangular"
+                        locale="es"
+                    />
+                </div>
 
                 <div className="auth-footer-box">
                     <p>
