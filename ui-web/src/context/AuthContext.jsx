@@ -26,6 +26,16 @@ export const AuthProvider = ({ children }) => {
         } catch (err) { return { success: false, message: err.message }; }
     };
 
+    const loginWithGoogle = async (credential) => {
+        try {
+            const { data } = await api.post('/auth/google', { credential });
+            localStorage.setItem('arcast_token', data.token);
+            localStorage.setItem('arcast_user', JSON.stringify(data.user));
+            setUser(data.user);
+            return { success: true };
+        } catch (err) { return { success: false, message: err.response?.data?.message || err.message }; }
+    };
+
     const register = async (username, email, password) => {
         try {
             await api.post('/auth/register', { username, email, password });
@@ -41,7 +51,7 @@ export const AuthProvider = ({ children }) => {
 
     // FIX: Agregamos loading al value para que App.jsx lo detecte
     const value = useMemo(() => ({
-        user, login, register, logout,
+        user, login, loginWithGoogle, register, logout,
         isAuthenticated: !!user,
         loading
     }), [user, loading]);
