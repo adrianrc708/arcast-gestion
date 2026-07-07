@@ -101,10 +101,16 @@ const MovieDetails = () => {
         return url;
     };
 
-    // Detecta una URL de YouTube (película/serie completa cargada en watchLink).
-    // Se reproduce embebida en vez de con el <video> nativo, que no soporta YouTube.
+    // Detecta una URL de YouTube
     const isYouTubeUrl = (url) =>
         typeof url === 'string' && /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)/i.test(url);
+
+    // Detecta URLs de video directo (archive.org, .mp4, .mkv, .webm, etc.)
+    const isDirectVideoUrl = (url) =>
+        typeof url === 'string' && (
+            url.includes('archive.org') ||
+            /\.(mp4|mkv|webm|avi|mov|m3u8)(\?|$)/i.test(url)
+        );
 
     // El backend guarda el tráiler como `trailerKey` (ID de YouTube). Construimos
     // la URL de embed a partir de ahí; si algún registro trae `trailerUrl` completo
@@ -452,13 +458,24 @@ const MovieDetails = () => {
                                             allowFullScreen
                                         ></iframe>
                                     </div>
-                                ) : (
+                                ) : isDirectVideoUrl(item.watchLink) ? (
                                     <VideoPlayer
                                         src={item.watchLink}
                                         title={item.title || item.name}
                                         onProgress={handleVideoProgress}
                                         initialTime={resumePrompt?.currentTime}
                                     />
+                                ) : (
+                                    /* URL de página externa — embebida en iframe */
+                                    <div className="player-glass-container">
+                                        <iframe
+                                            src={item.watchLink}
+                                            title={item.title || item.name}
+                                            frameBorder="0"
+                                            allowFullScreen
+                                            style={{ width: '100%', height: '100%', border: 'none' }}
+                                        ></iframe>
+                                    </div>
                                 )
                             ) : activeVideo === 'episode' && type === 'tvshow' && archiveEpisodeUrl ? (
                                 <VideoPlayer
