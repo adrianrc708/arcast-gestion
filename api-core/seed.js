@@ -13,7 +13,7 @@ const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 
 // Solo definimos cuántas páginas queremos, quitamos los géneros hardcodeados
-const PAGES_TO_FETCH = 5;
+const PAGES_TO_FETCH = 12;
 
 // --- HELPERS (Se mantienen iguales) ---
 const findTrailer = (videos) => {
@@ -74,6 +74,8 @@ async function importPeruvianMovies() {
             });
 
             for (const basicData of response.data.results) {
+                // Ignorar entradas sin poster (evita importar películas sin imagen)
+                if (!basicData.poster_path) { process.stdout.write('_'); continue; }
                 // noinspection JSUnresolvedFunction
                 const existing = await Movie.findOne({ tmdbId: basicData.id });
                 if (!existing) {
@@ -144,6 +146,8 @@ async function importPeruvianTVShows() {
             });
 
             for (const basicData of response.data.results) {
+                // Ignorar entradas sin poster
+                if (!basicData.poster_path) { process.stdout.write('_'); continue; }
                 // noinspection JSUnresolvedFunction
                 const existing = await TVShow.findOne({ tmdbId: basicData.id });
                 if (!existing) {
