@@ -1,58 +1,16 @@
-services:
-  mongo:
-    image: mongo:7
-    restart: unless-stopped
-    # --quiet silencia los logs de "Connection accepted/ended" que genera el
-    # healthcheck cada intervalo (era el ruido que inundaba la terminal),
-    # manteniendo visibles los errores reales.
-    command: ["mongod", "--quiet"]
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - arcast_net
-    healthcheck:
-      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
+version: '3.8'
 
+services:
   api-core:
     build: ./api-core
     ports:
       - "5001:5001"
     env_file:
       - ./api-core/.env
-    environment:
-      # Infra local: estos valores tienen prioridad sobre .env para que todo
-      # corra dentro de Docker sin depender de servicios en la nube.
-      - MONGO_URI=mongodb://mongo:27017/ReelScoreDB
-      - AI_ENGINE_URL=http://ai-engine:5000
-      # Arranque automático (todo con un solo `docker-compose up`):
-      #  - cuentas base (idempotente)
-      #  - catálogo TMDB si está vacío
-      #  - películas curadas reproducibles (archive.org)
-      #  - matcher de archive.org para el resto (se ejecuta una sola vez)
-      - AUTO_SEED_USERS=true
-      - AUTO_SEED_CATALOG=true
-      - AUTO_SEED_ARCHIVE=true
-      - AUTO_MATCH_ARCHIVE=true
-      - AUTO_EMBED_CATALOG=true
-    volumes:
-      - ./api-core:/app
-      - /app/node_modules
-      # Carpeta de videos locales. Coloca aquí los archivos y usa rutas como
-      # /media/mi-pelicula.mp4 en el campo localPath (ver README).
-      - ./media:/media
     networks:
       - arcast_net
-    depends_on:
-      mongo:
-        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:5001/api/system/health" ]
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/system/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -64,7 +22,7 @@ services:
     networks:
       - arcast_net
     healthcheck:
-      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" ]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -82,6 +40,3 @@ services:
 networks:
   arcast_net:
     driver: bridge
-
-volumes:
-  mongo_data:

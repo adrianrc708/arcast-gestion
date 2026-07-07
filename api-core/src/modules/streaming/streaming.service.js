@@ -1,10 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const Playback = require('./playback.model');
-const Movie = require('../catalog/movie.model');
-const Episode = require('../catalog/episode.model');
-const mongoose = require('mongoose');
-const tmdbProvider = require('../catalog/providers/tmdb.provider');
 
 // Tipos MIME por extensión
 const MIME_TYPES = {
@@ -109,109 +105,14 @@ async function getProgress(userId, contentId) {
     return Playback.findOne({ userId, contentId }).exec();
 }
 
-async function populateContentGeneric(playbacks) {
-    if (!playbacks || playbacks.length === 0) return playbacks;
-
-    const contentIds = playbacks.map(p => String(p.contentId));
-    
-    const objectIds = contentIds.filter(id => mongoose.isValidObjectId(id));
-    const tmdbIds = contentIds.filter(id => !mongoose.isValidObjectId(id));
-
-    const movies = await Movie.find({ _id: { $in: objectIds } }).lean();
-    const episodes = await Episode.find({ _id: { $in: objectIds } }).populate('tvshowId').lean();
-
-    const movieMap = {};
-    movies.forEach(m => movieMap[m._id.toString()] = { ...m, type: 'movie' });
-    
-    const episodeMap = {};
-    episodes.forEach(e => episodeMap[e._id.toString()] = { ...e, type: 'series' });
-
-    if (tmdbIds.length > 0) {
-        const tmdbMovies = await Promise.all(
-            tmdbIds.map(id => tmdbProvider.getMovieDetails(id).catch(() => null))
-        );
-        tmdbMovies.forEach(m => {
-            if (m) {
-                movieMap[m.id.toString()] = { ...m, type: 'movie' };
-            }
-        });
-    }
-
-    return playbacks.map(p => {
-        const idStr = String(p.contentId);
-        p.contentId = movieMap[idStr] || episodeMap[idStr] || p.contentId;
-        return p;
-    });
-}
-
-async function getContinueWatchingList(userId, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
-    const query = {
+async function getContinueWatchingList(userId) {
+    return Playback.find({
         userId,
         $expr: { $lt: ['$currentTime', '$duration'] }
-    };
-
-    const total = await Playback.countDocuments(query);
-    const playbacks = await Playback.find(query)
-        .sort({ lastWatched: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .exec();
-
-    let list = await populateContentGeneric(playbacks);
-
-    // Adaptamos el formato para que coincida con lo que espera el frontend (ContinueWatching.jsx)
-    list = list.map(entry => {
-        const percentWatched = entry.duration ? Math.round((entry.currentTime / entry.duration) * 100) : 0;
-        const contentType = (entry.contentId && entry.contentId.type === 'series') ? 'TVShow' : 'Movie';
-        
-        return {
-            _id: entry._id,
-            contentId: entry.contentId?._id || entry.contentId,
-            contentType,
-            percentWatched,
-            currentTime: entry.currentTime,
-            item: entry.contentId // El objeto poblado
-        };
-    });
-
-    return {
-        total,
-        page,
-        pages: Math.ceil(total / limit) || 1,
-        list
-    };
-}
-
-async function getHistory(userId, filters = {}) {
-    const query = { userId };
-    
-    if (filters.from || filters.to) {
-        query.lastWatched = {};
-        if (filters.from) {
-            query.lastWatched.$gte = new Date(filters.from);
-        }
-        if (filters.to) {
-            const toDate = new Date(filters.to);
-            toDate.setHours(23, 59, 59, 999);
-            query.lastWatched.$lte = toDate;
-        }
-    }
-    
-    let playbacks = await Playback.find(query)
-        .sort({ lastWatched: -1 })
-        .lean()
-        .exec();
-
-    playbacks = await populateContentGeneric(playbacks);
-
-    if (filters.type) {
-        const typeMatch = filters.type === 'movie' ? 'movie' : 'series';
-        playbacks = playbacks.filter(p => p.contentId && p.contentId.type === typeMatch);
-    }
-    
-    return playbacks;
+    })
+    .sort({ lastWatched: -1 })
+    .populate('contentId')
+    .exec();
 }
 
 module.exports = {
@@ -220,5 +121,4 @@ module.exports = {
     saveOrUpdateProgress,
     getProgress,
     getContinueWatchingList,
-    getHistory,
 };

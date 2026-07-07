@@ -3,27 +3,27 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import api from './services/api';
 
-import ContinueWatching from './views/ContinueWatching';
-import History from './views/History';
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
 import AdminPanel from './views/AdminPanel';
 import MovieDetails from './views/MovieDetails';
 import Profile from './views/Profile';
-import SemanticSearch from './views/SemanticSearch';
 import './index.css';
 
+// 1. Aislamos el Dashboard y las librerías de gráficas para que no bloqueen la app principal
 const BossDashboard = lazy(() => import('./views/BossDashboard'));
 
 const App = () => {
     const { isAuthenticated, user } = useAuth();
 
+    // Efecto que inyecta el CSS global sin importar si está logueado
     useEffect(() => {
         api.get('/system/config')
             .then(res => {
                 const config = Array.isArray(res.data) ? res.data[0] : res.data;
                 const customCSS = config?.customCSS;
+
                 if (customCSS) {
                     let styleTag = document.getElementById('arcast-custom-css');
                     if (!styleTag) {
@@ -34,7 +34,7 @@ const App = () => {
                     styleTag.innerHTML = customCSS;
                 }
             })
-            .catch(err => console.error('Error:', err));
+            .catch(err => console.error('No se pudo cargar la configuración del sistema:', err));
     }, []);
 
     if (!isAuthenticated) return <Auth />;
@@ -46,23 +46,23 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={
                         user?.role === 'admin' ? <Navigate to="/admin" replace /> :
-                            user?.role === 'boss' ? <Navigate to="/boss" replace /> :
+                            user?.role === 'boss'  ? <Navigate to="/boss" replace />  :
                                 <Home />
                     } />
+
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/item/:type/:id" element={<MovieDetails />} />
                     <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
-                    <Route path="/semantic-search" element={<SemanticSearch />} />
+                    
+                    {/* 2. Envolvemos la ruta con Suspense para manejar su carga por separado */}
                     <Route path="/boss" element={
                         user?.role === 'boss' ? (
-                            <Suspense fallback={<div className="py-20 text-center text-purple-400 font-bold animate-pulse">Iniciando módulos...</div>}>
+                            <Suspense fallback={<div className="py-20 text-center text-purple-400 font-bold animate-pulse">Iniciando módulos gráficos...</div>}>
                                 <BossDashboard />
                             </Suspense>
                         ) : <Navigate to="/" replace />
                     } />
                     <Route path="*" element={<Navigate to="/" replace />} />
-                    <Route path="/continue-watching" element={<ContinueWatching />} />
-                    <Route path="/history" element={<History />} />
                 </Routes>
             </main>
         </div>
