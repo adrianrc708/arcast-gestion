@@ -63,29 +63,7 @@ exports.getProgress = catchAsync(async (req, res, next) => {
 });
 
 exports.getContinueWatching = catchAsync(async (req, res, _next) => {
-    const userId = req.params.userId || req.user.id;
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-
-    const result = await streamingService.getContinueWatchingList(userId, page, limit);
-    
-    res.status(200).json({ 
-        status: 'success', 
-        results: result.list.length, 
-        data: { list: result.list },
-        pagination: {
-            total: result.total,
-            page: result.page,
-            pages: result.pages
-        }
-    });
-});
-
-exports.getHistory = catchAsync(async (req, res, _next) => {
-    const userId = req.params.userId;
-    const { type, from, to } = req.query;
-
-    const list = await streamingService.getHistory(userId, { type, from, to });
-
+    const userId = req.user.id;
+    const list = await streamingService.getContinueWatchingList(userId);
     res.status(200).json({ status: 'success', results: list.length, data: { list } });
 });
