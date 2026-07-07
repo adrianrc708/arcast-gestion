@@ -21,10 +21,11 @@ const AdminPanel = () => {
                     { id: 'movies', label: '2. Gestión de Películas' },
                     { id: 'tvshows', label: '3. Gestión de Series' },
                     { id: 'episodes', label: '3.5 Gestión de Episodios' },
-                    { id: 'reviews', label: '4. Moderar Reseñas' },
-                    { id: 'users', label: '5. Usuarios y Roles' },
-                    { id: 'system', label: '6. Sistema Global' },
-                    { id: 'audit', label: '7. Registro de Auditoría' },
+                    { id: 'streaming', label: '4. Estado de Streaming' },
+                    { id: 'reviews', label: '5. Moderar Reseñas' },
+                    { id: 'users', label: '6. Usuarios y Roles' },
+                    { id: 'system', label: '7. Sistema Global' },
+                    { id: 'audit', label: '8. Registro de Auditoría' },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -44,7 +45,7 @@ const AdminPanel = () => {
                 {msg.text && (
                     <div className={`p-4 rounded-xl border text-sm font-bold flex justify-between items-center animate-in slide-in-from-top ${msg.type === 'success' ? 'bg-green-500/10 border-green-500/50 text-green-400' : 'bg-red-500/10 border-red-500/50 text-red-400'
                         }`}>
-                        <span>{msg.type === 'success' ? '✅' : '❌'} {msg.text}</span>
+                        <span>{msg.text}</span>
                         <button onClick={clearMsg} className="opacity-50 hover:opacity-100">✕</button>
                     </div>
                 )}
@@ -54,6 +55,7 @@ const AdminPanel = () => {
                     {activeTab === 'movies' && <TabMovies onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'tvshows' && <TabTVShows onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'episodes' && <TabEpisodes onSuccess={showSuccess} onError={showError} />}
+                    {activeTab === 'streaming' && <TabStreaming onError={showError} />}
                     {activeTab === 'reviews' && <TabReviews onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'users' && <TabUsers onSuccess={showSuccess} onError={showError} />}
                     {activeTab === 'system' && <TabSystem onSuccess={showSuccess} onError={showError} />}
@@ -130,7 +132,11 @@ const TabMovies = ({ onSuccess, onError }) => {
                 <div className="flex-1 w-full max-w-md">
                     <h3 className="text-2xl font-black text-white mb-4">Catálogo de Películas</h3>
                     <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30">🔍</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </span>
                         <input type="text" placeholder="Buscar película..." value={searchTerm} onChange={handleSearch} className="admin-search-input" />
                     </div>
                 </div>
@@ -148,8 +154,14 @@ const TabMovies = ({ onSuccess, onError }) => {
                         <input type="text" placeholder="ID Trailer" value={formData.trailerKey} onChange={e => setFormData({ ...formData, trailerKey: e.target.value })} className="modern-input-admin" />
                     </div>
                     <textarea placeholder="Sinopsis..." value={formData.overview} onChange={e => setFormData({ ...formData, overview: e.target.value })} className="w-full modern-input-admin" rows="3"></textarea>
-                    <input type="text" placeholder="Enlace alternativo (URL externa ej: archive.org)" value={formData.watchLink} onChange={e => setFormData({ ...formData, watchLink: e.target.value })} className="w-full modern-input-admin" />
-                    <input type="text" placeholder="Ruta local del video (ej: /media/videos/pelicula.mp4)" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin" />
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Fuente principal — archive.org (URL)</label>
+                        <input type="text" placeholder="https://archive.org/details/mi-pelicula" value={formData.watchLink} onChange={e => setFormData({ ...formData, watchLink: e.target.value })} className="w-full modern-input-admin" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Respaldo local — archivo en media/</label>
+                        <input type="text" placeholder="/media/mi-pelicula.mp4" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin" />
+                    </div>
                     <div className="flex gap-4 justify-end">
                         <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 font-bold text-sm">Cancelar</button>
                         <button type="submit" className="bg-[#238636] text-white px-6 py-2 rounded-lg font-bold text-sm">Guardar</button>
@@ -259,7 +271,11 @@ const TabTVShows = ({ onSuccess, onError }) => {
                 <div className="flex-1 w-full max-w-md">
                     <h3 className="text-2xl font-black text-white mb-4">Catálogo de Series</h3>
                     <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30">🔍</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </span>
                         <input type="text" placeholder="Buscar serie..." value={searchTerm} onChange={handleSearch} className="admin-search-input" />
                     </div>
                 </div>
@@ -519,7 +535,6 @@ const TabAudit = ({ onError }) => {
                 </div>
             ) : logs.length === 0 ? (
                 <div className="text-center py-20 text-gray-600">
-                    <p className="text-4xl mb-4">📋</p>
                     <p className="font-bold">Sin registros de auditoría aún.</p>
                 </div>
             ) : (
@@ -651,8 +666,8 @@ const TabEpisodes = ({ onSuccess, onError }) => {
                 </div>
 
                 <div className="bg-[#58a6ff]/5 p-4 rounded-xl border border-[#58a6ff]/20 space-y-2">
-                    <label className="text-xs font-black text-[#58a6ff] uppercase tracking-wider block">URL Directa (.mp4 Archive)</label>
-                    <input required type="url" placeholder="Ej: https://archive.org/.../cap1.mp4" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin border-[#58a6ff]/30 focus:border-[#58a6ff]" />
+                    <label className="text-xs font-black text-[#58a6ff] uppercase tracking-wider block">Fuente del capítulo (Archive.org o ruta local)</label>
+                    <input required type="text" placeholder="Ej: https://archive.org/.../cap1.mp4  ó  /media/serie-t1e1.mp4" value={formData.localPath} onChange={e => setFormData({ ...formData, localPath: e.target.value })} className="w-full modern-input-admin border-[#58a6ff]/30 focus:border-[#58a6ff]" />
                 </div>
 
                 <div className="flex justify-end pt-2">
@@ -690,6 +705,146 @@ const TabEpisodes = ({ onSuccess, onError }) => {
                     <p className="text-sm text-gray-500 italic">No hay capítulos guardados para esta serie todavía. ¡Agrega el primero arriba!</p>
                 )}
             </div>
+        </div>
+    );
+};
+
+// ==========================================
+// PESTAÑA 4: ESTADO DE STREAMING (VISIBILIDAD)
+// ==========================================
+const STATUS_META = {
+    archive:  { label: 'Archive.org',  cls: 'bg-[#58a6ff]/15 text-[#58a6ff] border-[#58a6ff]/40' },
+    direct:   { label: 'Video directo', cls: 'bg-[#58a6ff]/15 text-[#58a6ff] border-[#58a6ff]/40' },
+    local:    { label: 'Local',        cls: 'bg-green-500/15 text-green-400 border-green-500/40' },
+    complete: { label: 'Completa',     cls: 'bg-green-500/15 text-green-400 border-green-500/40' },
+    partial:  { label: 'Parcial',      cls: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/40' },
+    external: { label: 'Solo enlace',  cls: 'bg-gray-500/15 text-gray-300 border-gray-500/40' },
+    none:     { label: 'Sin fuente',   cls: 'bg-red-500/15 text-red-400 border-red-500/40' },
+};
+
+const StatusBadge = ({ status }) => {
+    const meta = STATUS_META[status] || STATUS_META.none;
+    return (
+        <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${meta.cls}`}>
+            {meta.label}
+        </span>
+    );
+};
+
+const SummaryCard = ({ label, value, accent }) => (
+    <div className="bg-[#0d1117] border border-white/5 rounded-2xl p-5">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</p>
+        <p className={`text-3xl font-black mt-1 ${accent || 'text-white'}`}>{value}</p>
+    </div>
+);
+
+const TabStreaming = ({ onError }) => {
+    const [data, setData] = useState({ summary: null, movies: [], tvshows: [] });
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');   // all | streamable | none
+    const [typeFilter, setTypeFilter] = useState('all'); // all | movie | tvshow
+
+    const fetchStatus = () => {
+        setLoading(true);
+        api.get('/catalog/streaming-status')
+            .then(res => setData(res.data))
+            .catch(() => onError('Error al cargar el estado de streaming.'))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => { fetchStatus(); }, []);
+
+    const allItems = [...(data.movies || []), ...(data.tvshows || [])];
+    const items = allItems.filter(it => {
+        if (filter === 'streamable' && !it.streamable) return false;
+        if (filter === 'none' && it.streamable) return false;
+        if (typeFilter !== 'all' && it.type !== typeFilter) return false;
+        return true;
+    });
+
+    const s = data.summary;
+    const pct = s && s.total ? Math.round((s.streamable / s.total) * 100) : 0;
+
+    return (
+        <div className="space-y-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-white/5 pb-6">
+                <div>
+                    <h3 className="text-2xl font-black text-white mb-1">Estado de Streaming del Catálogo</h3>
+                    <p className="text-sm text-gray-400">Qué títulos están listos para reproducirse (archive.org o archivo local) y cuáles solo tienen metadata.</p>
+                </div>
+                <button onClick={fetchStatus} className="bg-[#58a6ff]/10 border border-[#58a6ff]/30 text-[#58a6ff] text-xs font-black px-4 py-2 rounded-lg hover:bg-[#58a6ff]/20 transition-colors">
+                    ↻ Actualizar
+                </button>
+            </div>
+
+            {loading ? (
+                <div className="flex justify-center py-20">
+                    <div className="w-8 h-8 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
+                </div>
+            ) : (
+                <>
+                    {s && (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <SummaryCard label="Total en catálogo" value={s.total} />
+                            <SummaryCard label="Listos para streaming" value={s.streamable} accent="text-green-400" />
+                            <SummaryCard label="Solo metadata" value={s.notStreamable} accent="text-red-400" />
+                            <SummaryCard label="Cobertura" value={`${pct}%`} accent="text-[#58a6ff]" />
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-3">
+                        <div className="flex gap-1 bg-black/30 p-1 rounded-xl border border-white/5">
+                            {[['all', 'Todos'], ['streamable', 'Listos'], ['none', 'Sin fuente']].map(([id, label]) => (
+                                <button key={id} onClick={() => setFilter(id)}
+                                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${filter === id ? 'bg-[#58a6ff] text-[#0d1117]' : 'text-gray-400 hover:text-white'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-1 bg-black/30 p-1 rounded-xl border border-white/5">
+                            {[['all', 'Todo'], ['movie', 'Películas'], ['tvshow', 'Series']].map(([id, label]) => (
+                                <button key={id} onClick={() => setTypeFilter(id)}
+                                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${typeFilter === id ? 'bg-[#58a6ff] text-[#0d1117]' : 'text-gray-400 hover:text-white'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="admin-table-container">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Obra</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Fuente / Cobertura</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.map(it => (
+                                    <tr key={`${it.type}-${it._id}`}>
+                                        <td className="flex items-center gap-3">
+                                            <img src={it.posterUrl || 'https://via.placeholder.com/40x56/1a1a1a/1a1a1a'} className="w-9 h-12 rounded object-cover" alt="" />
+                                            <span className="font-bold text-white">{it.title} {it.year && <span className="text-gray-500 font-mono text-xs">({it.year})</span>}</span>
+                                        </td>
+                                        <td className="text-xs font-black uppercase opacity-60">{it.type === 'movie' ? 'Película' : 'Serie'}</td>
+                                        <td><StatusBadge status={it.status} /></td>
+                                        <td className="text-xs opacity-60 max-w-[280px] truncate" title={it.source || ''}>
+                                            {it.type === 'tvshow'
+                                                ? `${it.episodesWithSource}/${it.episodesTotal} episodios con fuente`
+                                                : (it.source || '— sin configurar —')}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {items.length === 0 && (
+                                    <tr><td colSpan="4" className="text-center py-10 text-gray-600">No hay títulos que coincidan con el filtro.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
